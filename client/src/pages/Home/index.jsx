@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GraduationCap,
@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+
+import Logo from "../../assets/logo.png";
 
 /**
  * UTILITIES
@@ -192,6 +194,63 @@ const staggerContainer = {
 };
 
 /**
+ * COUNT-UP COMPONENT
+ * Animates a numeric stat (e.g. "80K+") from 0 to its target
+ * when it scrolls into the viewport.
+ */
+function parseStatValue(raw) {
+  // Extracts leading number and trailing suffix: "80K+" → { target: 80, suffix: "K+" }
+  const match = raw.match(/^([\d.]+)(.*)$/);
+  if (!match) return { target: 0, suffix: raw };
+  return { target: parseFloat(match[1]), suffix: match[2] };
+}
+
+function CountUp({ value }) {
+  const { target, suffix } = parseStatValue(value);
+  const [display, setDisplay] = useState(0);
+  const ref = useRef(null);
+  const hasStarted = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted.current) {
+          hasStarted.current = true;
+          const duration = 1800; // ms
+          const startTime = performance.now();
+
+          const tick = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease-out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setDisplay(Math.floor(eased * target));
+            if (progress < 1) requestAnimationFrame(tick);
+            else setDisplay(target);
+          };
+
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.3 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return (
+    <span ref={ref}>
+      {display}
+      {suffix}
+    </span>
+  );
+}
+
+/**
  * MAIN PAGE COMPONENTS
  */
 
@@ -214,9 +273,9 @@ const LoadingScreen = ({ onFinished }) => {
         transition={{ duration: 0.5, type: "spring" }}
         className="relative"
       >
-        <div className="w-20 h-20 rounded-2xl flex items-center justify-center relative z-10 bg-[#17468C] shadow-2xl shadow-[#17468C]/30">
-          <GraduationCap className="text-white w-10 h-10" />
-        </div>
+        {/* <div className="w-20 h-20 rounded-2xl flex items-center justify-center relative z-10 bg-[#17468C] shadow-2xl shadow-[#17468C]/30"> */}
+        <img src={Logo} alt="Logo" className="w-48" />
+        {/* </div> */}
         <motion.div
           animate={{
             scale: [1, 1.5, 1],
@@ -271,13 +330,22 @@ export default function App() {
                   variants={staggerContainer}
                   className="lg:col-span-7 space-y-8"
                 >
-                  <motion.div variants={fadeInUp}>
+                  <motion.div
+                    variants={fadeInUp}
+                    className="cursor-pointer"
+                    onClick={() =>
+                      window.open(
+                        "https://vidhyaedufoundation.com/admission-point-application-form/",
+                        "_blank",
+                      )
+                    }
+                  >
                     <Badge
                       variant="brandRed"
                       className="px-4 py-1.5 text-xs shadow-sm shadow-[#B82424]/10 border-[#B82424]/20 backdrop-blur-md bg-[#B82424]/5"
                     >
                       <Sparkles size={14} className="mr-2 text-[#B82424]" />
-                      Now Partnering with 100+ Institutions
+                      Inviting Admission Partners
                     </Badge>
                   </motion.div>
 
@@ -285,9 +353,9 @@ export default function App() {
                     variants={fadeInUp}
                     className="text-5xl lg:text-[4.5rem] font-bold text-slate-900 leading-[1.05] tracking-tight"
                   >
-                    Education <br />
+                    Empower <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#17468C] via-[#6366f1] to-[#B82424]">
-                      Without Borders
+                      Education Globally
                     </span>
                   </motion.h1>
 
@@ -295,9 +363,10 @@ export default function App() {
                     variants={fadeInUp}
                     className="text-lg text-slate-500 max-w-xl leading-relaxed"
                   >
-                    6A Skillcity is the unified bridge for recruitment partners
-                    and global universities, delivering UGC-approved excellence
-                    to every student.
+                    Join us in expanding your global presence and reaching
+                    qualified students worldwide through a single, easy-to-use
+                    platform trusted by over 100 institutions. Revolutionize
+                    education and fulfill your mission to educate the world.
                   </motion.p>
 
                   <motion.div
@@ -455,23 +524,23 @@ export default function App() {
               >
                 {[
                   {
-                    label: "Partner Centres",
+                    label: "Students Helped",
+                    value: "80K+",
+                    color: "text-[#17468C]",
+                  },
+                  {
+                    label: "Programs",
+                    value: "140+",
+                    color: "text-[#B82424]",
+                  },
+                  {
+                    label: "Recruitment Partners",
                     value: "65K+",
                     color: "text-[#17468C]",
                   },
                   {
-                    label: "Active Students",
-                    value: "80K+",
-                    color: "text-[#B82424]",
-                  },
-                  {
-                    label: "Degree Courses",
-                    value: "140+",
-                    color: "text-[#17468C]",
-                  },
-                  {
-                    label: "Global Presence",
-                    value: "12+",
+                    label: "Partner Institutions",
+                    value: "150+",
                     color: "text-[#B82424]",
                   },
                 ].map((stat, i) => (
@@ -489,7 +558,7 @@ export default function App() {
                         stat.color,
                       )}
                     >
-                      {stat.value}
+                      <CountUp value={stat.value} />
                     </h4>
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
                       {stat.label}
@@ -754,12 +823,7 @@ export default function App() {
               <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-slate-200">
                 <div className="lg:col-span-4 space-y-6">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-[#B82424] shadow-md shadow-[#B82424]/20">
-                      <GraduationCap className="text-white w-5 h-5" />
-                    </div>
-                    <span className="text-xl font-bold tracking-tight text-[#17468C]">
-                      6A<span className="text-slate-900">SKILLCITY</span>
-                    </span>
+                    <img src={Logo} alt="Logo" className="w-24" />
                   </div>
                   <p className="text-slate-500 text-sm leading-relaxed max-w-xs">
                     Managing global academic affairs with precision, integrity,

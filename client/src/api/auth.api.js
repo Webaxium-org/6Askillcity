@@ -12,3 +12,8 @@ export const loginAdmissionPoint = async (formData) => {
   );
   return response.data;
 };
+
+export const getAllUsers = async () => {
+  const response = await axiosInstance.get("/auth/users");
+  return response.data;
+};

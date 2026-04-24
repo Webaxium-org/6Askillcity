@@ -25,35 +25,36 @@ export const handleFormError = (error, setFormErrors, dispatch, navigate) => {
     if (Object.keys(validationErrors).length > 0) {
       // It's a direct Yup validation error mapped as an object
       Object.entries(validationErrors).forEach(([key, value]) => {
-         setFormErrors(key, { type: 'manual', message: value });
+        setFormErrors(key, { type: "manual", message: value });
       });
     } else if (error?.response?.data?.errors) {
-       // Backend validation errors format handling (e.g. express-validator)
-       const backendErrors = error.response.data.errors;
-       if (Array.isArray(backendErrors)) {
-           backendErrors.forEach(err => setFormErrors(err.path || err.param, { type: 'manual', message: err.msg }));
-       } else if (typeof backendErrors === 'object') {
-           Object.entries(backendErrors).forEach(([key, value]) => {
-               setFormErrors(key, { type: 'manual', message: value });
-           });
-       }
+      // Backend validation errors format handling (e.g. express-validator)
+      const backendErrors = error.response.data.errors;
+      if (Array.isArray(backendErrors)) {
+        backendErrors.forEach((err) =>
+          setFormErrors(err.path || err.param, {
+            type: "manual",
+            message: err.msg,
+          }),
+        );
+      } else if (typeof backendErrors === "object") {
+        Object.entries(backendErrors).forEach(([key, value]) => {
+          setFormErrors(key, { type: "manual", message: value });
+        });
+      }
     } else {
-        // Fallback for simple single-field error object passed from user snippet natively
-        // Try direct call
-        try {
-           setFormErrors(validationErrors);
-        } catch(e) { }
+      // Fallback for simple single-field error object passed from user snippet natively
+      // Try direct call
+      try {
+        setFormErrors(validationErrors);
+      } catch (e) {}
     }
   }
 
   if (error?.response?.status === 401 || error?.response?.status === 403) {
-    if (error?.response?.data?.message === "ONBOARDING_REQUIRED") {
-      navigate("/onboarding/account-type");
-    } else {
-      // disconnectSocket();
-      dispatch(logOut()); // Clear user state in Redux
-      navigate("/login"); // Optional standard redirect
-    }
+    // disconnectSocket();
+    dispatch(logOut()); // Clear user state in Redux
+    navigate("/login"); // Optional standard redirect
   }
 
   if (error?.response?.status === 500) {
@@ -69,6 +70,6 @@ export const handleFormError = (error, setFormErrors, dispatch, navigate) => {
     showAlert({
       type: error.response ? "error" : "warning",
       message: errorMessage,
-    })
+    }),
   );
 };

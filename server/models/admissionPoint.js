@@ -94,6 +94,11 @@ const AdmissionPointSchema = new mongoose.Schema(
       officePhotos: [{ type: String }], // Array since the form says "Photos" (plural)
     },
 
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     registrationDate: {
       type: Date,
       default: Date.now,

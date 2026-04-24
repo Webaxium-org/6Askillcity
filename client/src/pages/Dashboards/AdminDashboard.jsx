@@ -9,7 +9,6 @@ import {
   Building2,
   ChevronRight,
   Activity,
-  Plus,
   CheckCircle,
   Eye,
   XCircle,
@@ -20,64 +19,41 @@ import {
   User as UserIcon,
   Phone,
   Mail,
+  MessageSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   getPendingAdmissionPoints,
   updateAdmissionPointStatus,
 } from "../../api/admissionPoint.api";
+import { getPendingEligibility, reviewApplication } from "../../api/student.api";
 import { handleFormError } from "../../utils/handleFormError";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { showAlert } from "../../redux/alertSlice";
 
-// Dummy Students Data
-const DUMMY_STUDENTS = [
-  {
-    id: "STU-001",
-    name: "Aarav Patel",
-    course: "Web Development",
-    status: "Active",
-    date: "2026-04-20",
-  },
-  {
-    id: "STU-002",
-    name: "Priya Sharma",
-    course: "Data Science",
-    status: "Pending",
-    date: "2026-04-19",
-  },
-  {
-    id: "STU-003",
-    name: "Rohan Gupta",
-    course: "UI/UX Design",
-    status: "Active",
-    date: "2026-04-18",
-  },
-  {
-    id: "STU-004",
-    name: "Neha Singh",
-    course: "Web Development",
-    status: "Active",
-    date: "2026-04-15",
-  },
-  {
-    id: "STU-005",
-    name: "Aditya Kumar",
-    course: "Cloud Computing",
-    status: "Graduated",
-    date: "2026-04-10",
-  },
-];
 
-export default function UserDashboard() {
+const COURSE_LABELS = {
+  uiux: "Advanced UI/UX Design",
+  fsd: "Full Stack Web Dev",
+  ds: "Data Science & AI",
+  dm: "Digital Marketing",
+};
+
+export default function AdminDashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [pendingPoints, setPendingPoints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingApplications, setPendingApplications] = useState([]);
+  const [loadingApps, setLoadingApps] = useState(true);
   const [approveWarningId, setApproveWarningId] = useState(null);
   const [rejectWarningId, setRejectWarningId] = useState(null);
   const [viewDetailsPoint, setViewDetailsPoint] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectRemark, setRejectRemark] = useState("");
+  const [approvingId, setApprovingId] = useState(null);
+  const [rejectingId, setRejectingId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,6 +69,19 @@ export default function UserDashboard() {
       }
     };
     fetchData();
+
+    // Fetch pending eligibility applications
+    const fetchApps = async () => {
+      try {
+        const res = await getPendingEligibility();
+        if (res.success) setPendingApplications(res.data);
+      } catch {
+        // silently fail
+      } finally {
+        setLoadingApps(false);
+      }
+    };
+    fetchApps();
   }, []);
 
   const confirmApprove = async () => {
@@ -143,6 +132,39 @@ export default function UserDashboard() {
     }
   };
 
+  const handleEligibilityApprove = async (id) => {
+    setApprovingId(id);
+    try {
+      const res = await reviewApplication(id, "approve");
+      if (res.success) {
+        setPendingApplications((prev) => prev.filter((a) => a._id !== id));
+        dispatch(showAlert({ type: "success", message: "Application approved — student is now Eligible!" }));
+      }
+    } catch (err) {
+      handleFormError(err, null, dispatch, navigate);
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleEligibilityRejectConfirm = async () => {
+    if (!rejectTarget || !rejectRemark.trim()) return;
+    setRejectingId(rejectTarget);
+    try {
+      const res = await reviewApplication(rejectTarget, "reject", rejectRemark);
+      if (res.success) {
+        setPendingApplications((prev) => prev.filter((a) => a._id !== rejectTarget));
+        setRejectTarget(null);
+        setRejectRemark("");
+        dispatch(showAlert({ type: "success", message: "Application rejected with remarks." }));
+      }
+    } catch (err) {
+      handleFormError(err, null, dispatch, navigate);
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   return (
     <DashboardLayout title="Overview">
       <div className="space-y-8">
@@ -162,12 +184,14 @@ export default function UserDashboard() {
             color="purple"
           />
           <StatCard
-            title="Pending Partners"
-            value={loading ? "..." : pendingPoints.length}
+            title="Pending Applications"
+            value={loadingApps ? "..." : pendingApplications.length}
             icon={Clock}
-            trend={-2.4}
-            subtext="Requires review"
+            trend={0}
+            subtext="Eligibility queue"
             color="rose"
+            onClick={() => navigate("/dashboard/eligibility-queue")}
+            style={{ cursor: "pointer" }}
           />
           <StatCard
             title="Active Centers"
@@ -310,7 +334,7 @@ export default function UserDashboard() {
             </div>
           </motion.div>
 
-          {/* Dummy Students Table */}
+          {/* Pending Eligibility Table */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -320,88 +344,172 @@ export default function UserDashboard() {
             <div className="px-6 py-5 border-b border-border flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-lg flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-blue-500" />
-                  <span>Recent Enrolls</span>
+                  <Clock className="w-5 h-5 text-amber-500" />
+                  <span>Eligibility Review Queue</span>
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Latest student registrations
+                  Applications awaiting eligibility decision
                 </p>
               </div>
-              <button className="p-2 bg-primary text-primary-foreground rounded-lg shadow-sm hover:bg-primary/90 transition-colors">
-                <Plus className="w-4 h-4" />
+              <button
+                onClick={() => navigate("/dashboard/eligibility-queue")}
+                className="text-sm font-medium text-amber-500 hover:text-amber-400 transition-colors bg-amber-500/10 px-3 py-1.5 rounded-lg flex items-center"
+              >
+                View All <ChevronRight className="w-4 h-4 ml-1" />
               </button>
             </div>
             <div className="flex-1 overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Course
-                    </th>
-                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Status
-                    </th>
+                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Applicant</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Course</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {DUMMY_STUDENTS.map((student, idx) => (
-                    <motion.tr
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      key={student.id}
-                      className="hover:bg-muted/50 transition-colors cursor-pointer"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                            {student.name.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="font-medium text-foreground text-sm">
-                              {student.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {student.id}
-                            </div>
-                          </div>
+                  {loadingApps ? (
+                    <tr>
+                      <td colSpan="3">
+                        <div className="px-6 py-8 text-center text-muted-foreground">
+                          Loading review queue...
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-foreground">
-                          {student.course}
-                        </span>
+                    </tr>
+                  ) : pendingApplications.length === 0 ? (
+                    <tr>
+                      <td colSpan="3">
+                        <div className="px-6 py-8 text-center text-muted-foreground flex flex-col items-center">
+                          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                            <CheckCircle className="w-6 h-6 text-emerald-500/50" />
+                          </div>
+                          All caught up! No pending applications.
+                        </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border",
-                            student.status === "Active"
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                              : student.status === "Pending"
-                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                : "bg-primary/10 text-primary border-primary/20",
-                          )}
-                        >
-                          {student.status}
-                        </span>
-                      </td>
-                    </motion.tr>
-                  ))}
+                    </tr>
+                  ) : (
+                    pendingApplications.slice(0, 5).map((app, idx) => (
+                      <motion.tr
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        key={app._id}
+                        className="hover:bg-muted/50 transition-colors group"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-foreground text-sm">{app.name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Mail className="w-3 h-3" />{app.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                          {COURSE_LABELS[app.course] || app.course}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => navigate(`/dashboard/eligibility-queue`)}
+                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
+                              title="Open Full Queue"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEligibilityApprove(app._id)}
+                              disabled={approvingId === app._id}
+                              className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 hover:border-emerald-500 transition-all duration-200"
+                              title="Approve"
+                            >
+                              {approvingId === app._id ? (
+                                <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => { setRejectTarget(app._id); setRejectRemark(""); }}
+                              className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-red-500 transition-all duration-200"
+                              title="Reject"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
-            <div className="px-6 py-4 border-t border-border bg-muted/20 text-center">
-              <button className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-                View Full Roster
-              </button>
-            </div>
+            {!loadingApps && pendingApplications.length > 0 && (
+              <div className="px-6 py-3.5 border-t border-border bg-muted/20 text-sm text-muted-foreground">
+                {pendingApplications.length} application{pendingApplications.length !== 1 ? "s" : ""} pending
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
+
+      {/* Reject Eligibility Modal */}
+      <AnimatePresence>
+        {rejectTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+            onClick={() => setRejectTarget(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border"
+            >
+              <div className="flex items-center gap-3 text-red-500 mb-4">
+                <ShieldAlert className="w-6 h-6" />
+                <h3 className="text-xl font-bold text-foreground">Reject Application</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Provide a remark explaining the rejection. The partner will see this before re-submitting.
+              </p>
+              <div className="space-y-1.5 mb-6">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5" /> Admin Remark <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={rejectRemark}
+                  onChange={(e) => setRejectRemark(e.target.value)}
+                  placeholder="Explain why this application is being rejected..."
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all text-sm resize-none"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRejectTarget(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEligibilityRejectConfirm}
+                  disabled={!rejectRemark.trim() || rejectingId === rejectTarget}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {rejectingId === rejectTarget ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <><XCircle className="w-4 h-4" /> Confirm Rejection</>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Approve Warning Modal */}
       <AnimatePresence>

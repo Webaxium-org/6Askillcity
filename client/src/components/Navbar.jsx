@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+import Logo from "../assets/logo.png";
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -68,12 +69,9 @@ const Navbar = () => {
           transition={{ type: "spring", bounce: 0.4 }}
           className="flex items-center gap-2 cursor-pointer group"
         >
-          <div className="p-1.5 rounded-lg shadow-md bg-[#B82424] group-hover:scale-105 transition-transform">
-            <GraduationCap className="text-white w-5 h-5" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-[#17468C]">
-            6A<span className="text-slate-900">SKILLCITY</span>
-          </span>
+          <a href="/">
+            <img src={Logo} alt="Logo" className="w-16" />
+          </a>
         </motion.div>
 
         <div className="hidden md:flex items-center space-x-2">

@@ -83,7 +83,7 @@ export default function PartnerDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
           <StatCard
             title="Total Enrolled"
@@ -127,37 +127,41 @@ export default function PartnerDashboard() {
           className="bg-card border border-border rounded-xl shadow-sm flex flex-col"
         >
           {/* Header & Controls */}
-          <div className="px-6 py-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold text-lg flex items-center space-x-2">
-                <Briefcase className="w-5 h-5 text-blue-500" />
-                <span>My Students Console</span>
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Manage your enrollments and track progress.
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search students..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-2 rounded-xl bg-muted/50 border border-transparent focus:bg-background focus:border-border outline-none text-sm transition-all w-full sm:w-64"
-                />
+          <div className="px-4 sm:px-6 py-5 border-b border-border flex flex-col gap-4">
+            {/* Title row with Add button */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-blue-500 shrink-0" />
+                  <span>Applications</span>
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Manage and track your submitted applications.
+                </p>
               </div>
-              <button className="p-2 rounded-xl bg-muted/50 border border-transparent hover:border-border text-foreground transition-all">
-                <Filter className="w-4 h-4" />
-              </button>
               <button
-                onClick={() => navigate("/partner-dashboard/student/add")}
-                className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm whitespace-nowrap"
+                onClick={() => navigate("/dashboard/applications")}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm whitespace-nowrap shrink-0"
               >
                 <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Add Student</span>
+                <span className="hidden xs:inline sm:inline">View All Applications</span>
+              </button>
+            </div>
+
+            {/* Search & Filter row */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search applications..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 pr-4 py-2 rounded-xl bg-muted/50 border border-transparent focus:bg-background focus:border-border outline-none text-sm transition-all w-full"
+                />
+              </div>
+              <button className="p-2 rounded-xl bg-muted/50 border border-transparent hover:border-border text-foreground transition-all shrink-0">
+                <Filter className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -167,19 +171,19 @@ export default function PartnerDashboard() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border bg-muted/20">
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Student Details
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Applicant Details
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Assigned Course
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Enrollment Date
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
                     Actions
                   </th>
                 </tr>
@@ -189,12 +193,14 @@ export default function PartnerDashboard() {
                   <tr>
                     <td
                       colSpan="5"
-                      className="px-6 py-12 text-center text-muted-foreground flex flex-col items-center justify-center w-full"
+                      className="px-6 py-12 text-center text-muted-foreground"
                     >
-                      <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
-                        <Search className="w-6 h-6 text-muted-foreground/50" />
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                          <Search className="w-6 h-6 text-muted-foreground/50" />
+                        </div>
+                        No students found matching your search.
                       </div>
-                      No students found matching your search.
                     </td>
                   </tr>
                 ) : (
@@ -206,22 +212,29 @@ export default function PartnerDashboard() {
                       key={student.id}
                       className="hover:bg-muted/50 transition-colors group cursor-pointer"
                     >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-foreground font-bold shadow-sm">
+                      {/* Student Details */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-foreground font-bold shadow-sm shrink-0">
                             {student.name.charAt(0)}
                           </div>
-                          <div>
-                            <div className="font-medium text-foreground text-sm">
+                          <div className="min-w-0">
+                            <div className="font-medium text-foreground text-sm truncate">
                               {student.name}
                             </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                            <div className="text-xs text-muted-foreground mt-0.5 truncate">
                               {student.email}
+                            </div>
+                            {/* Course shown inline on xs when column is hidden */}
+                            <div className="sm:hidden text-xs text-primary/80 mt-1 font-medium truncate">
+                              {student.course}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+
+                      {/* Assigned Course — hidden on xs */}
+                      <td className="hidden sm:table-cell px-6 py-4">
                         <span className="text-sm font-medium text-foreground">
                           {student.course}
                         </span>
@@ -237,13 +250,17 @@ export default function PartnerDashboard() {
                           />
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
+
+                      {/* Enrollment Date — hidden below md */}
+                      <td className="hidden md:table-cell px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
                         {new Date(student.date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4">
+
+                      {/* Status */}
+                      <td className="px-4 sm:px-6 py-4">
                         <span
                           className={cn(
-                            "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border",
+                            "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border whitespace-nowrap",
                             student.status === "Active"
                               ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               : student.status === "Pending"
@@ -257,7 +274,9 @@ export default function PartnerDashboard() {
                           {student.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+
+                      {/* Actions */}
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center justify-end">
                           <button className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
                             <MoreVertical className="w-4 h-4" />
@@ -271,12 +290,13 @@ export default function PartnerDashboard() {
             </table>
           </div>
 
-          <div className="px-6 py-4 border-t border-border bg-muted/20 flex items-center justify-between text-sm">
+          {/* Footer / Pagination */}
+          <div className="px-4 sm:px-6 py-4 border-t border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3 text-sm">
             <span className="text-muted-foreground">
               Showing {filteredStudents.length} of {DUMMY_STUDENTS.length}{" "}
-              students
+              applications
             </span>
-            <div className="flex space-x-2">
+            <div className="flex gap-2">
               <button className="px-3 py-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-50">
                 Prev
               </button>

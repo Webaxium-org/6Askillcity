@@ -12,22 +12,89 @@ import { useDispatch } from "react-redux";
 import { handleFormError } from "../../utils/handleFormError";
 import { showAlert } from "../../redux/alertSlice";
 import { registerStudent } from "../../api/student.api";
+import { getUniversities, getPrograms, getProgramFees } from "../../api/university.api";
 
 export default function StudentRegistration() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  const [universities, setUniversities] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [selectedFee, setSelectedFee] = useState(null);
 
   const {
     register,
     handleSubmit,
     setError,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(studentRegistrationSchema),
   });
+
+  const selectedUniversity = watch("university");
+  const selectedProgram = watch("program");
+
+  React.useEffect(() => {
+    const fetchUnis = async () => {
+      try {
+        const res = await getUniversities();
+        if (res.success) setUniversities(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchUnis();
+  }, []);
+
+  React.useEffect(() => {
+    if (selectedUniversity) {
+      const fetchProgs = async () => {
+        try {
+          const res = await getPrograms(selectedUniversity);
+          if (res.success) setPrograms(res.data);
+          setValue("program", "");
+          setSelectedFee(null);
+          setValue("programFee", "");
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      fetchProgs();
+    } else {
+      setPrograms([]);
+    }
+  }, [selectedUniversity, setValue]);
+
+  React.useEffect(() => {
+    if (selectedProgram) {
+      const fetchFee = async () => {
+        try {
+          const res = await getProgramFees(selectedProgram);
+          if (res.success) {
+            const currentFee = res.data.find(f => f.isCurrent);
+            if (currentFee) {
+              setSelectedFee(currentFee);
+              setValue("programFee", currentFee._id);
+              // Auto-fill course for backward compatibility
+              const progName = programs.find(p => p._id === selectedProgram)?.name;
+              setValue("course", progName || "Course Selected");
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      fetchFee();
+    } else {
+      setSelectedFee(null);
+      setValue("programFee", "");
+    }
+  }, [selectedProgram, setValue, programs]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -188,28 +255,78 @@ export default function StudentRegistration() {
 
               <motion.div variants={itemVariants}>
                 <div className="space-y-2">
-                  <label htmlFor="course" className="text-sm font-semibold text-white">
-                    Target Course Entry
+                  <label htmlFor="university" className="text-sm font-semibold text-white">
+                    Target University
                   </label>
                   <select
-                    id="course"
-                    {...register("course")}
+                    id="university"
+                    {...register("university")}
                     className={cn(
                       "w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl outline-none transition-all placeholder:text-white/40 focus:border-[#B82424] focus:ring-1 focus:ring-[#B82424] text-white",
-                      errors.course && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      errors.university && "border-red-500 focus:border-red-500 focus:ring-red-500"
                     )}
                   >
-                    <option value="" className="text-black">Select assigned course</option>
-                    <option value="uiux" className="text-black">Advanced UI/UX Design</option>
-                    <option value="fsd" className="text-black">Full Stack Web Development</option>
-                    <option value="ds" className="text-black">Data Science & AI</option>
-                    <option value="dm" className="text-black">Digital Marketing Masterclass</option>
+                    <option value="" className="text-black">Select University</option>
+                    {universities.map(u => (
+                      <option key={u._id} value={u._id} className="text-black">{u.name}</option>
+                    ))}
                   </select>
-                  {errors.course && (
-                    <p className="text-red-400 text-xs font-semibold">{errors.course.message}</p>
+                  {errors.university && (
+                    <p className="text-red-400 text-xs font-semibold">{errors.university.message}</p>
                   )}
                 </div>
               </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <div className="space-y-2">
+                  <label htmlFor="program" className="text-sm font-semibold text-white">
+                    Target Program
+                  </label>
+                  <select
+                    id="program"
+                    {...register("program")}
+                    disabled={!selectedUniversity}
+                    className={cn(
+                      "w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl outline-none transition-all placeholder:text-white/40 focus:border-[#B82424] focus:ring-1 focus:ring-[#B82424] text-white disabled:opacity-50",
+                      errors.program && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    )}
+                  >
+                    <option value="" className="text-black">Select Program</option>
+                    {programs.map(p => (
+                      <option key={p._id} value={p._id} className="text-black">{p.name}</option>
+                    ))}
+                  </select>
+                  {errors.program && (
+                    <p className="text-red-400 text-xs font-semibold">{errors.program.message}</p>
+                  )}
+                </div>
+              </motion.div>
+
+              <input type="hidden" {...register("programFee")} />
+              <input type="hidden" {...register("course")} />
+
+              {selectedFee && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="md:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4"
+                >
+                  <div>
+                    <h4 className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">Estimated Program Fee</h4>
+                    <p className="text-2xl font-black text-white">₹{selectedFee.totalFee.toLocaleString()}</p>
+                  </div>
+                  <div className="flex gap-4 text-xs text-blue-100/60 font-medium">
+                    <div className="text-right">
+                      <p>Application Fee</p>
+                      <p className="text-white">₹{selectedFee.applicationFee.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p>Tuition Fee</p>
+                      <p className="text-white">₹{selectedFee.tuitionFee.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Row 4 File */}
               <motion.div variants={itemVariants} className="md:col-span-2">

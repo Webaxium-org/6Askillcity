@@ -35,29 +35,53 @@ const StudentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    university: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "University",
+    },
+    program: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Program",
+    },
+    programFee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProgramFee",
+    },
 
     // Uploaded Artifacts
     idProof: {
       type: String, // String mapping to local path
-      required: false, // Optional just in case AI upload isn't strictly mandatory
+      required: false,
     },
 
-    // System Mappings
-    status: {
+    // Application Lifecycle (Student-to-Application Workflow)
+    applicationStatus: {
       type: String,
-      enum: ["Active", "Pending", "Graduated", "Suspended"],
-      default: "Pending",
+      enum: ["Draft", "Pending Eligibility", "Eligible", "Rejected"],
+      default: "Draft",
     },
+    admin_remarks: {
+      type: String,
+      default: "",
+    },
+    nextFollowupDate: {
+      type: Date,
+      index: true,
+    },
+
+    // Legacy system progress field (kept for backward compat)
     progress: {
       type: Number,
       default: 0,
       min: 0,
       max: 100,
     },
+
+    // System Mappings
     registeredBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "AdmissionPoint",
-      required: false, // Make false so it works standalone too while testing
+      required: false,
     },
     deleted: {
       type: Boolean,

@@ -160,10 +160,10 @@ export default function AddStudent() {
       dispatch(
         showAlert({
           type: "success",
-          message: "Student enrolled successfully!",
+          message: "Application saved as Draft! Submit it for eligibility review when ready.",
         }),
       );
-      navigate("/partner-dashboard");
+      navigate("/dashboard/applications");
     } catch (error) {
       console.error("Submission Error:", error);
       dispatch(
@@ -183,11 +183,11 @@ export default function AddStudent() {
         {/* Header Ribbon */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate("/partner-dashboard")}
+            onClick={() => navigate("/dashboard/applications")}
             className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
           >
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Portal</span>
+            <span>Back to Applications</span>
           </button>
         </div>
 
@@ -428,7 +428,7 @@ export default function AddStudent() {
                   ) : (
                     <>
                       <Save className="w-5 h-5" />
-                      <span>Confirm Enrollment</span>
+                      <span>Save as Draft</span>
                     </>
                   )}
                 </button>

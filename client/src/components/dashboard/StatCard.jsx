@@ -7,7 +7,7 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "purple" }) => {
+export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "purple", onClick }) => {
   const colorMap = {
     purple: "from-purple-500/20 to-purple-500/5 text-purple-500 border-purple-500/20",
     blue: "from-blue-500/20 to-blue-500/5 text-blue-500 border-blue-500/20",
@@ -18,12 +18,16 @@ export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "pu
   return (
     <motion.div
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col relative overflow-hidden group"
+      onClick={onClick}
+      className={cn(
+        "bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col relative overflow-hidden group",
+        onClick && "cursor-pointer"
+      )}
     >
       <div className={cn(
         "absolute top-0 right-0 w-32 h-32 bg-gradient-to-br rounded-full blur-3xl -mr-16 -mt-16 transition-opacity duration-300 opacity-50 group-hover:opacity-100",
-        colorMap[color].split(" ")[0], // grab from part
-        colorMap[color].split(" ")[1]  // grab to part
+        colorMap[color].split(" ")[0],
+        colorMap[color].split(" ")[1]
       )} />
       
       <div className="flex justify-between items-start mb-4 relative z-10">

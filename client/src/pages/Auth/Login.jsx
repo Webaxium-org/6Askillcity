@@ -20,6 +20,9 @@ import { loginAdmissionPoint, loginUser } from "../../api/auth.api";
 import { showAlert } from "../../redux/alertSlice";
 import { useTheme } from "../../components/global/ThemeProvider";
 
+import Logo from "../../assets/logo.png";
+import { setUser } from "../../redux/userSlice";
+
 // Utility for class merging
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -91,9 +94,12 @@ const UserLoginForm = () => {
         }),
       );
 
-      navigate("/user-dashboard");
+      const user = { ...responseData.data, type: "admin" };
+      dispatch(setUser(user));
+
+      navigate("/admin-dashboard");
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -201,9 +207,12 @@ const PartnerLoginForm = () => {
         }),
       );
 
+      const user = { ...responseData.data, type: "partner" };
+      dispatch(setUser(user));
+
       navigate("/partner-dashboard");
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -305,13 +314,9 @@ export default function Login() {
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => navigate("/")}
         >
-          <div className="p-2 rounded-xl shadow-lg bg-[#B82424] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300">
-            <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7" />
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-1.5">
-            <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#17468C]">6A</span>
-            <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground/90 dark:text-foreground">SKILLCITY</span>
-          </div>
+          <a href="/">
+            <img src={Logo} alt="Logo" className="w-[68px]" />
+          </a>
         </motion.div>
 
         <motion.button

@@ -12,6 +12,11 @@ export const getPendingAdmissionPoints = async () => {
   return response.data;
 };
 
+export const getAllApprovedAdmissionPoints = async () => {
+  const response = await axiosInstance.get("/admission-points/approved");
+  return response.data;
+};
+
 export const updateAdmissionPointStatus = async (id, status) => {
   const response = await axiosInstance.patch(`/admission-points/${id}/status`, { status });
   return response.data;
