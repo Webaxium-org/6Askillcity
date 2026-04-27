@@ -28,6 +28,11 @@ const ProgramFeeSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    refId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
   },
   { timestamps: true }
 );

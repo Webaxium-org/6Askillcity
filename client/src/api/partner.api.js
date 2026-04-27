@@ -39,3 +39,8 @@ export const removePartnerPermission = async (id) => {
   const res = await axios.delete(`${API_URL}/admission-points/permissions/${id}`, { withCredentials: true });
   return res.data;
 };
+
+export const getMyProfile = async () => {
+  const res = await axios.get(`${API_URL}/admission-points/profile/me`, { withCredentials: true });
+  return res.data;
+};

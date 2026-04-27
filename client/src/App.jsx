@@ -15,6 +15,10 @@ import EligibilityQueuePage from "./pages/Students/EligibilityQueuePage";
 import UniversityManagement from "./pages/UniversityManagement/UniversityManagement";
 import PartnerList from "./pages/PartnerManagement/PartnerList";
 import PartnerProfile from "./pages/PartnerManagement/PartnerProfile";
+import MyProfile from "./pages/Dashboards/MyProfile";
+import StudentList from "./pages/StudentManagement/StudentList";
+import StudentPaymentDetail from "./pages/StudentManagement/StudentPaymentDetail";
+import PaymentManagement from "./pages/StudentManagement/PaymentManagement";
 import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { SocketProvider } from "./context/SocketContext";
@@ -40,6 +44,10 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/register-student" element={<StudentRegistration />} />
               <Route path="/dashboard/tickets" element={<TicketsPage />} />
+              <Route path="/dashboard/profile" element={<MyProfile />} />
+              <Route path="/dashboard/student-management" element={<StudentList />} />
+              <Route path="/dashboard/student-management/:id" element={<StudentPaymentDetail />} />
+              <Route path="/dashboard/payment-management" element={<PaymentManagement />} />
 
               {/* Partner: Application lifecycle */}
               <Route path="/dashboard/student/add" element={<AddStudent />} />

@@ -25,7 +25,7 @@ const logActivity = async (action, details, performedBy, targetType, targetId) =
 
 export const getUniversities = async (req, res, next) => {
   try {
-    const universities = await University.find().sort({ name: 1 });
+    const universities = await University.find({ isActive: true }).sort({ name: 1 });
     res.status(200).json({ success: true, data: universities });
   } catch (error) {
     next(error);
@@ -79,7 +79,8 @@ export const updateUniversity = async (req, res, next) => {
 export const getPrograms = async (req, res, next) => {
   try {
     const { universityId } = req.query;
-    const filter = universityId ? { university: universityId } : {};
+    const filter = { isActive: true };
+    if (universityId) filter.university = universityId;
     const programs = await Program.find(filter).populate("university", "name").sort({ name: 1 });
     res.status(200).json({ success: true, data: programs });
   } catch (error) {

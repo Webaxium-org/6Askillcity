@@ -42,6 +42,8 @@ import studentRoutes from './routes/student.routes.js';
 import ticketRoutes from './routes/ticket.routes.js';
 import followupRoutes from './routes/followup.routes.js';
 import universityRoutes from './routes/university.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 app.use('/api/admission-points', admissionPointRoutes);
 app.use('/api/auth', authRoutes);
@@ -49,6 +51,8 @@ app.use('/api/students', studentRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/followups', followupRoutes);
 app.use('/api/university-management', universityRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 7. Error Handling
 app.use(errorHandler);

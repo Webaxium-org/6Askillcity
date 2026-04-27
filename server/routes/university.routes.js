@@ -14,28 +14,29 @@ import { requireAuth, isAuthorized } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// All routes here require authentication and admin role
+// All routes here require authentication
 router.use(requireAuth);
-router.use(isAuthorized({ roles: ["admin"] }));
 
+// GET routes are accessible by both admins and partners
+// POST/PUT routes are restricted to admins
 router.route("/universities")
   .get(getUniversities)
-  .post(createUniversity);
+  .post(isAuthorized({ roles: ["admin"] }), createUniversity);
 
 router.route("/universities/:id")
-  .put(updateUniversity);
+  .put(isAuthorized({ roles: ["admin"] }), updateUniversity);
 
 router.route("/programs")
   .get(getPrograms)
-  .post(createProgram);
+  .post(isAuthorized({ roles: ["admin"] }), createProgram);
 
 router.route("/programs/:id")
-  .put(updateProgram);
+  .put(isAuthorized({ roles: ["admin"] }), updateProgram);
 
 router.route("/programs/:programId/fees")
   .get(getProgramFees)
-  .post(updateProgramFee);
+  .post(isAuthorized({ roles: ["admin"] }), updateProgramFee);
 
-router.get("/activity-logs", getActivityLogs);
+router.get("/activity-logs", isAuthorized({ roles: ["admin"] }), getActivityLogs);
 
 export default router;

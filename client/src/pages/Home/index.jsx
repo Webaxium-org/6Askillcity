@@ -32,15 +32,15 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 const Button = React.forwardRef(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variants = {
-      default: "bg-slate-900 text-slate-50 hover:bg-slate-900/90",
+      default: "bg-primary text-primary-foreground hover:bg-primary/90",
       primary: "bg-[#17468C] text-white hover:bg-[#17468C]/90 shadow",
       brandRed: "bg-[#B82424] text-white hover:bg-[#B82424]/90 shadow",
-      destructive: "bg-red-500 text-slate-50 hover:bg-red-500/90",
+      destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       outline:
-        "border border-slate-200  hover:bg-slate-100 hover:text-slate-900",
-      secondary: "bg-slate-100 text-slate-900 hover:bg-slate-100/80",
-      ghost: "hover:bg-slate-100 hover:text-slate-900",
-      link: "text-slate-900 underline-offset-4 hover:underline",
+        "border border-input hover:bg-accent hover:text-accent-foreground",
+      secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+      ghost: "hover:bg-accent hover:text-accent-foreground",
+      link: "text-primary underline-offset-4 hover:underline",
     };
     const sizes = {
       default: "h-10 px-4 py-2",
@@ -70,7 +70,7 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => {
     <input
       type={type}
       className={cn(
-        "flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       ref={ref}
@@ -95,12 +95,12 @@ Label.displayName = "Label";
 function Badge({ className, variant = "default", ...props }) {
   const variants = {
     default:
-      "border-transparent bg-slate-900 text-slate-50 hover:bg-slate-900/80",
+      "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
     secondary:
-      "border-transparent bg-slate-100 text-slate-900 hover:bg-slate-100/80",
+      "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
     destructive:
-      "border-transparent bg-red-500 text-slate-50 hover:bg-red-500/80",
-    outline: "text-slate-950 border-slate-200",
+      "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+    outline: "text-foreground border-border",
     brandBlue:
       "border-transparent bg-[#17468C]/10 text-[#17468C] hover:bg-[#17468C]/20 border border-[#17468C]/20",
     brandRed:
@@ -122,7 +122,7 @@ const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-slate-200  text-slate-950 shadow-sm",
+      "rounded-xl border border-border bg-card text-card-foreground shadow-sm",
       className,
     )}
     {...props}
@@ -152,7 +152,7 @@ const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn("text-sm text-slate-500", className)} {...props} />
+  <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
 ));
 CardDescription.displayName = "CardDescription";
 
@@ -265,7 +265,7 @@ const LoadingScreen = ({ onFinished }) => {
       key="loader"
       exit={{ opacity: 0, y: -50, filter: "blur(10px)" }}
       transition={{ duration: 0.6, ease: "easeInOut" }}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background"
     >
       <motion.div
         initial={{ scale: 0.8, opacity: 0, filter: "blur(10px)" }}
@@ -304,7 +304,7 @@ export default function App() {
   const navigate = useNavigate();
 
   return (
-    <div className="relative min-h-screen bg-slate-50 font-sans selection:bg-[#B82424] selection:text-white overflow-x-hidden">
+    <div className="relative min-h-screen bg-background font-sans selection:bg-[#B82424] selection:text-white overflow-x-hidden">
       <AnimatePresence mode="wait">
         {isLoading && <LoadingScreen onFinished={() => setIsLoading(false)} />}
       </AnimatePresence>
@@ -314,9 +314,9 @@ export default function App() {
           <Navbar />
 
           {/* HERO SECTION */}
-          <section className="relative pt-32 pb-24 lg:pt-48 lg:pb-36 overflow-hidden bg-white">
-            <div className="absolute inset-0 -z-10 h-full w-full bg-white [background:radial-gradient(125%_125%_at_50%_10%,#fff_40%,#17468c08_100%)]" />
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+          <section className="relative pt-32 pb-24 lg:pt-48 lg:pb-36 overflow-hidden bg-background">
+            <div className="absolute inset-0 -z-10 h-full w-full bg-background [background:radial-gradient(125%_125%_at_50%_10%,var(--background)_40%,#17468c08_100%)]" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
             {/* Decorative background blur blobs */}
             <div className="absolute top-20 right-0 w-96 h-96 bg-[#17468C]/10 rounded-full blur-[100px] -z-10" />
@@ -351,7 +351,7 @@ export default function App() {
 
                   <motion.h1
                     variants={fadeInUp}
-                    className="text-5xl lg:text-[4.5rem] font-bold text-slate-900 leading-[1.05] tracking-tight"
+                    className="text-5xl lg:text-[4.5rem] font-bold text-foreground leading-[1.05] tracking-tight"
                   >
                     Empower <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#17468C] via-[#6366f1] to-[#B82424]">
@@ -361,7 +361,7 @@ export default function App() {
 
                   <motion.p
                     variants={fadeInUp}
-                    className="text-lg text-slate-500 max-w-xl leading-relaxed"
+                    className="text-lg text-muted-foreground max-w-xl leading-relaxed"
                   >
                     Join us in expanding your global presence and reaching
                     qualified students worldwide through a single, easy-to-use
@@ -383,7 +383,7 @@ export default function App() {
                     <Button
                       variant="outline"
                       size="lg"
-                      className="rounded-full text-base hover:bg-slate-50 border-slate-200 shadow-sm hover:-translate-y-1 transition-all duration-300"
+                      className="rounded-full text-base hover:bg-accent border-border shadow-sm hover:-translate-y-1 transition-all duration-300"
                     >
                       View Institutions
                     </Button>
@@ -393,11 +393,11 @@ export default function App() {
                     variants={fadeInUp}
                     className="flex items-center gap-4 pt-8 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                       Trusted By
                     </p>
-                    <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent" />
-                    <div className="flex gap-6 font-bold text-slate-400">
+                    <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                    <div className="flex gap-6 font-bold text-muted-foreground/50">
                       <span className="hover:text-[#17468C] transition-colors cursor-default">
                         BTU
                       </span>
@@ -433,7 +433,7 @@ export default function App() {
                   {/* Glowing background blob behind the card */}
                   <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[1.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-700 pointer-events-none" />
 
-                  <Card className="shadow-2xl shadow-slate-900/10 relative overflow-hidden bg-white/80 backdrop-blur-2xl border-white/60">
+                  <Card className="shadow-2xl shadow-foreground/5 relative overflow-hidden bg-card/80 backdrop-blur-2xl border-border">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#17468C]/5 to-transparent rounded-bl-full pointer-events-none" />
                     <CardHeader className="relative z-10 space-y-2 pb-4 pt-8 px-8">
                       <CardTitle className="text-2xl font-bold">
@@ -451,7 +451,7 @@ export default function App() {
                           <Input
                             id="firstName"
                             placeholder="John"
-                            className="bg-white/50 border-slate-200/60 focus:bg-white transition-colors"
+                            className="bg-background/50 border-border/60 focus:bg-background transition-colors"
                           />
                         </div>
                         <div className="space-y-2">
@@ -459,7 +459,7 @@ export default function App() {
                           <Input
                             id="lastName"
                             placeholder="Doe"
-                            className="bg-white/50 border-slate-200/60 focus:bg-white transition-colors"
+                            className="bg-background/50 border-border/60 focus:bg-background transition-colors"
                           />
                         </div>
                       </div>
@@ -470,7 +470,7 @@ export default function App() {
                           id="email"
                           type="email"
                           placeholder="john@skillcity.com"
-                          className="bg-white/50 border-slate-200/60 focus:bg-white transition-colors"
+                          className="bg-background/50 border-border/60 focus:bg-background transition-colors"
                         />
                       </div>
 
@@ -479,7 +479,7 @@ export default function App() {
                         <div className="relative">
                           <select
                             id="centerType"
-                            className="flex h-10 w-full rounded-md border border-slate-200/60 bg-white/50 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#17468C] focus-visible:ring-offset-2 appearance-none focus:bg-white transition-colors"
+                            className="flex h-10 w-full rounded-md border border-border/60 bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 appearance-none focus:bg-background transition-colors"
                           >
                             <option>Admission Point</option>
                             <option>Vocational Hub</option>
@@ -499,8 +499,8 @@ export default function App() {
                       </Button>
                     </CardContent>
 
-                    <CardFooter className="justify-center pt-4 pb-8 relative z-10 bg-slate-50/50 mt-6 border-t border-slate-100/50">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                    <CardFooter className="justify-center pt-4 pb-8 relative z-10 bg-muted/50 mt-6 border-t border-border/50">
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest flex items-center gap-1.5">
                         <ShieldCheck size={14} className="text-[#17468C]/50" />{" "}
                         Secure Data Processing
                       </p>
@@ -512,15 +512,15 @@ export default function App() {
           </section>
 
           {/* CORE STATS */}
-          <section className="py-20 border-y border-slate-200 bg-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
+          <section className="py-20 border-y border-border bg-background relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
             <div className="container mx-auto px-6 relative z-10">
               <motion.div
                 initial="initial"
                 whileInView="animate"
                 viewport={{ once: true, margin: "-100px" }}
                 variants={staggerContainer}
-                className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 divide-x divide-slate-100"
+                className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 divide-x divide-border"
               >
                 {[
                   {
@@ -560,7 +560,7 @@ export default function App() {
                     >
                       <CountUp value={stat.value} />
                     </h4>
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
                       {stat.label}
                     </p>
                   </motion.div>
@@ -570,8 +570,8 @@ export default function App() {
           </section>
 
           {/* UNIVERSITY CARDS */}
-          <section id="universities" className="py-32 bg-slate-50 relative">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white to-transparent pointer-events-none" />
+          <section id="universities" className="py-32 bg-muted relative">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-background to-transparent pointer-events-none" />
             <div className="container mx-auto px-6 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
@@ -584,17 +584,17 @@ export default function App() {
                   <Badge variant="brandBlue" className="px-3 py-1 shadow-sm">
                     Academic Excellence
                   </Badge>
-                  <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight">
+                  <h2 className="text-4xl lg:text-5xl font-bold text-foreground tracking-tight">
                     Primary University Partners
                   </h2>
-                  <p className="text-lg text-slate-500">
+                  <p className="text-lg text-muted-foreground">
                     World-class institutions recognized by the University Grants
                     Commission.
                   </p>
                 </div>
                 <Button
                   variant="outline"
-                  className="group rounded-full shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+                  className="group rounded-full shadow-sm hover:shadow-md hover:border-border transition-all"
                 >
                   View All Partners{" "}
                   <ArrowRight
@@ -636,9 +636,9 @@ export default function App() {
                     }}
                     className="h-full"
                   >
-                    <Card className="h-full flex flex-col hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-300/50 transition-all duration-500 border-slate-200/60 bg-white/60 backdrop-blur-sm relative overflow-hidden group rounded-2xl">
+                    <Card className="h-full flex flex-col hover:-translate-y-2 hover:shadow-2xl hover:shadow-foreground/10 transition-all duration-500 border-border bg-card/60 backdrop-blur-sm relative overflow-hidden group rounded-2xl">
                       {/* Shine effect on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/60 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none z-20" />
+                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-foreground/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none z-20" />
 
                       <CardHeader className="flex flex-row items-center justify-between pb-8 pt-8 px-8 relative z-10">
                         <div
@@ -651,7 +651,7 @@ export default function App() {
                         </div>
                         <Badge
                           variant="secondary"
-                          className="bg-slate-100/80 backdrop-blur text-sm"
+                          className="bg-muted backdrop-blur text-sm"
                         >
                           {uni.loc}
                         </Badge>
@@ -660,25 +660,25 @@ export default function App() {
                         <CardTitle className="text-3xl font-bold">
                           {uni.title}
                         </CardTitle>
-                        <CardDescription className="text-base text-slate-500 leading-relaxed">
+                        <CardDescription className="text-base text-muted-foreground leading-relaxed">
                           {uni.desc}
                         </CardDescription>
                       </CardContent>
-                      <CardFooter className="border-t border-slate-100/80 pt-6 pb-8 px-8 bg-slate-50/50 relative z-10 mt-6">
+                      <CardFooter className="border-t border-border pt-6 pb-8 px-8 bg-muted relative z-10 mt-6">
                         <div className="flex items-center gap-12 w-full">
                           <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                               Approvals
                             </p>
-                            <p className="text-sm font-bold text-slate-800">
+                            <p className="text-sm font-bold text-foreground">
                               UGC, AIU, BCI
                             </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                               Programs
                             </p>
-                            <p className="text-sm font-bold text-slate-800">
+                            <p className="text-sm font-bold text-foreground">
                               UG, PG, PhD
                             </p>
                           </div>
@@ -711,7 +711,7 @@ export default function App() {
                 <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-white">
                   Partner Ecosystem
                 </h2>
-                <p className="text-slate-400 text-lg leading-relaxed">
+                <p className="text-white/60 text-lg leading-relaxed">
                   Choose your pathway and start your journey as an official 6A
                   Skillcity partner.
                 </p>
@@ -761,7 +761,7 @@ export default function App() {
                     }}
                     className="h-full"
                   >
-                    <Card className="bg-slate-900/50 backdrop-blur-xl border-slate-800 text-slate-50 h-full flex flex-col relative overflow-hidden group hover:border-slate-600 transition-all duration-500 shadow-2xl rounded-3xl">
+                    <Card className="bg-white/5 backdrop-blur-xl border-white/10 text-white h-full flex flex-col relative overflow-hidden group hover:border-white/20 transition-all duration-500 shadow-2xl rounded-3xl">
                       {/* Animated gradient background on hover */}
                       <div
                         className={cn(
@@ -795,7 +795,7 @@ export default function App() {
                                 path.color,
                               )}
                             />
-                            <span className="text-slate-300 font-medium text-lg">
+                            <span className="text-white/70 font-medium text-lg">
                               {point}
                             </span>
                           </div>
@@ -804,7 +804,7 @@ export default function App() {
                       <CardFooter className="px-10 pb-10 pt-6 relative z-10">
                         <Button
                           variant="outline"
-                          className="w-full h-12 rounded-xl bg-slate-800/50 border-slate-700 text-white hover:bg-white hover:text-slate-950 transition-all duration-300 group-hover:shadow-lg"
+                          className="w-full h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300 group-hover:shadow-lg"
                           onClick={() => navigate("/register-admission-point")}
                         >
                           Become a Partner
@@ -818,14 +818,14 @@ export default function App() {
           </section>
 
           {/* FOOTER */}
-          <footer className="pt-24 pb-10 bg-white border-t border-slate-200">
+          <footer className="pt-24 pb-10 bg-background border-t border-border">
             <div className="container mx-auto px-6">
-              <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-slate-200">
+              <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-border">
                 <div className="lg:col-span-4 space-y-6">
                   <div className="flex items-center gap-2">
                     <img src={Logo} alt="Logo" className="w-24" />
                   </div>
-                  <p className="text-slate-500 text-sm leading-relaxed max-w-xs">
+                  <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
                     Managing global academic affairs with precision, integrity,
                     and a commitment to student success.
                   </p>
@@ -835,7 +835,7 @@ export default function App() {
                         key={i}
                         variant="outline"
                         size="icon"
-                        className="rounded-full h-10 w-10 text-slate-500 hover:text-[#17468C] hover:border-[#17468C]/30 hover:bg-[#17468C]/5 transition-all"
+                        className="rounded-full h-10 w-10 text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
                       >
                         <Icon size={18} />
                       </Button>
@@ -844,10 +844,10 @@ export default function App() {
                 </div>
 
                 <div className="lg:col-span-2 space-y-5">
-                  <h5 className="text-sm font-bold text-slate-900">
+                  <h5 className="text-sm font-bold text-foreground">
                     Navigation
                   </h5>
-                  <ul className="space-y-3 text-sm text-slate-500">
+                  <ul className="space-y-3 text-sm text-muted-foreground">
                     <li>
                       <a
                         href="#"
@@ -876,13 +876,13 @@ export default function App() {
                 </div>
 
                 <div className="lg:col-span-3 space-y-5">
-                  <h5 className="text-sm font-bold text-slate-900">
+                  <h5 className="text-sm font-bold text-foreground">
                     Official Hub
                   </h5>
-                  <div className="flex gap-3 text-sm text-slate-500">
+                  <div className="flex gap-3 text-sm text-muted-foreground">
                     <MapPin
                       size={20}
-                      className="shrink-0 text-slate-400 mt-0.5"
+                      className="shrink-0 text-muted-foreground/60 mt-0.5"
                     />
                     <span className="leading-relaxed">
                       Grace Tower, 1st Floor, Cabin C1, Kochi, Kerala-682018
@@ -891,49 +891,49 @@ export default function App() {
                 </div>
 
                 <div className="lg:col-span-3 space-y-5">
-                  <h5 className="text-sm font-bold text-slate-900">
+                  <h5 className="text-sm font-bold text-foreground">
                     Newsletter
                   </h5>
                   <div className="flex gap-2">
                     <Input
                       placeholder="Enter email"
-                      className="h-10 rounded-lg bg-slate-50"
+                      className="h-10 rounded-lg bg-muted"
                     />
                     <Button
                       variant="primary"
                       size="icon"
-                      className="shrink-0 h-10 w-10 rounded-lg shadow-md shadow-[#17468C]/20 hover:-translate-y-0.5 transition-all"
+                      className="shrink-0 h-10 w-10 rounded-lg shadow-md shadow-primary/20 hover:-translate-y-0.5 transition-all"
                     >
                       <Send size={16} />
                     </Button>
                   </div>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className="text-[11px] text-muted-foreground font-medium">
                     By subscribing, you agree to our privacy protocols.
                   </p>
                 </div>
               </div>
 
               <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p className="text-xs font-semibold text-slate-500">
+                <p className="text-xs font-semibold text-muted-foreground">
                   © {new Date().getFullYear()} 6A Skillcity Foundation. All
                   rights reserved.
                 </p>
-                <div className="flex gap-6 text-xs font-semibold text-slate-500">
+                <div className="flex gap-6 text-xs font-semibold text-muted-foreground">
                   <a
                     href="#"
-                    className="hover:text-slate-900 transition-colors"
+                    className="hover:text-foreground transition-colors"
                   >
                     Compliance
                   </a>
                   <a
                     href="#"
-                    className="hover:text-slate-900 transition-colors"
+                    className="hover:text-foreground transition-colors"
                   >
                     Privacy
                   </a>
                   <a
                     href="#"
-                    className="hover:text-slate-900 transition-colors"
+                    className="hover:text-foreground transition-colors"
                   >
                     Terms
                   </a>

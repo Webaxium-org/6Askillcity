@@ -10,13 +10,11 @@ import {
   Phone,
   Calendar,
   BookOpen,
-  MapPin,
   UploadCloud,
   ChevronLeft,
   Save,
   ScanText,
 } from "lucide-react";
-import Tesseract from "tesseract.js";
 import axios from "axios";
 
 export default function AddStudent() {
@@ -39,13 +37,14 @@ export default function AddStudent() {
   });
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     setSelectedFile(file);
 
     setScanning(true);
@@ -87,24 +86,31 @@ export default function AddStudent() {
         foundData = true;
       } else {
         // Advanced Heuristic for Aadhar: Name is typically the line directly preceding the DOB line
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        const dobLineIndex = lines.findIndex(l => 
-           l.toLowerCase().includes('dob') || 
-           l.toLowerCase().includes('date of birth') || 
-           l.toLowerCase().includes('year of birth')
+        const lines = text
+          .split("\n")
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0);
+        const dobLineIndex = lines.findIndex(
+          (l) =>
+            l.toLowerCase().includes("dob") ||
+            l.toLowerCase().includes("date of birth") ||
+            l.toLowerCase().includes("year of birth"),
         );
-        
+
         if (dobLineIndex > 0) {
-           const possibleName = lines[dobLineIndex - 1];
-           // Ensure it's not grabbing header text if scanning is weird
-           if (!possibleName.toLowerCase().includes('government') && !possibleName.toLowerCase().includes('india')) {
-              // Strip stray characters that tesseract might add
-              const cleanName = possibleName.replace(/[^A-Za-z\s]/g, '').trim();
-              if (cleanName.length >= 3) {
-                 newFormData.name = cleanName;
-                 foundData = true;
-              }
-           }
+          const possibleName = lines[dobLineIndex - 1];
+          // Ensure it's not grabbing header text if scanning is weird
+          if (
+            !possibleName.toLowerCase().includes("government") &&
+            !possibleName.toLowerCase().includes("india")
+          ) {
+            // Strip stray characters that tesseract might add
+            const cleanName = possibleName.replace(/[^A-Za-z\s]/g, "").trim();
+            if (cleanName.length >= 3) {
+              newFormData.name = cleanName;
+              foundData = true;
+            }
+          }
         }
       }
 
@@ -143,7 +149,7 @@ export default function AddStudent() {
       Object.keys(formData).forEach((key) => {
         payload.append(key, formData[key]);
       });
-      
+
       if (selectedFile) {
         payload.append("idProof", selectedFile);
       }
@@ -154,13 +160,14 @@ export default function AddStudent() {
         {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
-        }
+        },
       );
 
       dispatch(
         showAlert({
           type: "success",
-          message: "Application saved as Draft! Submit it for eligibility review when ready.",
+          message:
+            "Application saved as Draft! Submit it for eligibility review when ready.",
         }),
       );
       navigate("/dashboard/applications");
@@ -266,15 +273,21 @@ export default function AddStudent() {
                 )}
               </AnimatePresence>
             </div>
-            
+
             {/* Show selected file banner if user uploaded something */}
             {selectedFile && (
-               <div className="mb-6 mx-auto max-w-sm flex items-center justify-between px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg text-sm font-medium">
-                  <span className="truncate max-w-[200px]">{selectedFile.name} (Attached)</span>
-                  <button type="button" onClick={() => setSelectedFile(null)} className="text-emerald-500 hover:text-emerald-700 transition-colors">
-                     Remove
-                  </button>
-               </div>
+              <div className="mb-6 mx-auto max-w-sm flex items-center justify-between px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg text-sm font-medium">
+                <span className="truncate max-w-[200px]">
+                  {selectedFile.name} (Attached)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFile(null)}
+                  className="text-emerald-500 hover:text-emerald-700 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -385,32 +398,6 @@ export default function AddStudent() {
                         <option value="diploma">Diploma</option>
                         <option value="bachelors">Bachelor's Degree</option>
                         <option value="masters">Master's Degree</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted-foreground">
-                      Target Course Entry
-                    </label>
-                    <div className="relative">
-                      <MapPin className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                      <select
-                        required
-                        name="course"
-                        value={formData.course}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm appearance-none"
-                      >
-                        <option value="" disabled>
-                          Assign a course
-                        </option>
-                        <option value="uiux">Advanced UI/UX Design</option>
-                        <option value="fsd">Full Stack Web Development</option>
-                        <option value="ds">Data Science & AI</option>
-                        <option value="dm">
-                          Digital Marketing Masterclass
-                        </option>
                       </select>
                     </div>
                   </div>

@@ -14,11 +14,13 @@ export const getMyApplications = async () => {
   return response.data;
 };
 
-// Shared: Get a single application by ID
+// Shared: Get a single application/student by ID
 export const getApplicationById = async (id) => {
   const response = await axiosInstance.get(`/students/${id}`);
   return response.data;
 };
+
+export const getStudentById = getApplicationById;
 
 // Partner: Edit a draft/rejected application
 export const updateApplication = async (id, formData) => {

@@ -9,6 +9,12 @@ import {
   updateApplication,
   submitApplication,
 } from "../../api/student.api";
+import {
+  getUniversities,
+  getPrograms,
+  getProgramFees,
+} from "../../api/university.api";
+import { getMyProfile } from "../../api/partner.api";
 import { FollowupTimeline } from "../../components/students/FollowupTimeline";
 import {
   ChevronLeft,
@@ -32,14 +38,34 @@ import {
   Plus,
   RefreshCw,
   Tag,
+  Building2,
+  GraduationCap,
+  BadgeDollarSign,
+  Hash,
 } from "lucide-react";
 
 // ── Constants ─────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Draft: { color: "text-slate-500 bg-slate-500/10 border-slate-500/20", icon: FileText, label: "Draft" },
-  "Pending Eligibility": { color: "text-amber-500 bg-amber-500/10 border-amber-500/20", icon: Clock, label: "Pending Review" },
-  Eligible: { color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", icon: CheckCircle2, label: "Eligible" },
-  Rejected: { color: "text-red-500 bg-red-500/10 border-red-500/20", icon: XCircle, label: "Rejected" },
+  Draft: {
+    color: "text-slate-500 bg-slate-500/10 border-slate-500/20",
+    icon: FileText,
+    label: "Draft",
+  },
+  "Pending Eligibility": {
+    color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+    icon: Clock,
+    label: "Pending Review",
+  },
+  Eligible: {
+    color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+    icon: CheckCircle2,
+    label: "Eligible",
+  },
+  Rejected: {
+    color: "text-red-500 bg-red-500/10 border-red-500/20",
+    icon: XCircle,
+    label: "Rejected",
+  },
 };
 
 const COURSE_LABELS = {
@@ -65,12 +91,25 @@ const CATEGORY_COLORS = {
 };
 
 // ── Form Field component ───────────────────────────────────────
-function Field({ label, name, type = "text", value, onChange, placeholder, icon: Icon, readOnly }) {
+function Field({
+  label,
+  name,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  readOnly,
+}) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        {label}
+      </label>
       <div className="relative">
-        {Icon && <Icon className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />}
+        {Icon && (
+          <Icon className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        )}
         <input
           type={type}
           name={name}
@@ -97,6 +136,13 @@ export default function ApplicationDetailPage() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
+  const [universities, setUniversities] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [fees, setFees] = useState([]);
+  const [myPermissions, setMyPermissions] = useState({
+    universities: [],
+    programs: [],
+  });
 
   const fetchApp = useCallback(async () => {
     setLoading(true);
@@ -111,20 +157,101 @@ export default function ApplicationDetailPage() {
           phone: res.data.phone || "",
           qualification: res.data.qualification || "",
           course: res.data.course || "",
+          university: res.data.university?._id || res.data.university || "",
+          program: res.data.program?._id || res.data.program || "",
         });
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Failed to load application." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Failed to load application.",
+        }),
+      );
       navigate("/dashboard/applications");
     } finally {
       setLoading(false);
     }
   }, [id, dispatch, navigate]);
 
-  useEffect(() => { fetchApp(); }, [fetchApp]);
+  useEffect(() => {
+    fetchApp();
+  }, [fetchApp]);
 
-  const handleChange = (e) =>
-    setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
+  useEffect(() => {
+    const fetchSupportData = async () => {
+      try {
+        const profile = await getMyProfile();
+        if (profile.success) {
+          const perms = profile.data.permissions;
+          const allowedUniIds = perms
+            .filter((p) => p.type === "university")
+            .map((p) => p.universityId?._id || p.universityId);
+          const allowedProgIds = perms
+            .filter((p) => p.type === "program")
+            .map((p) => p.programId?._id || p.programId);
+
+          setMyPermissions({
+            universities: allowedUniIds,
+            programs: allowedProgIds,
+          });
+
+          const [uniRes, progRes] = await Promise.all([
+            getUniversities(),
+            getPrograms(),
+          ]);
+
+          if (uniRes.success) {
+            setUniversities(
+              uniRes.data.filter((u) => allowedUniIds.includes(u._id)),
+            );
+          }
+          if (progRes.success) {
+            setPrograms(
+              progRes.data.filter((p) => allowedProgIds.includes(p._id)),
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching support data", error);
+      }
+    };
+    fetchSupportData();
+  }, []);
+
+  useEffect(() => {
+    if (formData.program) {
+      getProgramFees(formData.program).then((res) => {
+        if (res.success) {
+          const current = res.data.find((f) => f.isCurrent);
+          if (!current) {
+            dispatch(
+              showAlert({
+                type: "error",
+                message: "Program fee is empty, please contact the admin",
+              }),
+            );
+            setFormData((p) => ({ ...p, program: "" }));
+          } else {
+            setFees(res.data);
+          }
+        }
+      });
+    } else {
+      setFees([]);
+    }
+  }, [formData.program, dispatch]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((p) => {
+      const next = { ...p, [name]: value };
+      if (name === "university") {
+        next.program = "";
+      }
+      return next;
+    });
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -136,10 +263,20 @@ export default function ApplicationDetailPage() {
       if (res.success) {
         setApp(res.data);
         setEditing(false);
-        dispatch(showAlert({ type: "success", message: "Application updated successfully!" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Application updated successfully!",
+          }),
+        );
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Update failed." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Update failed.",
+        }),
+      );
     } finally {
       setSaving(false);
     }
@@ -151,17 +288,28 @@ export default function ApplicationDetailPage() {
       const res = await submitApplication(id);
       if (res.success) {
         setApp(res.data);
-        dispatch(showAlert({ type: "success", message: "Application submitted for eligibility review!" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Application submitted for eligibility review!",
+          }),
+        );
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Submission failed." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Submission failed.",
+        }),
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const canEdit = app && ["Draft", "Rejected"].includes(app.applicationStatus);
-  const canSubmit = app && ["Draft", "Rejected"].includes(app.applicationStatus);
+  const canSubmit =
+    app && ["Draft", "Rejected"].includes(app.applicationStatus);
 
   if (loading) {
     return (
@@ -182,9 +330,11 @@ export default function ApplicationDetailPage() {
   return (
     <DashboardLayout title="Application Detail">
       <div className="max-w-6xl mx-auto space-y-6">
-
         {/* Breadcrumb / Back */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <button
             onClick={() => navigate("/dashboard/applications")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
@@ -207,9 +357,13 @@ export default function ApplicationDetailPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">{app.name}</h1>
-              <p className="text-muted-foreground text-sm mt-0.5">{app.email} · {app.phone}</p>
+              <p className="text-muted-foreground text-sm mt-0.5">
+                {app.email} · {app.phone}
+              </p>
               <div className="flex items-center gap-2 mt-2">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${cfg.color}`}>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${cfg.color}`}
+                >
                   <StatusIcon className="w-3.5 h-3.5" />
                   {cfg.label}
                 </span>
@@ -247,9 +401,13 @@ export default function ApplicationDetailPage() {
                 {submitting ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : app.applicationStatus === "Rejected" ? (
-                  <><RotateCcw className="w-4 h-4" /> Re-submit</>
+                  <>
+                    <RotateCcw className="w-4 h-4" /> Re-submit
+                  </>
                 ) : (
-                  <><Send className="w-4 h-4" /> Submit for Review</>
+                  <>
+                    <Send className="w-4 h-4" /> Submit for Review
+                  </>
                 )}
               </button>
             )}
@@ -266,16 +424,22 @@ export default function ApplicationDetailPage() {
           >
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-red-500">Application Rejected — Admin Feedback</p>
-              <p className="text-sm text-foreground/80 mt-1">{app.admin_remarks}</p>
-              <p className="text-xs text-muted-foreground mt-2">Please address the feedback above, edit the application, and re-submit.</p>
+              <p className="text-sm font-semibold text-red-500">
+                Application Rejected — Admin Feedback
+              </p>
+              <p className="text-sm text-foreground/80 mt-1">
+                {app.admin_remarks}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Please address the feedback above, edit the application, and
+                re-submit.
+              </p>
             </div>
           </motion.div>
         )}
 
         {/* Two-column layout */}
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-
           {/* Left: Application Details Form */}
           <motion.div
             initial={{ opacity: 0, x: -16 }}
@@ -285,7 +449,9 @@ export default function ApplicationDetailPage() {
           >
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               {/* Card accent bar */}
-              <div className={`h-1 w-full ${app.applicationStatus === "Eligible" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : app.applicationStatus === "Rejected" ? "bg-gradient-to-r from-red-500 to-rose-500" : app.applicationStatus === "Pending Eligibility" ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-blue-500 to-purple-500"}`} />
+              <div
+                className={`h-1 w-full ${app.applicationStatus === "Eligible" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : app.applicationStatus === "Rejected" ? "bg-gradient-to-r from-red-500 to-rose-500" : app.applicationStatus === "Pending Eligibility" ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-blue-500 to-purple-500"}`}
+              />
               <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="font-bold text-base flex items-center gap-2">
@@ -306,10 +472,44 @@ export default function ApplicationDetailPage() {
                       Personal Details
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Field label="Full Legal Name" name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Rahul Sharma" icon={User} readOnly={!editing} />
-                      <Field label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} icon={Calendar} readOnly={!editing} />
-                      <Field label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="rahul@example.com" icon={Mail} readOnly={!editing} />
-                      <Field label="Phone Number" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+91 98765 43210" icon={Phone} readOnly={!editing} />
+                      <Field
+                        label="Full Legal Name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="e.g. Rahul Sharma"
+                        icon={User}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Date of Birth"
+                        name="dob"
+                        type="date"
+                        value={formData.dob}
+                        onChange={handleChange}
+                        icon={Calendar}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Email Address"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="rahul@example.com"
+                        icon={Mail}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Phone Number"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+91 98765 43210"
+                        icon={Phone}
+                        readOnly={!editing}
+                      />
                     </div>
                   </div>
 
@@ -321,7 +521,9 @@ export default function ApplicationDetailPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Qualification */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Highest Qualification</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Highest Qualification
+                        </label>
                         <div className="relative">
                           <BookOpen className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           {editing ? (
@@ -331,45 +533,104 @@ export default function ApplicationDetailPage() {
                               onChange={handleChange}
                               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none"
                             >
-                              <option value="" disabled>Select qualification</option>
+                              <option value="" disabled>
+                                Select qualification
+                              </option>
                               <option value="12th">12th Grade / PUC</option>
                               <option value="diploma">Diploma</option>
-                              <option value="bachelors">Bachelor's Degree</option>
+                              <option value="bachelors">
+                                Bachelor's Degree
+                              </option>
                               <option value="masters">Master's Degree</option>
                             </select>
                           ) : (
                             <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm opacity-60">
-                              {QUALIFICATION_LABELS[formData.qualification] || formData.qualification}
+                              {QUALIFICATION_LABELS[formData.qualification] ||
+                                formData.qualification}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Course */}
+                      {/* University Selection */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Target Course</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          University
+                        </label>
                         <div className="relative">
-                          <MapPin className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <Building2 className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           {editing ? (
                             <select
-                              name="course"
-                              value={formData.course}
+                              name="university"
+                              value={formData.university}
                               onChange={handleChange}
                               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none"
                             >
-                              <option value="" disabled>Assign a course</option>
-                              <option value="uiux">Advanced UI/UX Design</option>
-                              <option value="fsd">Full Stack Web Development</option>
-                              <option value="ds">Data Science & AI</option>
-                              <option value="dm">Digital Marketing Masterclass</option>
+                              <option value="">Select University</option>
+                              {universities.map((u) => (
+                                <option key={u._id} value={u._id}>
+                                  {u.name}
+                                </option>
+                              ))}
                             </select>
                           ) : (
                             <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm opacity-60">
-                              {COURSE_LABELS[formData.course] || formData.course}
+                              {app.university?.name || "Not assigned"}
                             </div>
                           )}
                         </div>
                       </div>
+
+                      {/* Program Selection */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Program
+                        </label>
+                        <div className="relative">
+                          <GraduationCap className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          {editing ? (
+                            <select
+                              name="program"
+                              value={formData.program}
+                              onChange={handleChange}
+                              disabled={!formData.university}
+                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none disabled:opacity-50"
+                            >
+                              <option value="">Select Program</option>
+                              {programs
+                                .filter(
+                                  (p) =>
+                                    p.university?._id === formData.university ||
+                                    p.university === formData.university,
+                                )
+                                .map((p) => (
+                                  <option key={p._id} value={p._id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                            </select>
+                          ) : (
+                            <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm opacity-60">
+                              {app.program?.name || "Not assigned"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Display current fee info if program selected */}
+                      {formData.program && fees.find((f) => f.isCurrent) && (
+                        <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                              <BadgeDollarSign className="w-3.5 h-3.5" /> Total
+                              Program Fee
+                            </span>
+                            <span className="text-sm font-black text-blue-600">
+                              ₹{fees.find((f) => f.isCurrent).totalFee}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -378,7 +639,10 @@ export default function ApplicationDetailPage() {
                     <div className="flex gap-3 pt-2">
                       <button
                         type="button"
-                        onClick={() => { setEditing(false); fetchApp(); }}
+                        onClick={() => {
+                          setEditing(false);
+                          fetchApp();
+                        }}
                         className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted text-sm font-medium transition-colors"
                       >
                         Cancel
@@ -391,7 +655,9 @@ export default function ApplicationDetailPage() {
                         {saving ? (
                           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <><Save className="w-4 h-4" /> Save Changes</>
+                          <>
+                            <Save className="w-4 h-4" /> Save Changes
+                          </>
                         )}
                       </button>
                     </div>
@@ -430,12 +696,13 @@ export default function ApplicationDetailPage() {
               <h2 className="font-bold text-base flex items-center gap-2 mb-4">
                 <MessageSquare className="w-4 h-4 text-primary" />
                 Follow-up Log
-                <span className="ml-auto text-xs text-muted-foreground font-normal">Newest first</span>
+                <span className="ml-auto text-xs text-muted-foreground font-normal">
+                  Newest first
+                </span>
               </h2>
               <FollowupTimeline studentId={id} canAdd={true} />
             </div>
           </motion.div>
-
         </div>
       </div>
     </DashboardLayout>

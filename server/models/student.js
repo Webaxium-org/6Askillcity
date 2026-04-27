@@ -31,10 +31,6 @@ const StudentSchema = new mongoose.Schema(
       required: true,
       enum: ["12th", "diploma", "bachelors", "masters"],
     },
-    course: {
-      type: String,
-      required: true,
-    },
     university: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "University",
@@ -46,6 +42,10 @@ const StudentSchema = new mongoose.Schema(
     programFee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProgramFee",
+    },
+    programFeeRefId: {
+      type: String,
+      trim: true,
     },
 
     // Uploaded Artifacts
@@ -75,6 +75,17 @@ const StudentSchema = new mongoose.Schema(
       default: 0,
       min: 0,
       max: 100,
+    },
+
+    // Payment Tracking Summary
+    paymentStatus: {
+      type: String,
+      enum: ["Unpaid", "Partially Paid", "Paid"],
+      default: "Unpaid",
+    },
+    totalFeePaid: {
+      type: Number,
+      default: 0,
     },
 
     // System Mappings

@@ -17,6 +17,8 @@ import {
   Clock,
   MessageSquare,
   Building2,
+  BadgeDollarSign,
+  CreditCard,
 } from "lucide-react";
 import { useTheme } from "../global/ThemeProvider";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -27,30 +29,76 @@ import { addNotification, markAllAsRead } from "../../redux/notificationSlice";
 import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
 
-const Sidebar = ({
-  isOpen,
-  setSidebarOpen,
-  isCollapsed,
-  setIsCollapsed,
-}) => {
+const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
   const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard, path: "/dashboard" },
+    {
+      id: "overview",
+      label: "Overview",
+      icon: LayoutDashboard,
+      path: "/dashboard",
+    },
     // Partner specific
-    ...(user?.type === "partner" ? [
-      { id: "applications", label: "Applications", icon: FileText, path: "/dashboard/applications" },
-    ] : []),
+    ...(user?.type === "partner"
+      ? [
+          {
+            id: "applications",
+            label: "Applications",
+            icon: FileText,
+            path: "/dashboard/applications",
+          },
+          {
+            id: "profile",
+            label: "My Profile",
+            icon: User,
+            path: "/dashboard/profile",
+          },
+        ]
+      : []),
     // Admin specific
-    ...(user?.type === "admin" ? [
-      { id: "eligibility", label: "Eligibility Queue", icon: Clock, path: "/dashboard/eligibility-queue" },
-      { id: "universities", label: "University Management", icon: Building2, path: "/dashboard/university-management" },
-      { id: "partners", label: "Partner Management", icon: UserPlus, path: "/dashboard/partner-management" },
-      { id: "students", label: "Students", icon: Users, path: "/dashboard#students" },
-    ] : []),
-    { id: "tickets", label: "Tickets", icon: MessageSquare, path: "/dashboard/tickets" },
+    ...(user?.type === "admin"
+      ? [
+          {
+            id: "eligibility",
+            label: "Eligibility Queue",
+            icon: Clock,
+            path: "/dashboard/eligibility-queue",
+          },
+          {
+            id: "universities",
+            label: "University Management",
+            icon: Building2,
+            path: "/dashboard/university-management",
+          },
+          {
+            id: "partners",
+            label: "Partner Management",
+            icon: UserPlus,
+            path: "/dashboard/partner-management",
+          },
+        ]
+      : []),
+    {
+      id: "tickets",
+      label: "Tickets",
+      icon: MessageSquare,
+      path: "/dashboard/tickets",
+    },
+    {
+      id: "management",
+      label: "Student Management",
+      icon: Users,
+      path: "/dashboard/student-management",
+    },
+    {
+      id: "payments",
+      label: "Payment Tracking",
+      icon: CreditCard,
+      path: "/dashboard/payment-management",
+    },
   ];
 
   return (
@@ -95,31 +143,37 @@ const Sidebar = ({
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.path || (location.pathname === "/dashboard" && item.id === "overview");
+            const isActive =
+              location.pathname === item.path ||
+              (location.pathname === "/dashboard" && item.id === "overview");
             return (
-            <button
-              key={item.id}
-              onClick={() => {
-                navigate(item.path);
-                setSidebarOpen(false);
-              }}
-              title={isCollapsed ? item.label : undefined}
-              className={cn(
-                "w-full flex items-center rounded-lg transition-all duration-200",
-                isCollapsed ? "justify-center py-3" : "space-x-3 px-3 py-2.5",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <item.icon
-                className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")}
-              />
-              {!isCollapsed && (
-                <span className="font-medium truncate">{item.label}</span>
-              )}
-            </button>
-          )})}
+              <button
+                key={item.id}
+                onClick={() => {
+                  navigate(item.path);
+                  setSidebarOpen(false);
+                }}
+                title={isCollapsed ? item.label : undefined}
+                className={cn(
+                  "w-full flex items-center rounded-lg transition-all duration-200",
+                  isCollapsed ? "justify-center py-3" : "space-x-3 px-3 py-2.5",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <item.icon
+                  className={cn(
+                    "shrink-0",
+                    isCollapsed ? "w-6 h-6" : "w-5 h-5",
+                  )}
+                />
+                {!isCollapsed && (
+                  <span className="font-medium truncate">{item.label}</span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-border">
@@ -162,17 +216,21 @@ export const DashboardLayout = ({ children, title }) => {
   const [showLogoutWarning, setShowLogoutWarning] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const { socket } = useSocket();
-  const { items: notifications, unreadCount } = useSelector((state) => state.notifications);
+  const { items: notifications, unreadCount } = useSelector(
+    (state) => state.notifications,
+  );
 
   React.useEffect(() => {
     if (!socket) return;
-    
+
     const handleNotification = (data) => {
       dispatch(addNotification(data));
-      dispatch(showAlert({
-        type: "info",
-        message: `${data.title}: ${data.message}`,
-      }));
+      dispatch(
+        showAlert({
+          type: "info",
+          message: `${data.title}: ${data.message}`,
+        }),
+      );
     };
 
     socket.on("notification", handleNotification);
@@ -198,7 +256,7 @@ export const DashboardLayout = ({ children, title }) => {
 
       <div
         className={cn(
-          "flex-1 flex flex-col min-h-screen transition-all duration-300",
+          "flex-1 flex flex-col min-h-screen transition-all duration-300 min-w-0",
           isCollapsed ? "md:pl-20" : "md:pl-64",
         )}
       >
@@ -239,7 +297,9 @@ export const DashboardLayout = ({ children, title }) => {
                     className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 flex flex-col max-h-[400px]"
                   >
                     <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-                      <h3 className="font-semibold text-foreground">Notifications</h3>
+                      <h3 className="font-semibold text-foreground">
+                        Notifications
+                      </h3>
                       {unreadCount > 0 && (
                         <button
                           onClick={() => dispatch(markAllAsRead())}
@@ -261,19 +321,30 @@ export const DashboardLayout = ({ children, title }) => {
                             key={notif.id}
                             className={cn(
                               "p-3 rounded-xl transition-colors cursor-pointer",
-                              notif.read ? "bg-transparent hover:bg-muted" : "bg-primary/5 hover:bg-primary/10 border border-primary/10"
+                              notif.read
+                                ? "bg-transparent hover:bg-muted"
+                                : "bg-primary/5 hover:bg-primary/10 border border-primary/10",
                             )}
                             onClick={() => {
-                               setShowNotifications(false);
-                               if (notif.ticketId) {
-                                  navigate("/dashboard/tickets");
-                               }
+                              setShowNotifications(false);
+                              if (notif.ticketId) {
+                                navigate("/dashboard/tickets");
+                              }
                             }}
                           >
-                            <h4 className={cn("text-sm mb-0.5", notif.read ? "font-medium text-foreground" : "font-bold text-foreground")}>
+                            <h4
+                              className={cn(
+                                "text-sm mb-0.5",
+                                notif.read
+                                  ? "font-medium text-foreground"
+                                  : "font-bold text-foreground",
+                              )}
+                            >
                               {notif.title}
                             </h4>
-                            <p className="text-xs text-muted-foreground break-words">{notif.message}</p>
+                            <p className="text-xs text-muted-foreground break-words">
+                              {notif.message}
+                            </p>
                             {!notif.read && (
                               <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2"></div>
                             )}

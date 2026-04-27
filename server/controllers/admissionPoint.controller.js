@@ -30,6 +30,7 @@ const uploadParams = multer({
 import AdmissionPoint from "../models/admissionPoint.js";
 import ActivityLog from "../models/activityLog.js";
 import PartnerPermission from "../models/partnerPermission.js";
+import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
 
 // Helper to log activity
@@ -382,6 +383,47 @@ export const removePartnerPermission = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Permission removed successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyPartnerProfile = async (req, res, next) => {
+  try {
+    const partnerId = req.user.userId;
+    const partner = await AdmissionPoint.findById(partnerId);
+
+    if (!partner) {
+      throw createError(404, "Partner profile not found");
+    }
+
+    const rawPermissions = await PartnerPermission.find({
+      partnerId,
+      status: "active",
+    })
+      .populate("universityId", "name")
+      .populate("programId", "name category duration");
+
+    // Fetch current fees for programs
+    const permissions = await Promise.all(rawPermissions.map(async (p) => {
+      const obj = p.toObject();
+      if (p.type === 'program' && p.programId) {
+        const currentFee = await ProgramFee.findOne({ 
+          program: p.programId._id, 
+          isCurrent: true 
+        });
+        obj.currentFee = currentFee;
+      }
+      return obj;
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        partner,
+        permissions,
+      },
     });
   } catch (error) {
     next(error);

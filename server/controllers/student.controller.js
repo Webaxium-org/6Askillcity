@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
 import path from "path";
 import Student from "../models/student.js";
+import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
 
 // Multer Local Storage Configuration mapping to Uploads Dir
@@ -89,12 +90,26 @@ export const enrollStudent = async (req, res, next) => {
       registeredBy: req.user?.userId,
     });
 
+    if (data.program) {
+      const currentFee = await ProgramFee.findOne({ program: data.program, isCurrent: true });
+      if (!currentFee) {
+        throw createError(400, "Program fee is empty, please contact the admin");
+      }
+      student.programFee = currentFee._id;
+      student.programFeeRefId = currentFee.refId;
+    }
+
     await student.save();
+
+    const populatedStudent = await Student.findById(student._id)
+      .populate("university", "name")
+      .populate("program", "name category duration")
+      .populate("programFee");
 
     res.status(201).json({
       success: true,
       message: "Application saved as Draft.",
-      data: student,
+      data: populatedStudent,
     });
   } catch (error) {
     next(error);
@@ -145,12 +160,21 @@ export const updateStudentDetails = async (req, res, next) => {
       throw createError(400, "You can only edit applications that are in Draft or Rejected status.");
     }
 
-    const allowedFields = ["name", "dob", "email", "phone", "qualification", "course"];
+    const allowedFields = ["name", "dob", "email", "phone", "qualification", "course", "university", "program"];
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         student[field] = req.body[field];
       }
     });
+
+    if (req.body.program) {
+      const currentFee = await ProgramFee.findOne({ program: req.body.program, isCurrent: true });
+      if (!currentFee) {
+        throw createError(400, "Program fee is empty, please contact the admin");
+      }
+      student.programFee = currentFee._id;
+      student.programFeeRefId = currentFee.refId;
+    }
 
     // Handle file re-upload
     const files = req.files || {};
@@ -160,10 +184,15 @@ export const updateStudentDetails = async (req, res, next) => {
 
     await student.save();
 
+    const populatedStudent = await Student.findById(student._id)
+      .populate("university", "name")
+      .populate("program", "name category duration")
+      .populate("programFee");
+
     res.status(200).json({
       success: true,
       message: "Application updated successfully.",
-      data: student,
+      data: populatedStudent,
     });
   } catch (error) {
     next(error);
@@ -190,15 +219,24 @@ export const submitForEligibility = async (req, res, next) => {
       throw createError(400, "Only Draft or Rejected applications can be submitted for eligibility.");
     }
 
+    if (!student.university || !student.program) {
+      throw createError(400, "Please assign a University and Program before submitting for eligibility review.");
+    }
+
     student.applicationStatus = "Pending Eligibility";
     // Clear previous remarks on re-submission
     if (student.admin_remarks) student.admin_remarks = "";
     await student.save();
 
+    const populatedStudent = await Student.findById(student._id)
+      .populate("university", "name")
+      .populate("program", "name category duration")
+      .populate("programFee");
+
     res.status(200).json({
       success: true,
       message: "Application submitted for eligibility review.",
-      data: student,
+      data: populatedStudent,
     });
   } catch (error) {
     next(error);
@@ -258,12 +296,18 @@ export const updateApplicationStatus = async (req, res, next) => {
 
     await student.save();
 
+    const populatedStudent = await Student.findById(student._id)
+      .populate("registeredBy", "centerName licenseeEmail")
+      .populate("university", "name")
+      .populate("program", "name category duration")
+      .populate("programFee");
+
     res.status(200).json({
       success: true,
       message: action === "approve"
         ? "Application approved. Student is now Eligible."
         : "Application rejected with remarks.",
-      data: student,
+      data: populatedStudent,
     });
   } catch (error) {
     next(error);

@@ -42,18 +42,9 @@ export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "pu
           <Icon className="w-5 h-5" />
         </div>
       </div>
-      <div className="mt-auto relative z-10">
-        <div className="flex items-center space-x-2">
-          {trend && (
-            <span className={cn(
-              "text-xs font-medium px-2 py-1 rounded-full",
-              trend > 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
-            )}>
-              {trend > 0 ? "+" : ""}{trend}%
-            </span>
-          )}
-          <span className="text-xs text-muted-foreground">{subtext}</span>
-        </div>
+      <div className="mt-auto relative z-10 flex items-center gap-2 py-2 border-t border-border/10">
+        <div className={cn("w-1.5 h-1.5 rounded-full", `bg-${colorMap[color].split('-')[1]}-500`)} />
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">{subtext}</span>
       </div>
     </motion.div>
   );
