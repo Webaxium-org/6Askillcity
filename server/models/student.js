@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const StudentSchema = new mongoose.Schema(
   {
-    // Demographic Detail
+    // Basic Demographic Detail
     name: {
       type: String,
       required: [true, "Student full name is required"],
@@ -12,6 +12,13 @@ const StudentSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Date of birth is required"],
     },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other"],
+    },
+    religion: String,
+    caste: String,
+    address: String,
     email: {
       type: String,
       required: [true, "Student email is required"],
@@ -24,13 +31,16 @@ const StudentSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    alternativePhone: String,
+    otherPhone: String,
 
-    // Academics
-    qualification: {
-      type: String,
-      required: true,
-      enum: ["12th", "diploma", "bachelors", "masters"],
-    },
+    // Family Details
+    fatherName: String,
+    motherName: String,
+    fatherPhone: String,
+    motherPhone: String,
+
+    // Current Academic Selection
     university: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "University",
@@ -39,6 +49,8 @@ const StudentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Program",
     },
+    branch: String,
+    completionYear: String,
     programFee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProgramFee",
@@ -48,13 +60,66 @@ const StudentSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Uploaded Artifacts
+    // 10th Standard Details
+    tenth: {
+      certificate: String, // path
+      completionYear: String,
+      board: String,
+      percentage: String,
+      totalMarks: Number,
+      obtainedMarks: Number,
+    },
+
+    // Plus Two (+2) Details
+    plusTwo: {
+      certificate: String, // path
+      completionYear: String,
+      board: String,
+      percentage: String,
+    },
+
+    // Bachelors Details
+    bachelors: {
+      certificates: [String], // array of paths
+      university: String,
+      course: String,
+      branch: String,
+      papersPassed: Number,
+      papersEqualised: Number,
+    },
+
+    // Masters Details
+    masters: {
+      certificates: [String], // array of paths
+      university: String,
+      course: String,
+      branch: String,
+      papersPassed: Number,
+      papersEqualised: Number,
+    },
+
+    // Verification & Documents
+    affidavit: String, // path
+    videoKycStatus: {
+      type: String,
+      enum: ["Pending", "Completed", "Rejected"],
+      default: "Pending",
+    },
+    migrationCertificate: String, // path
+    projectSubmission: String, // path or status
+    employmentStatus: {
+      type: String,
+      enum: ["Employed", "Unemployed", "Self-Employed", "Student"],
+      default: "Unemployed",
+    },
+
+    // Uploaded Artifacts (Legacy/General)
     idProof: {
-      type: String, // String mapping to local path
+      type: String,
       required: false,
     },
 
-    // Application Lifecycle (Student-to-Application Workflow)
+    // Application Lifecycle
     applicationStatus: {
       type: String,
       enum: ["Draft", "Pending Eligibility", "Eligible", "Rejected"],
@@ -69,7 +134,7 @@ const StudentSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Legacy system progress field (kept for backward compat)
+    // Progress tracking
     progress: {
       type: Number,
       default: 0,

@@ -11,13 +11,17 @@ import {
   ArrowUpDown,
   Download,
   Mail,
-  MoreHorizontal
+  MoreHorizontal,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getManagementStudents } from "../../api/payment.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
+import { StatCard } from "../../components/dashboard/StatCard";
+import { X } from "lucide-react";
 
 export default function StudentList() {
   const navigate = useNavigate();
@@ -25,6 +29,7 @@ export default function StudentList() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("all"); // all, paid, pending
 
   useEffect(() => {
     fetchStudents();
@@ -47,12 +52,20 @@ export default function StudentList() {
     }
   };
 
-  const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase()) ||
-    s.university?.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.program?.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = 
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.email.toLowerCase().includes(search.toLowerCase()) ||
+      (s.university?.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (s.program?.name || "").toLowerCase().includes(search.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    if (filterType === "paid") return s.paymentStatus === "Paid";
+    if (filterType === "pending") return s.paymentStatus !== "Paid";
+    
+    return true;
+  });
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -62,11 +75,16 @@ export default function StudentList() {
     }
   };
 
-  const totals = students.reduce((acc, curr) => ({
-    total: acc.total + 1,
-    paid: acc.paid + curr.totalFeePaid,
-    pending: acc.pending + ((curr.programFee?.totalFee || 0) - curr.totalFeePaid)
-  }), { total: 0, paid: 0, pending: 0 });
+  const totals = students.reduce((acc, curr) => {
+    const isPaid = curr.paymentStatus === "Paid";
+    return {
+      total: acc.total + 1,
+      paidAmount: acc.paidAmount + (curr.totalFeePaid || 0),
+      pendingAmount: acc.pendingAmount + (Math.max(0, (curr.programFee?.totalFee || 0) - (curr.totalFeePaid || 0))),
+      paidCount: acc.paidCount + (isPaid ? 1 : 0),
+      pendingCount: acc.pendingCount + (isPaid ? 0 : 1)
+    };
+  }, { total: 0, paidAmount: 0, pendingAmount: 0, paidCount: 0, pendingCount: 0 });
 
   return (
     <DashboardLayout title="Student Management">
@@ -74,46 +92,57 @@ export default function StudentList() {
         
         {/* Quick Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-           <div className="bg-card border border-border p-6 rounded-[2rem] shadow-sm flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                 <Users className="w-7 h-7" />
-              </div>
-              <div>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Students</p>
-                 <h4 className="text-2xl font-black">{totals.total}</h4>
-              </div>
-           </div>
-           <div className="bg-card border border-border p-6 rounded-[2rem] shadow-sm flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                 <BadgeDollarSign className="w-7 h-7" />
-              </div>
-              <div>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Collected</p>
-                 <h4 className="text-2xl font-black">₹{totals.paid.toLocaleString()}</h4>
-              </div>
-           </div>
-           <div className="bg-card border border-border p-6 rounded-[2rem] shadow-sm flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600">
-                 <BadgeDollarSign className="w-7 h-7" />
-              </div>
-              <div>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Pending</p>
-                 <h4 className="text-2xl font-black">₹{totals.pending.toLocaleString()}</h4>
-              </div>
-           </div>
+          <StatCard
+            title="Total Students"
+            value={totals.total}
+            icon={Users}
+            subtext="Full Database Record"
+            color="purple"
+            onClick={() => setFilterType("all")}
+            className={filterType === "all" ? "ring-2 ring-purple-500 shadow-lg shadow-purple-500/20" : ""}
+          />
+          <StatCard
+            title="Fee Paid Students"
+            value={totals.paidCount}
+            icon={CheckCircle2}
+            subtext={`Collected: ₹${totals.paidAmount.toLocaleString()}`}
+            color="emerald"
+            onClick={() => setFilterType("paid")}
+            className={filterType === "paid" ? "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/20" : ""}
+          />
+          <StatCard
+            title="Fee Pending Students"
+            value={totals.pendingCount}
+            icon={Clock}
+            subtext={`Pending: ₹${totals.pendingAmount.toLocaleString()}`}
+            color="rose"
+            onClick={() => setFilterType("pending")}
+            className={filterType === "pending" ? "ring-2 ring-rose-500 shadow-lg shadow-rose-500/20" : ""}
+          />
         </div>
 
         {/* Filters and Actions */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card border border-border p-4 rounded-[2rem] shadow-sm">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search by name, email, university or program..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border bg-muted/30 focus:border-primary outline-none transition-all text-sm"
-            />
+          <div className="flex flex-1 items-center gap-3 max-w-2xl">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search by name, email, university or program..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border bg-muted/30 focus:border-primary outline-none transition-all text-sm"
+              />
+            </div>
+            {filterType !== "all" && (
+              <button 
+                onClick={() => setFilterType("all")}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground text-[10px] font-black uppercase tracking-widest transition-all shrink-0"
+              >
+                <X className="w-3 h-3" />
+                Clear {filterType} Filter
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-3">
              <button className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-border bg-card hover:bg-muted text-sm font-bold transition-all">

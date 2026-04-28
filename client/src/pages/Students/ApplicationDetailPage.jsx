@@ -42,6 +42,11 @@ import {
   GraduationCap,
   BadgeDollarSign,
   Hash,
+  Baby,
+  Users,
+  School,
+  ShieldCheck,
+  Briefcase,
 } from "lucide-react";
 
 // ── Constants ─────────────────────────────────────────────────
@@ -75,13 +80,6 @@ const COURSE_LABELS = {
   dm: "Digital Marketing Masterclass",
 };
 
-const QUALIFICATION_LABELS = {
-  "12th": "12th Grade / PUC",
-  diploma: "Diploma",
-  bachelors: "Bachelor's Degree",
-  masters: "Master's Degree",
-};
-
 const CATEGORY_COLORS = {
   general: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   document: "bg-purple-500/10 text-purple-500 border-purple-500/20",
@@ -100,25 +98,42 @@ function Field({
   placeholder,
   icon: Icon,
   readOnly,
+  options,
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
         {label}
       </label>
       <div className="relative">
         {Icon && (
-          <Icon className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Icon className="w-4 h-4 text-muted-foreground/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors" />
         )}
-        <input
-          type={type}
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          readOnly={readOnly}
-          className={`w-full ${Icon ? "pl-10" : "pl-4"} pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
-        />
+        {options && !readOnly ? (
+          <select
+            name={name}
+            value={value}
+            onChange={onChange}
+            className={`w-full ${Icon ? "pl-10" : "pl-4"} pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none font-medium`}
+          >
+            <option value="">Select {label}</option>
+            {options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={type}
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            readOnly={readOnly}
+            className={`w-full ${Icon ? "pl-10" : "pl-4"} pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
+          />
+        )}
       </div>
     </div>
   );
@@ -153,12 +168,40 @@ export default function ApplicationDetailPage() {
         setFormData({
           name: res.data.name || "",
           dob: res.data.dob ? res.data.dob.split("T")[0] : "",
+          gender: res.data.gender || "",
+          religion: res.data.religion || "",
+          caste: res.data.caste || "",
+          address: res.data.address || "",
           email: res.data.email || "",
           phone: res.data.phone || "",
-          qualification: res.data.qualification || "",
-          course: res.data.course || "",
+          alternativePhone: res.data.alternativePhone || "",
+          otherPhone: res.data.otherPhone || "",
+          fatherName: res.data.fatherName || "",
+          motherName: res.data.motherName || "",
+          fatherPhone: res.data.fatherPhone || "",
+          motherPhone: res.data.motherPhone || "",
           university: res.data.university?._id || res.data.university || "",
           program: res.data.program?._id || res.data.program || "",
+          branch: res.data.branch || "",
+          completionYear: res.data.completionYear || "",
+          tenthCompletionYear: res.data.tenth?.completionYear || "",
+          tenthBoard: res.data.tenth?.board || "",
+          tenthPercentage: res.data.tenth?.percentage || "",
+          plusTwoCompletionYear: res.data.plusTwo?.completionYear || "",
+          plusTwoBoard: res.data.plusTwo?.board || "",
+          plusTwoPercentage: res.data.plusTwo?.percentage || "",
+          bachelorsUniversity: res.data.bachelors?.university || "",
+          bachelorsCourse: res.data.bachelors?.course || "",
+          bachelorsBranch: res.data.bachelors?.branch || "",
+          bachelorsPapersPassed: res.data.bachelors?.papersPassed || "",
+          bachelorsPapersEqualised: res.data.bachelors?.papersEqualised || "",
+          mastersUniversity: res.data.masters?.university || "",
+          mastersCourse: res.data.masters?.course || "",
+          mastersBranch: res.data.masters?.branch || "",
+          mastersPapersPassed: res.data.masters?.papersPassed || "",
+          mastersPapersEqualised: res.data.masters?.papersEqualised || "",
+          videoKycStatus: res.data.videoKycStatus || "Pending",
+          employmentStatus: res.data.employmentStatus || "Unemployed",
         });
       }
     } catch (err) {
@@ -465,15 +508,15 @@ export default function ApplicationDetailPage() {
                   )}
                 </div>
 
-                <form onSubmit={handleSave} className="space-y-5">
-                  {/* Personal section */}
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-4">
-                      Personal Details
+                <form onSubmit={handleSave} className="space-y-8">
+                  {/* Profile Identity section */}
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2 border-b border-border pb-2">
+                      <User className="w-3.5 h-3.5" /> Profile Identity
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <Field
-                        label="Full Legal Name"
+                        label="Full Name"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
@@ -491,6 +534,29 @@ export default function ApplicationDetailPage() {
                         readOnly={!editing}
                       />
                       <Field
+                        label="Gender"
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        options={["Male", "Female", "Other"]}
+                        icon={Baby}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Religion"
+                        name="religion"
+                        value={formData.religion}
+                        onChange={handleChange}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Caste"
+                        name="caste"
+                        value={formData.caste}
+                        onChange={handleChange}
+                        readOnly={!editing}
+                      />
+                      <Field
                         label="Email Address"
                         name="email"
                         type="email"
@@ -501,7 +567,7 @@ export default function ApplicationDetailPage() {
                         readOnly={!editing}
                       />
                       <Field
-                        label="Phone Number"
+                        label="Primary Phone"
                         name="phone"
                         type="tel"
                         value={formData.phone}
@@ -510,61 +576,258 @@ export default function ApplicationDetailPage() {
                         icon={Phone}
                         readOnly={!editing}
                       />
+                      <Field
+                        label="Alternative Phone"
+                        name="alternativePhone"
+                        type="tel"
+                        value={formData.alternativePhone}
+                        onChange={handleChange}
+                        icon={Phone}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Other Phone"
+                        name="otherPhone"
+                        type="tel"
+                        value={formData.otherPhone}
+                        onChange={handleChange}
+                        icon={Phone}
+                        readOnly={!editing}
+                      />
+                      <div className="sm:col-span-2">
+                        <Field
+                          label="Permanent Address"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          icon={MapPin}
+                          readOnly={!editing}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Academic section */}
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-4">
-                      Academic Path
+                  {/* Family Details */}
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-purple-500 flex items-center gap-2 border-b border-border pb-2">
+                      <Users className="w-3.5 h-3.5" /> Family Details
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Qualification */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          Highest Qualification
-                        </label>
-                        <div className="relative">
-                          <BookOpen className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          {editing ? (
-                            <select
-                              name="qualification"
-                              value={formData.qualification}
-                              onChange={handleChange}
-                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none"
-                            >
-                              <option value="" disabled>
-                                Select qualification
-                              </option>
-                              <option value="12th">12th Grade / PUC</option>
-                              <option value="diploma">Diploma</option>
-                              <option value="bachelors">
-                                Bachelor's Degree
-                              </option>
-                              <option value="masters">Master's Degree</option>
-                            </select>
-                          ) : (
-                            <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm opacity-60">
-                              {QUALIFICATION_LABELS[formData.qualification] ||
-                                formData.qualification}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <Field
+                        label="Father's Name"
+                        name="fatherName"
+                        value={formData.fatherName}
+                        onChange={handleChange}
+                        icon={User}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Father's Phone"
+                        name="fatherPhone"
+                        value={formData.fatherPhone}
+                        onChange={handleChange}
+                        icon={Phone}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Mother's Name"
+                        name="motherName"
+                        value={formData.motherName}
+                        onChange={handleChange}
+                        icon={User}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Mother's Phone"
+                        name="motherPhone"
+                        value={formData.motherPhone}
+                        onChange={handleChange}
+                        icon={Phone}
+                        readOnly={!editing}
+                      />
+                    </div>
+                  </div>
 
+                  {/* Academic History */}
+                  <div className="space-y-6">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 border-b border-border pb-2">
+                      <GraduationCap className="w-3.5 h-3.5" /> Academic History
+                    </h3>
+
+                    {/* 10th Standard */}
+                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 space-y-4">
+                      <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                        10th Standard / SSLC
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Field
+                          label="Completion Year"
+                          name="tenthCompletionYear"
+                          value={formData.tenthCompletionYear}
+                          onChange={handleChange}
+                          icon={Calendar}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Board"
+                          name="tenthBoard"
+                          value={formData.tenthBoard}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Percentage"
+                          name="tenthPercentage"
+                          value={formData.tenthPercentage}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Plus Two */}
+                    <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-4">
+                      <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                        Plus Two
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Field
+                          label="Completion Year"
+                          name="plusTwoCompletionYear"
+                          value={formData.plusTwoCompletionYear}
+                          onChange={handleChange}
+                          icon={Calendar}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Board"
+                          name="plusTwoBoard"
+                          value={formData.plusTwoBoard}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Percentage"
+                          name="plusTwoPercentage"
+                          value={formData.plusTwoPercentage}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bachelors */}
+                    <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 space-y-4">
+                      <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                        Bachelors
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Field
+                          label="University"
+                          name="bachelorsUniversity"
+                          value={formData.bachelorsUniversity}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Course"
+                          name="bachelorsCourse"
+                          value={formData.bachelorsCourse}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Branch"
+                          name="bachelorsBranch"
+                          value={formData.bachelorsBranch}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Papers Passed"
+                          name="bachelorsPapersPassed"
+                          type="number"
+                          value={formData.bachelorsPapersPassed}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Equalised"
+                          name="bachelorsPapersEqualised"
+                          type="number"
+                          value={formData.bachelorsPapersEqualised}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Masters */}
+                    <div className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/10 space-y-4">
+                      <h4 className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
+                        Masters
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Field
+                          label="University"
+                          name="mastersUniversity"
+                          value={formData.mastersUniversity}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Course"
+                          name="mastersCourse"
+                          value={formData.mastersCourse}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Branch"
+                          name="mastersBranch"
+                          value={formData.mastersBranch}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Papers Passed"
+                          name="mastersPapersPassed"
+                          type="number"
+                          value={formData.mastersPapersPassed}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Equalised"
+                          name="mastersPapersEqualised"
+                          type="number"
+                          value={formData.mastersPapersEqualised}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Enrollment selection */}
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-orange-500 flex items-center gap-2 border-b border-border pb-2">
+                      <Briefcase className="w-3.5 h-3.5" /> Enrollment Selection
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {/* University Selection */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
                           University
                         </label>
                         <div className="relative">
-                          <Building2 className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <Building2 className="w-4 h-4 text-muted-foreground/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           {editing ? (
                             <select
                               name="university"
                               value={formData.university}
                               onChange={handleChange}
-                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none"
+                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none font-medium"
                             >
                               <option value="">Select University</option>
                               {universities.map((u) => (
@@ -574,7 +837,7 @@ export default function ApplicationDetailPage() {
                               ))}
                             </select>
                           ) : (
-                            <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm opacity-60">
+                            <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm font-medium opacity-60">
                               {app.university?.name || "Not assigned"}
                             </div>
                           )}
@@ -583,18 +846,18 @@ export default function ApplicationDetailPage() {
 
                       {/* Program Selection */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
                           Program
                         </label>
                         <div className="relative">
-                          <GraduationCap className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <GraduationCap className="w-4 h-4 text-muted-foreground/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           {editing ? (
                             <select
                               name="program"
                               value={formData.program}
                               onChange={handleChange}
                               disabled={!formData.university}
-                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none disabled:opacity-50"
+                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none disabled:opacity-50 font-medium"
                             >
                               <option value="">Select Program</option>
                               {programs
@@ -610,27 +873,73 @@ export default function ApplicationDetailPage() {
                                 ))}
                             </select>
                           ) : (
-                            <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm opacity-60">
+                            <div className="pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm font-medium opacity-60">
                               {app.program?.name || "Not assigned"}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Display current fee info if program selected */}
-                      {formData.program && fees.find((f) => f.isCurrent) && (
-                        <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                              <BadgeDollarSign className="w-3.5 h-3.5" /> Total
-                              Program Fee
-                            </span>
-                            <span className="text-sm font-black text-blue-600">
-                              ₹{fees.find((f) => f.isCurrent).totalFee}
-                            </span>
-                          </div>
+                      <Field
+                        label="Branch"
+                        name="branch"
+                        value={formData.branch}
+                        onChange={handleChange}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Completion Year"
+                        name="completionYear"
+                        value={formData.completionYear}
+                        onChange={handleChange}
+                        icon={Calendar}
+                        readOnly={!editing}
+                      />
+                    </div>
+
+                    {/* Display current fee info if program selected */}
+                    {formData.program && fees.find((f) => f.isCurrent) && (
+                      <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                            <BadgeDollarSign className="w-3.5 h-3.5" /> Total
+                            Program Fee
+                          </span>
+                          <span className="text-sm font-black text-blue-600">
+                            ₹{fees.find((f) => f.isCurrent).totalFee}
+                          </span>
                         </div>
-                      )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Compliance */}
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 border-b border-border pb-2">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Compliance
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field
+                        label="Video KYC Status"
+                        name="videoKycStatus"
+                        value={formData.videoKycStatus}
+                        onChange={handleChange}
+                        options={["Pending", "Completed", "Rejected"]}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Employment Status"
+                        name="employmentStatus"
+                        value={formData.employmentStatus}
+                        onChange={handleChange}
+                        options={[
+                          "Employed",
+                          "Unemployed",
+                          "Self-Employed",
+                          "Student",
+                        ]}
+                        readOnly={!editing}
+                      />
                     </div>
                   </div>
 
@@ -666,23 +975,98 @@ export default function ApplicationDetailPage() {
               </div>
             </div>
 
-            {/* ID Proof */}
-            {app.idProof && (
-              <div className="bg-card border border-border rounded-xl p-5">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-3 flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5" /> Uploaded ID Proof
-                </h3>
-                <a
-                  href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${app.idProof.replace(/\\/g, "/")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted text-sm transition-colors"
-                >
-                  <FileText className="w-4 h-4 text-blue-500" />
-                  View Uploaded Document
-                </a>
+            {/* Documents section */}
+            <div className="bg-card border border-border rounded-xl p-6 space-y-6">
+              <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b border-border pb-3">
+                <FileText className="w-4 h-4 text-primary" /> Application Documents
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: "Identity Proof", path: app.idProof },
+                  { label: "10th Certificate", path: app.tenthCertificate },
+                  { label: "Plus Two Certificate", path: app.plusTwoCertificate },
+                  { label: "Affidavit", path: app.affidavit },
+                  { label: "Migration Certificate", path: app.migrationCertificate },
+                  { label: "Project Submission", path: app.projectSubmission },
+                ].map(
+                  (doc, i) =>
+                    doc.path && (
+                      <div
+                        key={i}
+                        className="p-4 rounded-xl border border-border bg-muted/30 flex items-center justify-between group hover:border-primary/30 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-blue-500" />
+                          <span className="text-xs font-bold text-foreground">
+                            {doc.label}
+                          </span>
+                        </div>
+                        <a
+                          href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${doc.path.replace(/\\/g, "/")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-background border border-border hover:bg-primary hover:text-white hover:border-primary text-[10px] font-black transition-all"
+                        >
+                          VIEW
+                        </a>
+                      </div>
+                    ),
+                )}
               </div>
-            )}
+
+              {/* Multiple Certificates */}
+              {((app.bachelorsCertificates &&
+                app.bachelorsCertificates.length > 0) ||
+                (app.mastersCertificates &&
+                  app.mastersCertificates.length > 0)) && (
+                <div className="space-y-4 pt-4 border-t border-border">
+                  {app.bachelorsCertificates?.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                        Bachelors Certificates
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {app.bachelorsCertificates.map((path, idx) => (
+                          <a
+                            key={idx}
+                            href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${path.replace(/\\/g, "/")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
+                          >
+                            <FileText className="w-3 h-3 text-indigo-500" />
+                            Cert {idx + 1}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {app.mastersCertificates?.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                        Masters Certificates
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {app.mastersCertificates.map((path, idx) => (
+                          <a
+                            key={idx}
+                            href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${path.replace(/\\/g, "/")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
+                          >
+                            <FileText className="w-3 h-3 text-rose-500" />
+                            Cert {idx + 1}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </motion.div>
 
           {/* Right: Follow-up Timeline */}

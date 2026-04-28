@@ -13,6 +13,7 @@ import {
   removePartnerPermission,
   getMyPartnerProfile,
 } from "../controllers/admissionPoint.controller.js";
+import { getPartnerDashboardStats } from "../controllers/partner.controller.js";
 import { isAuthorized, requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -20,6 +21,7 @@ const router = express.Router();
 router.post("/register", uploadAdmissionFiles, createAdmissionPoint);
 
 router.get("/profile/me", requireAuth, isAuthorized({ types: ["partner"] }), getMyPartnerProfile);
+router.get("/stats", requireAuth, isAuthorized({ types: ["partner"] }), getPartnerDashboardStats);
 
 router.use(requireAuth, isAuthorized({ types: ["admin"] }));
 

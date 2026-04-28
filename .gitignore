@@ -45,3 +45,8 @@ dist-ssr/
 # Optional caches
 # ==========================
 /.vite/
+
+# ==========================
+# Service Account Credentials
+# ==========================
+server/apt-summer-*.json

@@ -20,7 +20,14 @@ const uploadParams = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit max
 }).fields([
-  { name: "idProof", maxCount: 1 }
+  { name: "idProof", maxCount: 1 },
+  { name: "tenthCertificate", maxCount: 1 },
+  { name: "plusTwoCertificate", maxCount: 1 },
+  { name: "bachelorsCertificates", maxCount: 5 },
+  { name: "mastersCertificates", maxCount: 5 },
+  { name: "affidavit", maxCount: 1 },
+  { name: "migrationCertificate", maxCount: 1 },
+  { name: "projectSubmission", maxCount: 1 },
 ]);
 
 export const uploadStudentDocs = uploadParams;
@@ -70,22 +77,69 @@ export const enrollStudent = async (req, res, next) => {
     }
 
     const files = req.files || {};
-    let idProofPath = null;
-    if (files.idProof && files.idProof.length > 0) {
-      idProofPath = files.idProof[0].path;
-    }
+    const extractPath = (field) => (files[field] && files[field].length > 0 ? files[field][0].path : null);
+    const extractPaths = (field) => (files[field] ? files[field].map(f => f.path) : []);
 
     const student = new Student({
       name: data.name,
       dob: data.dob,
+      gender: data.gender,
+      religion: data.religion,
+      caste: data.caste,
+      address: data.address,
       email: data.email,
       phone: data.phone,
-      qualification: data.qualification,
-      course: data.course,
+      alternativePhone: data.alternativePhone,
+      otherPhone: data.otherPhone,
+      
+      fatherName: data.fatherName,
+      motherName: data.motherName,
+      fatherPhone: data.fatherPhone,
+      motherPhone: data.motherPhone,
+
       university: data.university,
       program: data.program,
-      programFee: data.programFee,
-      idProof: idProofPath,
+      branch: data.branch,
+      completionYear: data.completionYear,
+      
+      tenth: {
+        certificate: extractPath("tenthCertificate"),
+        completionYear: data.tenthCompletionYear,
+        board: data.tenthBoard,
+        percentage: data.tenthPercentage,
+        totalMarks: data.tenthTotalMarks,
+        obtainedMarks: data.tenthObtainedMarks,
+      },
+      plusTwo: {
+        certificate: extractPath("plusTwoCertificate"),
+        completionYear: data.plusTwoCompletionYear,
+        board: data.plusTwoBoard,
+        percentage: data.plusTwoPercentage,
+      },
+      bachelors: {
+        certificates: extractPaths("bachelorsCertificates"),
+        university: data.bachelorsUniversity,
+        course: data.bachelorsCourse,
+        branch: data.bachelorsBranch,
+        papersPassed: data.bachelorsPapersPassed,
+        papersEqualised: data.bachelorsPapersEqualised,
+      },
+      masters: {
+        certificates: extractPaths("mastersCertificates"),
+        university: data.mastersUniversity,
+        course: data.mastersCourse,
+        branch: data.mastersBranch,
+        papersPassed: data.mastersPapersPassed,
+        papersEqualised: data.mastersPapersEqualised,
+      },
+
+      affidavit: extractPath("affidavit"),
+      videoKycStatus: data.videoKycStatus || "Pending",
+      migrationCertificate: extractPath("migrationCertificate"),
+      projectSubmission: extractPath("projectSubmission"),
+      employmentStatus: data.employmentStatus || "Unemployed",
+
+      idProof: extractPath("idProof"),
       applicationStatus: "Draft",
       registeredBy: req.user?.userId,
     });
@@ -160,12 +214,42 @@ export const updateStudentDetails = async (req, res, next) => {
       throw createError(400, "You can only edit applications that are in Draft or Rejected status.");
     }
 
-    const allowedFields = ["name", "dob", "email", "phone", "qualification", "course", "university", "program"];
+    const allowedFields = [
+      "name", "dob", "gender", "religion", "caste", "address",
+      "email", "phone", "alternativePhone", "otherPhone",
+      "fatherName", "motherName", "fatherPhone", "motherPhone",
+      "university", "program", "branch", "completionYear",
+      "videoKycStatus", "employmentStatus"
+    ];
+
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         student[field] = req.body[field];
       }
     });
+
+    // Academic nested fields
+    if (req.body.tenthCompletionYear) student.tenth.completionYear = req.body.tenthCompletionYear;
+    if (req.body.tenthBoard) student.tenth.board = req.body.tenthBoard;
+    if (req.body.tenthPercentage) student.tenth.percentage = req.body.tenthPercentage;
+    if (req.body.tenthTotalMarks) student.tenth.totalMarks = req.body.tenthTotalMarks;
+    if (req.body.tenthObtainedMarks) student.tenth.obtainedMarks = req.body.tenthObtainedMarks;
+
+    if (req.body.plusTwoCompletionYear) student.plusTwo.completionYear = req.body.plusTwoCompletionYear;
+    if (req.body.plusTwoBoard) student.plusTwo.board = req.body.plusTwoBoard;
+    if (req.body.plusTwoPercentage) student.plusTwo.percentage = req.body.plusTwoPercentage;
+
+    if (req.body.bachelorsUniversity) student.bachelors.university = req.body.bachelorsUniversity;
+    if (req.body.bachelorsCourse) student.bachelors.course = req.body.bachelorsCourse;
+    if (req.body.bachelorsBranch) student.bachelors.branch = req.body.bachelorsBranch;
+    if (req.body.bachelorsPapersPassed) student.bachelors.papersPassed = req.body.bachelorsPapersPassed;
+    if (req.body.bachelorsPapersEqualised) student.bachelors.papersEqualised = req.body.bachelorsPapersEqualised;
+
+    if (req.body.mastersUniversity) student.masters.university = req.body.mastersUniversity;
+    if (req.body.mastersCourse) student.masters.course = req.body.mastersCourse;
+    if (req.body.mastersBranch) student.masters.branch = req.body.mastersBranch;
+    if (req.body.mastersPapersPassed) student.masters.papersPassed = req.body.mastersPapersPassed;
+    if (req.body.mastersPapersEqualised) student.masters.papersEqualised = req.body.mastersPapersEqualised;
 
     if (req.body.program) {
       const currentFee = await ProgramFee.findOne({ program: req.body.program, isCurrent: true });
@@ -176,10 +260,27 @@ export const updateStudentDetails = async (req, res, next) => {
       student.programFeeRefId = currentFee.refId;
     }
 
-    // Handle file re-upload
+    // Handle file re-uploads
     const files = req.files || {};
-    if (files.idProof && files.idProof.length > 0) {
-      student.idProof = files.idProof[0].path;
+    const updatePath = (field, target) => {
+      if (files[field] && files[field].length > 0) student[target] = files[field][0].path;
+    };
+    const updateNestedPath = (field, obj, subField) => {
+      if (files[field] && files[field].length > 0) student[obj][subField] = files[field][0].path;
+    };
+
+    updatePath("idProof", "idProof");
+    updateNestedPath("tenthCertificate", "tenth", "certificate");
+    updateNestedPath("plusTwoCertificate", "plusTwo", "certificate");
+    updatePath("affidavit", "affidavit");
+    updatePath("migrationCertificate", "migrationCertificate");
+    updatePath("projectSubmission", "projectSubmission");
+
+    if (files.bachelorsCertificates) {
+      student.bachelors.certificates = files.bachelorsCertificates.map(f => f.path);
+    }
+    if (files.mastersCertificates) {
+      student.masters.certificates = files.mastersCertificates.map(f => f.path);
     }
 
     await student.save();

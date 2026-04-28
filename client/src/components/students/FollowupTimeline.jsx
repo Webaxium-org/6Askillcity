@@ -2,7 +2,11 @@ import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
-import { getFollowups, addFollowup, deleteFollowup } from "../../api/student.api";
+import {
+  getFollowups,
+  addFollowup,
+  deleteFollowup,
+} from "../../api/student.api";
 import {
   MessageSquare,
   Trash2,
@@ -10,6 +14,7 @@ import {
   Tag,
   Calendar,
   Bell,
+  Clock,
 } from "lucide-react";
 
 const CATEGORY_COLORS = {
@@ -37,29 +42,48 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
       const res = await getFollowups(studentId);
       if (res.success) setFollowups(res.data);
     } catch {
-      dispatch(showAlert({ type: "error", message: "Failed to load follow-ups." }));
+      dispatch(
+        showAlert({ type: "error", message: "Failed to load follow-ups." }),
+      );
     } finally {
       setLoadingFollowups(false);
     }
   }, [studentId, dispatch]);
 
-  useEffect(() => { fetchFollowups(); }, [fetchFollowups]);
+  useEffect(() => {
+    fetchFollowups();
+  }, [fetchFollowups]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!note.trim()) return;
     setSubmitting(true);
     try {
-      const res = await addFollowup(studentId, note, category, nextFollowupDate);
+      const res = await addFollowup(
+        studentId,
+        note,
+        category,
+        nextFollowupDate,
+      );
       if (res.success) {
         setFollowups((prev) => [res.data, ...prev]);
         setNote("");
         setCategory("general");
         setNextFollowupDate("");
-        dispatch(showAlert({ type: "success", message: "Follow-up logged and scheduled!" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Follow-up logged and scheduled!",
+          }),
+        );
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Failed to save follow-up." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Failed to save follow-up.",
+        }),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -71,7 +95,9 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
       await deleteFollowup(id);
       setFollowups((prev) => prev.filter((f) => f._id !== id));
     } catch {
-      dispatch(showAlert({ type: "error", message: "Failed to delete follow-up." }));
+      dispatch(
+        showAlert({ type: "error", message: "Failed to delete follow-up." }),
+      );
     } finally {
       setDeletingId(null);
     }
@@ -81,7 +107,10 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
     <div className="space-y-4">
       {/* Add followup form */}
       {canAdd && (
-        <form onSubmit={handleAdd} className="bg-muted/30 border border-border rounded-xl p-3 space-y-3">
+        <form
+          onSubmit={handleAdd}
+          className="bg-muted/30 border border-border rounded-xl p-3 space-y-3"
+        >
           <div className="flex items-center gap-2 mb-1">
             <MessageSquare className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-semibold">Add Internal Note</span>
@@ -111,7 +140,9 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
 
             <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded border border-input">
               <Calendar className="w-3 h-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground mr-1">Next:</span>
+              <span className="text-[10px] text-muted-foreground mr-1">
+                Next:
+              </span>
               <input
                 type="date"
                 value={nextFollowupDate}
@@ -128,7 +159,9 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
               {submitting ? (
                 <div className="w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
               ) : (
-                <><Plus className="w-3 h-3" /> Log & Schedule</>
+                <>
+                  <Plus className="w-3 h-3" /> Log & Schedule
+                </>
               )}
             </button>
           </div>
@@ -169,8 +202,12 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
                 <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
                   <div className="flex items-start justify-between gap-1 mb-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-bold text-foreground truncate max-w-[80px]">{f.authorName}</span>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium border ${CATEGORY_COLORS[f.category] || CATEGORY_COLORS.general}`}>
+                      <span className="text-[10px] font-bold text-foreground truncate max-w-[80px]">
+                        {f.authorName}
+                      </span>
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium border ${CATEGORY_COLORS[f.category] || CATEGORY_COLORS.general}`}
+                      >
                         {f.category}
                       </span>
                     </div>
@@ -186,18 +223,26 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
                       )}
                     </button>
                   </div>
-                  <p className="text-[11px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{f.note}</p>
-                  
+                  <p className="text-[11px] text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                    {f.note}
+                  </p>
+
                   {f.nextFollowupDate && (
                     <div className="mt-2 pt-2 border-t border-border flex items-center gap-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
                       <Bell className="w-3 h-3" />
-                      Next Scheduled: {new Date(f.nextFollowupDate).toLocaleDateString([], { dateStyle: 'medium' })}
+                      Next Scheduled:{" "}
+                      {new Date(f.nextFollowupDate).toLocaleDateString([], {
+                        dateStyle: "medium",
+                      })}
                     </div>
                   )}
 
                   <div className="mt-2 text-[9px] text-muted-foreground italic flex items-center gap-1">
                     <Clock className="w-2.5 h-2.5" />
-                    {new Date(f.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                    {new Date(f.createdAt).toLocaleString([], {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
                   </div>
                 </div>
               </motion.div>

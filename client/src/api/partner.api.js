@@ -1,46 +1,41 @@
-import axios from "axios";
+import { axiosInstance as API } from "./axiosInstance";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-export const getPartners = async (params = {}) => {
-  const res = await axios.get(`${API_URL}/admission-points`, { 
-    params,
-    withCredentials: true 
-  });
-  return res.data;
-};
-
-export const getPartnerById = async (id) => {
-  const res = await axios.get(`${API_URL}/admission-points/${id}`, { withCredentials: true });
-  return res.data;
-};
-
-export const updatePartnerStatus = async (id, status) => {
-  const res = await axios.patch(`${API_URL}/admission-points/${id}/status`, { status }, { withCredentials: true });
-  return res.data;
-};
-
-export const togglePartnerActive = async (id, isActive) => {
-  const res = await axios.patch(`${API_URL}/admission-points/${id}/toggle-active`, { isActive }, { withCredentials: true });
-  return res.data;
-};
-
-export const getPartnerPermissions = async (partnerId) => {
-  const res = await axios.get(`${API_URL}/admission-points/${partnerId}/permissions`, { withCredentials: true });
-  return res.data;
-};
-
-export const addPartnerPermission = async (data) => {
-  const res = await axios.post(`${API_URL}/admission-points/permissions`, data, { withCredentials: true });
-  return res.data;
-};
-
-export const removePartnerPermission = async (id) => {
-  const res = await axios.delete(`${API_URL}/admission-points/permissions/${id}`, { withCredentials: true });
-  return res.data;
+export const getPartnerDashboardStats = async () => {
+  const response = await API.get("/admission-points/stats");
+  return response.data;
 };
 
 export const getMyProfile = async () => {
-  const res = await axios.get(`${API_URL}/admission-points/profile/me`, { withCredentials: true });
-  return res.data;
+  const response = await API.get("/admission-points/profile/me");
+  return response.data;
+};
+
+export const getPartners = async (params) => {
+  const response = await API.get("/admission-points", { params });
+  return response.data;
+};
+
+export const getPartnerById = async (id) => {
+  const response = await API.get(`/admission-points/${id}`);
+  return response.data;
+};
+
+export const togglePartnerActive = async (id, isActive) => {
+  const response = await API.patch(`/admission-points/${id}/toggle-active`, { isActive });
+  return response.data;
+};
+
+export const getPartnerPermissions = async (partnerId) => {
+  const response = await API.get(`/admission-points/${partnerId}/permissions`);
+  return response.data;
+};
+
+export const addPartnerPermission = async (data) => {
+  const response = await API.post("/admission-points/permissions", data);
+  return response.data;
+};
+
+export const removePartnerPermission = async (id) => {
+  const response = await API.delete(`/admission-points/permissions/${id}`);
+  return response.data;
 };

@@ -7,7 +7,7 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "purple", onClick }) => {
+export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "purple", onClick, className }) => {
   const colorMap = {
     purple: "from-purple-500/20 to-purple-500/5 text-purple-500 border-purple-500/20",
     blue: "from-blue-500/20 to-blue-500/5 text-blue-500 border-blue-500/20",
@@ -21,7 +21,8 @@ export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "pu
       onClick={onClick}
       className={cn(
         "bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col relative overflow-hidden group",
-        onClick && "cursor-pointer"
+        onClick && "cursor-pointer",
+        className
       )}
     >
       <div className={cn(
