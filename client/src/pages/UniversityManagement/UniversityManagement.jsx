@@ -58,6 +58,16 @@ export default function UniversityManagement() {
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [feeHistory, setFeeHistory] = useState([]);
   const [loadingFees, setLoadingFees] = useState(false);
+  const [feeForm, setFeeForm] = useState({
+    applicationFee: 0,
+    tuitionFee: 0,
+    totalFee: 0
+  });
+  const [programFees, setProgramFees] = useState({
+    applicationFee: 0,
+    tuitionFee: 0,
+    totalFee: 0
+  });
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -157,7 +167,19 @@ export default function UniversityManagement() {
     setLoadingFees(true);
     try {
       const res = await getProgramFees(program._id);
-      if (res.success) setFeeHistory(res.data);
+      if (res.success) {
+        setFeeHistory(res.data);
+        const current = res.data.find(f => f.isCurrent);
+        if (current) {
+          setFeeForm({
+            applicationFee: current.applicationFee,
+            tuitionFee: current.tuitionFee,
+            totalFee: current.totalFee
+          });
+        } else {
+          setFeeForm({ applicationFee: 0, tuitionFee: 0, totalFee: 0 });
+        }
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -299,6 +321,7 @@ export default function UniversityManagement() {
                       <tr className="bg-muted/50 border-b border-border">
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Program Name</th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">University</th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Duration</th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
@@ -307,7 +330,7 @@ export default function UniversityManagement() {
                     <tbody className="divide-y divide-border">
                       {filteredPrograms.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-20 text-center text-muted-foreground">No programs found.</td>
+                          <td colSpan="6" className="px-6 py-20 text-center text-muted-foreground">No programs found.</td>
                         </tr>
                       ) : (
                         filteredPrograms.map((prog) => (
@@ -320,6 +343,7 @@ export default function UniversityManagement() {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm font-medium">{prog.university?.name || "N/A"}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-primary">{prog.type || "N/A"}</td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">{prog.category}</td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">{prog.duration}</td>
                             <td className="px-6 py-4">
@@ -452,10 +476,52 @@ export default function UniversityManagement() {
                       <input name="category" defaultValue={editingProgram?.category} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="e.g. Engineering" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Duration</label>
-                      <input name="duration" defaultValue={editingProgram?.duration} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="e.g. 4 Years" />
+                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Type</label>
+                      <select name="type" defaultValue={editingProgram?.type || ""} className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm">
+                        <option value="">Select Type</option>
+                        <option value="CT">CT</option>
+                        <option value="Vocational">Vocational</option>
+                        <option value="Skilled">Skilled</option>
+                      </select>
                     </div>
                   </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Duration</label>
+                    <input name="duration" defaultValue={editingProgram?.duration} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="e.g. 4 Years" />
+                  </div>
+
+                  {!editingProgram && (
+                    <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 space-y-3">
+                      <h4 className="text-[10px] font-black uppercase text-emerald-600">Initial Fee Structure (Optional)</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground mb-1 block uppercase">App Fee</label>
+                          <input 
+                            name="applicationFee" 
+                            type="number" 
+                            onChange={(e) => setProgramFees(p => ({...p, applicationFee: Number(e.target.value), totalFee: Number(e.target.value) + p.tuitionFee}))}
+                            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs outline-none focus:ring-1 focus:ring-emerald-500" 
+                            placeholder="0" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground mb-1 block uppercase">Tuition Fee</label>
+                          <input 
+                            name="tuitionFee" 
+                            type="number" 
+                            onChange={(e) => setProgramFees(p => ({...p, tuitionFee: Number(e.target.value), totalFee: p.applicationFee + Number(e.target.value)}))}
+                            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs outline-none focus:ring-1 focus:ring-emerald-500" 
+                            placeholder="0" 
+                          />
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-emerald-500/10 flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Amount:</span>
+                        <span className="text-sm font-black text-emerald-600">₹{programFees.totalFee.toLocaleString()}</span>
+                        <input type="hidden" name="totalFee" value={programFees.totalFee} />
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 pt-2">
                     <input type="checkbox" name="isActive" id="prog-active" defaultChecked={editingProgram ? editingProgram.isActive : true} className="w-4 h-4 text-primary rounded" />
                     <label htmlFor="prog-active" className="text-sm font-medium">Active Status</label>
@@ -488,20 +554,42 @@ export default function UniversityManagement() {
                   <p className="text-sm text-muted-foreground mb-6">Update the fee structure for <b>{selectedProgram?.name}</b>. This will create a new history record.</p>
                   
                   <form onSubmit={handleUpdateFee} className="space-y-4">
-                    <div className="p-4 bg-muted/50 rounded-xl border border-border space-y-4">
-                      <div>
-                        <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Total Fee</label>
-                        <input name="totalFee" type="number" required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-sm" placeholder="0.00" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-xl border border-border space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
                         <div>
                           <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Application Fee</label>
-                          <input name="applicationFee" type="number" required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-sm" placeholder="0.00" />
+                          <input 
+                            name="applicationFee" 
+                            type="number" 
+                            value={feeForm.applicationFee}
+                            onChange={(e) => setFeeForm(p => ({...p, applicationFee: Number(e.target.value), totalFee: Number(e.target.value) + p.tuitionFee}))}
+                            required 
+                            className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-sm" 
+                            placeholder="0.00" 
+                          />
                         </div>
                         <div>
                           <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Tuition Fee</label>
-                          <input name="tuitionFee" type="number" required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-sm" placeholder="0.00" />
+                          <input 
+                            name="tuitionFee" 
+                            type="number" 
+                            value={feeForm.tuitionFee}
+                            onChange={(e) => setFeeForm(p => ({...p, tuitionFee: Number(e.target.value), totalFee: p.applicationFee + Number(e.target.value)}))}
+                            required 
+                            className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-sm" 
+                            placeholder="0.00" 
+                          />
                         </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-border">
+                        <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Total Fee (Calculated)</label>
+                        <div className="w-full px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-black text-lg flex items-center gap-2">
+                          <IndianRupee className="w-5 h-5" />
+                          {feeForm.totalFee.toLocaleString()}
+                          <input type="hidden" name="totalFee" value={feeForm.totalFee} />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-2 italic">Total fee is automatically calculated as App Fee + Tuition Fee</p>
                       </div>
                     </div>
                     <div className="flex gap-3 pt-4">

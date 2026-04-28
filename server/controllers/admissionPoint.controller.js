@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import path from "path";
@@ -226,11 +227,33 @@ export const getAllAdmissionPoints = async (req, res, next) => {
 
     const admissionPoints = await AdmissionPoint.find(filter).sort({
       createdAt: -1,
-    });
+    }).lean();
+
+    // Enhance with permission summaries
+    const data = await Promise.all(admissionPoints.map(async (point) => {
+      const permissions = await PartnerPermission.find({ 
+        partnerId: point._id,
+        status: "active" 
+      }).populate("universityId", "name shortName");
+      
+      const unis = [...new Set(
+        permissions
+          .filter(p => p.type === "university" && p.universityId)
+          .map(p => p.universityId.shortName || p.universityId.name)
+      )];
+
+      const progCount = permissions.filter(p => p.type === "program").length;
+
+      return {
+        ...point,
+        assignedUnis: unis,
+        programCount: progCount
+      };
+    }));
 
     res.status(200).json({
       success: true,
-      data: admissionPoints,
+      data: data,
     });
   } catch (error) {
     next(error);
@@ -424,6 +447,43 @@ export const getMyPartnerProfile = async (req, res, next) => {
         partner,
         permissions,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generateAdminAccessToken = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const token = crypto.randomBytes(16).toString("hex"); // 32 chars hex
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
+
+    const partner = await AdmissionPoint.findByIdAndUpdate(
+      id,
+      {
+        adminAccessToken: token,
+        adminAccessTokenExpires: expires,
+      },
+      { new: true }
+    );
+
+    if (!partner) {
+      throw createError(404, "Partner not found");
+    }
+
+    await logActivity(
+      "GENERATE_ADMIN_TOKEN",
+      `Generated temporary access token for partner ${partner.centerName}`,
+      req.user.userId,
+      "AdmissionPoint",
+      partner._id
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Access token generated successfully. Valid for 15 minutes.",
+      token,
     });
   } catch (error) {
     next(error);

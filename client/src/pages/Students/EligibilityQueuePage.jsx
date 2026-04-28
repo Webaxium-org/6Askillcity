@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { getPendingEligibility, reviewApplication } from "../../api/student.api";
 import { FollowupTimeline } from "../../components/students/FollowupTimeline";
+import { ReviewModal } from "../../components/students/ReviewModal";
 import {
   CheckCircle,
   XCircle,
@@ -17,10 +18,12 @@ import {
   X,
   ShieldAlert,
   User,
+  Users,
   Mail,
   Phone,
   CalendarDays,
   BookOpen,
+  MapPin,
 } from "lucide-react";
 
 const COURSE_LABELS = {
@@ -116,117 +119,7 @@ function RejectModal({ app, onClose, onConfirm }) {
 }
 
 // ── Application Detail Side Panel ──────────────────────────────
-function DetailPanel({ app, onClose, onApprove, onReject, approvingId }) {
-  const isApproving = approvingId === app._id;
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-40 flex items-center justify-end bg-background/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "100%" }}
-        transition={{ type: "spring", damping: 28, stiffness: 280 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-card border-l border-border w-full max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col"
-      >
-        <div className="px-6 py-5 border-b border-border bg-muted/30 flex items-start justify-between shrink-0">
-          <div>
-            <h3 className="font-bold text-lg">{app.name}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Application Details</p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-6 flex-1">
-          {/* Personal Info */}
-          <section>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-3 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5" /> Personal
-            </h4>
-            <div className="space-y-2.5 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{app.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="w-3.5 h-3.5 shrink-0" />
-                <span>{app.phone}</span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                <span>{app.dob ? new Date(app.dob).toLocaleDateString() : "N/A"}</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Academic Info */}
-          <section>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-3 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" /> Academic
-            </h4>
-            <div className="space-y-2.5 text-sm">
-              <div>
-                <span className="text-xs text-muted-foreground">Qualification</span>
-                <p className="font-medium">{QUALIFICATION_LABELS[app.qualification] || app.qualification}</p>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Target Course</span>
-                <p className="font-medium">{COURSE_LABELS[app.course] || app.course}</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Partner Info */}
-          {app.registeredBy && (
-            <section>
-              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-3 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5" /> Submitted By
-              </h4>
-              <div className="space-y-1 text-sm">
-                <p className="font-medium">{app.registeredBy.centerName}</p>
-                <p className="text-muted-foreground text-xs">{app.registeredBy.licenseeEmail}</p>
-              </div>
-            </section>
-          )}
-
-          {/* Submitted date */}
-          <div className="pt-2">
-            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-3">Timeline & Notes</p>
-            <FollowupTimeline studentId={app._id} canAdd={true} />
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="px-6 pb-6 pt-2 flex gap-3 shrink-0 border-t border-border">
-          <button
-            onClick={() => onReject(app)}
-            className="flex-1 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 text-sm font-medium transition-all flex items-center justify-center gap-2"
-          >
-            <XCircle className="w-4 h-4" /> Reject
-          </button>
-          <button
-            onClick={() => onApprove(app._id)}
-            disabled={isApproving}
-            className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-60"
-          >
-            {isApproving ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <><CheckCircle className="w-4 h-4" /> Approve</>
-            )}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
+// DetailPanel is replaced by ReviewModal
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function EligibilityQueuePage() {
@@ -235,6 +128,7 @@ export default function EligibilityQueuePage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedApp, setSelectedApp] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [approvingId, setApprovingId] = useState(null);
 
@@ -395,8 +289,14 @@ export default function EligibilityQueuePage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-sm text-foreground">
-                        {COURSE_LABELS[app.course] || app.course}
+                      <td className="px-5 py-4">
+                        <div className="text-sm font-medium text-foreground truncate max-w-[150px]">
+                          {app.program?.name || app.course || "N/A"}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                          <Building2 className="w-3 h-3" />
+                          {app.university?.name || "N/A"}
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         {app.registeredBy ? (
@@ -420,15 +320,13 @@ export default function EligibilityQueuePage() {
                             <XCircle className="w-3.5 h-3.5" /> Reject
                           </button>
                           <button
-                            onClick={() => handleApprove(app._id)}
-                            disabled={approvingId === app._id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium transition-all shadow-sm disabled:opacity-50"
+                            onClick={() => {
+                               setSelectedApp(app);
+                               setIsReviewModalOpen(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium transition-all shadow-sm"
                           >
-                            {approvingId === app._id ? (
-                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <><CheckCircle className="w-3.5 h-3.5" /> Approve</>
-                            )}
+                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </button>
                         </div>
                       </td>
@@ -447,18 +345,18 @@ export default function EligibilityQueuePage() {
         </motion.div>
       </div>
 
-      {/* Detail Side Panel */}
-      <AnimatePresence>
-        {selectedApp && !rejectTarget && (
-          <DetailPanel
-            app={selectedApp}
-            onClose={() => setSelectedApp(null)}
-            onApprove={handleApprove}
-            onReject={(app) => setRejectTarget(app)}
-            approvingId={approvingId}
-          />
-        )}
-      </AnimatePresence>
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        app={selectedApp}
+        onApprove={handleApprove}
+        onReject={(app) => {
+          setIsReviewModalOpen(false);
+          setRejectTarget(app);
+        }}
+        approvingId={approvingId}
+      />
 
       {/* Reject Modal */}
       <AnimatePresence>

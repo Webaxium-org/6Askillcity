@@ -20,6 +20,10 @@ const ProgramSchema = new mongoose.Schema(
       type: String,
       required: [true, "Category is required"],
     },
+    type: {
+      type: String,
+      enum: ["CT", "Vocational", "Skilled"],
+    },
     isActive: {
       type: Boolean,
       default: true,

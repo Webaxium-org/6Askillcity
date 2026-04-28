@@ -91,8 +91,22 @@ export const getPrograms = async (req, res, next) => {
 export const createProgram = async (req, res, next) => {
   try {
     console.log("Creating Program with body:", req.body);
-    const program = new Program(req.body);
+    const { name, university, duration, category, type, isActive, applicationFee, tuitionFee, totalFee } = req.body;
+    
+    const program = new Program({ name, university, duration, category, type, isActive });
     await program.save();
+
+    // If fee details are provided, create an initial fee record
+    if (applicationFee !== undefined || tuitionFee !== undefined || totalFee !== undefined) {
+      const newFee = new ProgramFee({
+        program: program._id,
+        applicationFee: applicationFee || 0,
+        tuitionFee: tuitionFee || 0,
+        totalFee: totalFee || (Number(applicationFee || 0) + Number(tuitionFee || 0)),
+        isCurrent: true
+      });
+      await newFee.save();
+    }
 
     await logActivity(
       "CREATE_PROGRAM",

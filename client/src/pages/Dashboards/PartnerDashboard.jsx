@@ -66,17 +66,21 @@ export default function PartnerDashboard() {
   const revenueData = stats?.revenueChartData || [];
 
   // Calculate current month's progress
-  const currentMonthEnrollment = enrollmentData.length > 0 
-    ? enrollmentData[enrollmentData.length - 1].students 
-    : 0;
-  const targetProgress = Math.min((currentMonthEnrollment / PARTNER_MONTHLY_TARGET) * 100, 100);
+  const currentMonthEnrollment =
+    enrollmentData.length > 0
+      ? enrollmentData[enrollmentData.length - 1].students
+      : 0;
+  const targetProgress = Math.min(
+    (currentMonthEnrollment / PARTNER_MONTHLY_TARGET) * 100,
+    100,
+  );
   const isTargetMet = currentMonthEnrollment >= PARTNER_MONTHLY_TARGET;
 
   return (
     <DashboardLayout title="Partner Dashboard">
       <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h2 className="text-3xl font-black tracking-tight text-foreground">
               Partner Overview
@@ -85,18 +89,32 @@ export default function PartnerDashboard() {
               Real-time student recruitment and application tracking
             </p>
           </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/dashboard/student/add")}
+              className="group relative flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/20 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <UserPlus className="w-4 h-4 relative z-10" />
+              <span className="relative z-10">New Application</span>
+            </button>
+            <button
+              onClick={() =>
+                navigate("/dashboard/tickets", {
+                  state: { openNewTicket: true },
+                })
+              }
+              className="group relative flex items-center gap-2 px-6 py-3 rounded-2xl bg-card border border-border text-foreground font-bold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-muted/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <MessageSquare className="w-4 h-4 text-rose-500 relative z-10" />
+              <span className="relative z-10">New Ticket</span>
+            </button>
+          </div>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Enrolled"
-            value={loading ? "..." : summary.totalStudents || 0}
-            icon={Users}
-            subtext="Lifetime student count"
-            color="purple"
-            onClick={() => navigate("/dashboard/student-management")}
-          />
           <StatCard
             title="Total Applications"
             value={loading ? "..." : summary.totalApplications || 0}
@@ -106,8 +124,20 @@ export default function PartnerDashboard() {
             onClick={() => navigate("/dashboard/applications")}
           />
           <StatCard
+            title="Total Enrolled"
+            value={loading ? "..." : summary.totalStudents || 0}
+            icon={Users}
+            subtext="Lifetime student count"
+            color="purple"
+            onClick={() => navigate("/dashboard/student-management")}
+          />
+          <StatCard
             title="Total Earnings"
-            value={loading ? "..." : `₹${summary.totalRevenue?.toLocaleString() || 0}`}
+            value={
+              loading
+                ? "..."
+                : `₹${summary.totalRevenue?.toLocaleString() || 0}`
+            }
             icon={CreditCard}
             subtext="Commission & collections"
             color="emerald"
@@ -264,15 +294,18 @@ export default function PartnerDashboard() {
             <div className="mt-6 pt-6 border-t border-border">
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
                 <span>Monthly Target ({PARTNER_MONTHLY_TARGET})</span>
-                <span className={isTargetMet ? "text-emerald-500" : "text-primary"}>
-                  {currentMonthEnrollment} / {PARTNER_MONTHLY_TARGET} ({Math.round(targetProgress)}%)
+                <span
+                  className={isTargetMet ? "text-emerald-500" : "text-primary"}
+                >
+                  {currentMonthEnrollment} / {PARTNER_MONTHLY_TARGET} (
+                  {Math.round(targetProgress)}%)
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className={cn(
                     "h-full transition-all duration-1000",
-                    isTargetMet ? "bg-emerald-500" : "bg-primary"
+                    isTargetMet ? "bg-emerald-500" : "bg-primary",
                   )}
                   style={{ width: `${targetProgress}%` }}
                 />
@@ -295,7 +328,9 @@ export default function PartnerDashboard() {
                   <Briefcase className="w-5 h-5 text-blue-500" />
                   <span>Recent Applications</span>
                 </h3>
-                <p className="text-sm text-muted-foreground">Last 5 submissions</p>
+                <p className="text-sm text-muted-foreground">
+                  Last 5 submissions
+                </p>
               </div>
               <button
                 onClick={() => navigate("/dashboard/applications")}
@@ -315,7 +350,10 @@ export default function PartnerDashboard() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {recentApplications.map((app) => (
-                    <tr key={app._id} className="hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={app._id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-xs">
@@ -323,21 +361,31 @@ export default function PartnerDashboard() {
                           </div>
                           <div>
                             <div className="font-bold text-sm">{app.name}</div>
-                            <div className="text-[10px] text-muted-foreground">{new Date(app.createdAt).toLocaleDateString()}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {new Date(app.createdAt).toLocaleDateString()}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-xs font-bold">{app.program?.name || "N/A"}</div>
-                        <div className="text-[10px] text-muted-foreground">{app.university?.name || "N/A"}</div>
+                        <div className="text-xs font-bold">
+                          {app.program?.name || "N/A"}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {app.university?.name || "N/A"}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={cn(
-                          "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                          app.applicationStatus === "Eligible" ? "bg-emerald-500/10 text-emerald-500" :
-                          app.applicationStatus === "Rejected" ? "bg-rose-500/10 text-rose-500" :
-                          "bg-amber-500/10 text-amber-500"
-                        )}>
+                        <span
+                          className={cn(
+                            "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                            app.applicationStatus === "Eligible"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : app.applicationStatus === "Rejected"
+                                ? "bg-rose-500/10 text-rose-500"
+                                : "bg-amber-500/10 text-amber-500",
+                          )}
+                        >
                           {app.applicationStatus}
                         </span>
                       </td>
@@ -345,7 +393,10 @@ export default function PartnerDashboard() {
                   ))}
                   {recentApplications.length === 0 && (
                     <tr>
-                      <td colSpan="3" className="px-6 py-10 text-center text-muted-foreground text-sm font-medium">
+                      <td
+                        colSpan="3"
+                        className="px-6 py-10 text-center text-muted-foreground text-sm font-medium"
+                      >
                         No recent applications found
                       </td>
                     </tr>
@@ -367,7 +418,9 @@ export default function PartnerDashboard() {
                   <Users className="w-5 h-5 text-purple-500" />
                   <span>Enrolled Students</span>
                 </h3>
-                <p className="text-sm text-muted-foreground">Recently approved</p>
+                <p className="text-sm text-muted-foreground">
+                  Recently approved
+                </p>
               </div>
               <button
                 onClick={() => navigate("/dashboard/student-management")}
@@ -387,7 +440,10 @@ export default function PartnerDashboard() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {recentStudents.map((stu) => (
-                    <tr key={stu._id} className="hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={stu._id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center font-bold text-xs">
@@ -395,36 +451,47 @@ export default function PartnerDashboard() {
                           </div>
                           <div>
                             <div className="font-bold text-sm">{stu.name}</div>
-                            <div className="text-[10px] text-muted-foreground">{stu.email}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {stu.email}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={cn(
-                          "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                          stu.paymentStatus === "Paid" ? "bg-emerald-500/10 text-emerald-500" :
-                          stu.paymentStatus === "Partially Paid" ? "bg-amber-500/10 text-amber-500" :
-                          "bg-rose-500/10 text-rose-500"
-                        )}>
+                        <span
+                          className={cn(
+                            "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                            stu.paymentStatus === "Paid"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : stu.paymentStatus === "Partially Paid"
+                                ? "bg-amber-500/10 text-amber-500"
+                                : "bg-rose-500/10 text-rose-500",
+                          )}
+                        >
                           {stu.paymentStatus}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col items-end">
-                           <span className="text-[10px] font-bold mb-1">{stu.progress || 0}%</span>
-                           <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-purple-500 rounded-full" 
-                                style={{ width: `${stu.progress || 0}%` }}
-                              />
-                           </div>
+                          <span className="text-[10px] font-bold mb-1">
+                            {stu.progress || 0}%
+                          </span>
+                          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-purple-500 rounded-full"
+                              style={{ width: `${stu.progress || 0}%` }}
+                            />
+                          </div>
                         </div>
                       </td>
                     </tr>
                   ))}
                   {recentStudents.length === 0 && (
                     <tr>
-                      <td colSpan="3" className="px-6 py-10 text-center text-muted-foreground text-sm font-medium">
+                      <td
+                        colSpan="3"
+                        className="px-6 py-10 text-center text-muted-foreground text-sm font-medium"
+                      >
                         No enrolled students found
                       </td>
                     </tr>

@@ -33,6 +33,10 @@ export const recordPayment = async (req, res, next) => {
     const { amount, method, remarks } = req.body;
     const partnerId = req.user.userId;
 
+    if (req.user.userType === "admin") {
+      throw createError(403, "Admins are not allowed to record payments.");
+    }
+
     if (!amount || amount <= 0) throw createError(400, "Invalid payment amount.");
 
     const student = await Student.findById(studentId).populate("programFee");
@@ -107,6 +111,10 @@ export const setSchedule = async (req, res, next) => {
     const { schedule } = req.body; // Array of { dueDate, amount, description }
     const partnerId = req.user.userId;
 
+    if (req.user.userType === "admin") {
+      throw createError(403, "Admins are not allowed to set payment schedules.");
+    }
+
     if (!Array.isArray(schedule)) throw createError(400, "Invalid schedule data.");
 
     // Remove old pending schedules for this student? Or just add new ones?
@@ -132,6 +140,11 @@ export const setSchedule = async (req, res, next) => {
 export const deleteSchedule = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    if (req.user.userType === "admin") {
+      throw createError(403, "Admins are not allowed to delete schedules.");
+    }
+
     const schedule = await PaymentSchedule.findById(id);
     if (!schedule) throw createError(404, "Schedule not found.");
     

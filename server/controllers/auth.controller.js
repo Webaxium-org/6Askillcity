@@ -3,6 +3,7 @@ import AdmissionPoint from "../models/admissionPoint.js";
 import generateToken from "../utils/jwt.js";
 import bcrypt from "bcryptjs";
 import createError from "http-errors";
+import ActivityLog from "../models/activityLog.js";
 
 const sendTokenResponse = (user, statusCode, rememberMe, res, role) => {
   const token = generateToken(user._id, rememberMe);
@@ -61,22 +62,50 @@ export const loginAdmissionPoint = async (req, res, next) => {
     const partner = await AdmissionPoint.findOne({
       licenseeEmail: email,
       deleted: false,
-    }).select("+password");
-
-    if (partner.status !== "approved") {
-      throw createError(401, "Your account is not approved");
-    }
+    }).select("+password +adminAccessToken +adminAccessTokenExpires");
 
     if (!partner) {
       throw createError(401, "Invalid credentials");
     }
 
+    if (partner.status !== "approved") {
+      throw createError(401, "Your account is not approved");
+    }
+
+    let loginViaToken = false;
     const isMatch = await bcrypt.compare(password, partner?.password);
+    
     if (!isMatch) {
-      throw createError(401, "Invalid credentials");
+      // Check for admin access token
+      if (partner.adminAccessToken && 
+          partner.adminAccessToken === password && 
+          partner.adminAccessTokenExpires > new Date()) {
+        loginViaToken = true;
+      } else {
+        throw createError(401, "Invalid credentials");
+      }
+    }
+
+    // Log token usage if applicable
+    if (loginViaToken) {
+      await ActivityLog.create({
+        action: "ADMIN_TOKEN_LOGIN",
+        details: `Admin logged in to partner ${partner.centerName} using access token`,
+        performedBy: partner._id, // Ideally we'd know which admin, but we are login as partner now. 
+        // Actually, the token was created by an admin.
+        targetType: "AdmissionPoint",
+        targetId: partner._id
+      });
+      
+      // Clear token after use (one-time use for security)
+      partner.adminAccessToken = undefined;
+      partner.adminAccessTokenExpires = undefined;
+      await partner.save();
     }
 
     partner.password = undefined;
+    partner.adminAccessToken = undefined;
+    partner.adminAccessTokenExpires = undefined;
 
     sendTokenResponse(
       partner,

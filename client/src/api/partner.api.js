@@ -39,3 +39,18 @@ export const removePartnerPermission = async (id) => {
   const response = await API.delete(`/admission-points/permissions/${id}`);
   return response.data;
 };
+
+export const getPermittedCourses = async () => {
+  const response = await API.get("/admission-points/permitted-courses");
+  return response.data;
+};
+
+export const reviewPartner = async (id, status) => {
+  const response = await API.patch(`/admission-points/${id}/status`, { status });
+  return response.data;
+};
+
+export const generateAdminToken = async (id) => {
+  const response = await API.post(`/admission-points/${id}/generate-token`);
+  return response.data;
+};

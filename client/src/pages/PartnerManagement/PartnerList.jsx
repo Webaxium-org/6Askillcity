@@ -13,7 +13,9 @@ import {
   UserMinus,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  Building2,
+  GraduationCap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPartners, togglePartnerActive } from "../../api/partner.api";
@@ -202,6 +204,35 @@ export default function PartnerList() {
                         <MapPin className="w-4 h-4" />
                       </div>
                       <span className="truncate">{partner.location.city}, {partner.location.state}</span>
+                    </div>
+
+                    {/* Universities & Courses Summary */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                       <div className="bg-primary/5 border border-primary/10 p-2.5 rounded-xl">
+                          <p className="text-[9px] font-black uppercase tracking-[0.1em] text-primary/70 mb-1 flex items-center gap-1">
+                             <Building2 className="w-2.5 h-2.5" /> Universities
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                             {partner.assignedUnis?.length > 0 ? (
+                               partner.assignedUnis.map((uni, idx) => (
+                                 <span key={idx} className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase">
+                                   {uni}
+                                 </span>
+                               ))
+                             ) : (
+                               <span className="text-[10px] text-muted-foreground italic">None assigned</span>
+                             )}
+                          </div>
+                       </div>
+                       <div className="bg-emerald-500/5 border border-emerald-500/10 p-2.5 rounded-xl">
+                          <p className="text-[9px] font-black uppercase tracking-[0.1em] text-emerald-600/70 mb-1 flex items-center gap-1">
+                             <GraduationCap className="w-2.5 h-2.5" /> Courses
+                          </p>
+                          <div className="flex items-baseline gap-1">
+                             <span className="text-lg font-black text-emerald-600 leading-none">{partner.programCount || 0}</span>
+                             <span className="text-[10px] font-bold text-emerald-600/60 uppercase">Programs</span>
+                          </div>
+                       </div>
                     </div>
                   </div>
 

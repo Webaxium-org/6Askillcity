@@ -50,6 +50,7 @@ import { handleFormError } from "../../utils/handleFormError";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { showAlert } from "../../redux/alertSlice";
+import { ReviewModal } from "../../components/students/ReviewModal";
 
 const COURSE_LABELS = {
   uiux: "Advanced UI/UX Design",
@@ -78,6 +79,8 @@ export default function AdminDashboard() {
   const [rejectRemark, setRejectRemark] = useState("");
   const [approvingId, setApprovingId] = useState(null);
   const [rejectingId, setRejectingId] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
 
   useEffect(() => {
     fetchAllData();
@@ -223,6 +226,14 @@ export default function AdminDashboard() {
         {/* Real Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
+            title="New Applications"
+            value={loadingApps ? "..." : pendingApplications.length}
+            icon={FileText}
+            subtext="Eligibility review queue"
+            color="blue"
+            onClick={() => navigate("/dashboard/eligibility-queue")}
+          />
+          <StatCard
             title="Total Students"
             value={loadingStats ? "..." : summary.totalStudents || 0}
             icon={Users}
@@ -237,18 +248,6 @@ export default function AdminDashboard() {
             subtext="Verified Admission Points"
             color="emerald"
             onClick={() => navigate("/dashboard/partner-management")}
-          />
-          <StatCard
-            title="Total Revenue"
-            value={
-              loadingStats
-                ? "..."
-                : `₹${summary.totalRevenue?.toLocaleString() || 0}`
-            }
-            icon={CreditCard}
-            subtext="Global fee collections"
-            color="blue"
-            onClick={() => navigate("/dashboard/payment-management")}
           />
           <StatCard
             title="Active Tickets"
@@ -402,12 +401,18 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
                 <span>Enrollment Goal ({ENROLLMENT_GOAL})</span>
                 <span>
-                  {stats ? (
-                    summary.totalStudents === 0 ? "0%" :
-                    (summary.totalStudents / ENROLLMENT_GOAL * 100 < 1) ? 
-                    (summary.totalStudents / ENROLLMENT_GOAL * 100).toFixed(1) + "%" :
-                    Math.round((summary.totalStudents / ENROLLMENT_GOAL) * 100) + "%"
-                  ) : "0%"}
+                  {stats
+                    ? summary.totalStudents === 0
+                      ? "0%"
+                      : (summary.totalStudents / ENROLLMENT_GOAL) * 100 < 1
+                        ? (
+                            (summary.totalStudents / ENROLLMENT_GOAL) *
+                            100
+                          ).toFixed(1) + "%"
+                        : Math.round(
+                            (summary.totalStudents / ENROLLMENT_GOAL) * 100,
+                          ) + "%"
+                    : "0%"}
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -507,36 +512,13 @@ export default function AdminDashboard() {
                           ).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center justify-end space-x-2">
+                          <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setViewDetailsPoint(point);
-                              }}
-                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200 shadow-sm"
+                              onClick={() => setViewDetailsPoint(point)}
+                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
                               title="View Details"
                             >
                               <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setApproveWarningId(point._id);
-                              }}
-                              className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 hover:border-emerald-500 transition-all duration-200 shadow-sm"
-                              title="Approve"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRejectWarningId(point._id);
-                              }}
-                              className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-red-500 transition-all duration-200 shadow-sm"
-                              title="Reject"
-                            >
-                              <XCircle className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
@@ -580,7 +562,7 @@ export default function AdminDashboard() {
                       Applicant
                     </th>
                     <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Course
+                      Course / University
                     </th>
                     <th className="px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
                       Action
@@ -625,31 +607,26 @@ export default function AdminDashboard() {
                             {app.email}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">
-                          {COURSE_LABELS[app.course] || app.course}
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-foreground truncate max-w-[150px]">
+                            {app.program?.name || app.course || "N/A"}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                            <Building2 className="w-3 h-3" />
+                            {app.university?.name || "N/A"}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() =>
-                                navigate(`/dashboard/eligibility-queue`)
-                              }
-                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
-                              title="Open Full Queue"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEligibilityApprove(app._id)}
-                              disabled={approvingId === app._id}
+                              onClick={() => {
+                                setSelectedApp(app);
+                                setIsReviewModalOpen(true);
+                              }}
                               className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 hover:border-emerald-500 transition-all duration-200"
-                              title="Approve"
+                              title="Review & Approve"
                             >
-                              {approvingId === app._id ? (
-                                <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
+                               <CheckCircle className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => {
@@ -1013,10 +990,46 @@ export default function AdminDashboard() {
                     </div>
                   )}
               </div>
+
+              {/* Action Footer */}
+              <div className="p-6 border-t border-border bg-muted/30 flex gap-4 shrink-0">
+                <button
+                  onClick={() => {
+                    setRejectWarningId(viewDetailsPoint._id);
+                    setViewDetailsPoint(null);
+                  }}
+                  className="flex-1 py-3.5 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-5 h-5" /> Reject Application
+                </button>
+                <button
+                  onClick={() => {
+                    setApproveWarningId(viewDetailsPoint._id);
+                    setViewDetailsPoint(null);
+                  }}
+                  className="flex-[2] py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20"
+                >
+                  <CheckCircle className="w-5 h-5" /> Approve Partnership
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        app={selectedApp}
+        onApprove={handleEligibilityApprove}
+        onReject={(app) => {
+          setIsReviewModalOpen(false);
+          setRejectTarget(app._id);
+          setRejectRemark("");
+        }}
+        approvingId={approvingId}
+      />
     </DashboardLayout>
   );
 }

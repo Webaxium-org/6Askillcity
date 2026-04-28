@@ -185,7 +185,6 @@ const PartnerLoginForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    partnerId: "",
     email: "",
     password: "",
     rememberMe: false,
@@ -238,15 +237,6 @@ const PartnerLoginForm = () => {
 
       {error && <div className="text-red-500 text-sm text-center">{error}</div>}
 
-      <InputField
-        icon={Briefcase}
-        type="text"
-        placeholder="Partner ID"
-        value={formData.partnerId}
-        onChange={(e) =>
-          setFormData({ ...formData, partnerId: e.target.value })
-        }
-      />
       <InputField
         icon={Mail}
         type="email"

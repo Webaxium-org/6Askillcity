@@ -117,11 +117,15 @@ function Field({
             className={`w-full ${Icon ? "pl-10" : "pl-4"} pr-4 py-2.5 rounded-xl border border-input bg-background focus:border-primary outline-none transition-all text-sm appearance-none font-medium`}
           >
             <option value="">Select {label}</option>
-            {options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
+            {options.map((opt, idx) => {
+              const optLabel = typeof opt === "object" ? opt.label : opt;
+              const optValue = typeof opt === "object" ? opt.value : opt;
+              return (
+                <option key={idx} value={optValue}>
+                  {optLabel}
+                </option>
+              );
+            })}
           </select>
         ) : (
           <input
@@ -171,6 +175,7 @@ export default function ApplicationDetailPage() {
           gender: res.data.gender || "",
           religion: res.data.religion || "",
           caste: res.data.caste || "",
+          country: res.data.country || "",
           address: res.data.address || "",
           email: res.data.email || "",
           phone: res.data.phone || "",
@@ -182,10 +187,12 @@ export default function ApplicationDetailPage() {
           motherPhone: res.data.motherPhone || "",
           university: res.data.university?._id || res.data.university || "",
           program: res.data.program?._id || res.data.program || "",
-          branch: res.data.branch || "",
           completionYear: res.data.completionYear || "",
+          highestQualification: res.data.highestQualification || "Plus Two",
           tenthCompletionYear: res.data.tenth?.completionYear || "",
           tenthBoard: res.data.tenth?.board || "",
+          tenthTotalMarks: res.data.tenth?.totalMarks || "",
+          tenthObtainedMarks: res.data.tenth?.obtainedMarks || "",
           tenthPercentage: res.data.tenth?.percentage || "",
           plusTwoCompletionYear: res.data.plusTwo?.completionYear || "",
           plusTwoBoard: res.data.plusTwo?.board || "",
@@ -284,6 +291,15 @@ export default function ApplicationDetailPage() {
       setFees([]);
     }
   }, [formData.program, dispatch]);
+
+  useEffect(() => {
+    const total = parseFloat(formData.tenthTotalMarks);
+    const obtained = parseFloat(formData.tenthObtainedMarks);
+    if (total > 0 && obtained >= 0) {
+      const percentage = ((obtained / total) * 100).toFixed(2);
+      setFormData((prev) => ({ ...prev, tenthPercentage: percentage }));
+    }
+  }, [formData.tenthTotalMarks, formData.tenthObtainedMarks]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -488,7 +504,8 @@ export default function ApplicationDetailPage() {
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="xl:col-span-3 space-y-5"
+            // className="xl:col-span-3 space-y-5"
+            className="xl:col-span-4 space-y-5"
           >
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               {/* Card accent bar */}
@@ -554,6 +571,14 @@ export default function ApplicationDetailPage() {
                         name="caste"
                         value={formData.caste}
                         onChange={handleChange}
+                        readOnly={!editing}
+                      />
+                      <Field
+                        label="Country"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        icon={MapPin}
                         readOnly={!editing}
                       />
                       <Field
@@ -654,6 +679,18 @@ export default function ApplicationDetailPage() {
                       <GraduationCap className="w-3.5 h-3.5" /> Academic History
                     </h3>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field
+                        label="Highest Qualification"
+                        name="highestQualification"
+                        value={formData.highestQualification}
+                        onChange={handleChange}
+                        options={["Plus Two", "Bachelors", "Masters"]}
+                        icon={GraduationCap}
+                        readOnly={!editing}
+                      />
+                    </div>
+
                     {/* 10th Standard */}
                     <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 space-y-4">
                       <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
@@ -672,6 +709,22 @@ export default function ApplicationDetailPage() {
                           label="Board"
                           name="tenthBoard"
                           value={formData.tenthBoard}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Total Marks"
+                          name="tenthTotalMarks"
+                          type="number"
+                          value={formData.tenthTotalMarks}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Obtained Marks"
+                          name="tenthObtainedMarks"
+                          type="number"
+                          value={formData.tenthObtainedMarks}
                           onChange={handleChange}
                           readOnly={!editing}
                         />
@@ -881,13 +934,6 @@ export default function ApplicationDetailPage() {
                       </div>
 
                       <Field
-                        label="Branch"
-                        name="branch"
-                        value={formData.branch}
-                        onChange={handleChange}
-                        readOnly={!editing}
-                      />
-                      <Field
                         label="Completion Year"
                         name="completionYear"
                         value={formData.completionYear}
@@ -978,16 +1024,23 @@ export default function ApplicationDetailPage() {
             {/* Documents section */}
             <div className="bg-card border border-border rounded-xl p-6 space-y-6">
               <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b border-border pb-3">
-                <FileText className="w-4 h-4 text-primary" /> Application Documents
+                <FileText className="w-4 h-4 text-primary" /> Application
+                Documents
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
                   { label: "Identity Proof", path: app.idProof },
                   { label: "10th Certificate", path: app.tenthCertificate },
-                  { label: "Plus Two Certificate", path: app.plusTwoCertificate },
+                  {
+                    label: "Plus Two Certificate",
+                    path: app.plusTwoCertificate,
+                  },
                   { label: "Affidavit", path: app.affidavit },
-                  { label: "Migration Certificate", path: app.migrationCertificate },
+                  {
+                    label: "Migration Certificate",
+                    path: app.migrationCertificate,
+                  },
                   { label: "Project Submission", path: app.projectSubmission },
                 ].map(
                   (doc, i) =>
@@ -1074,7 +1127,7 @@ export default function ApplicationDetailPage() {
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.15 }}
-            className="xl:col-span-2 space-y-4"
+            className="xl:col-span-2 space-y-4 hidden"
           >
             <div className="bg-card border border-border rounded-xl p-5">
               <h2 className="font-bold text-base flex items-center gap-2 mb-4">

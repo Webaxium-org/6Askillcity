@@ -40,7 +40,10 @@ export const getStudentById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const student = await Student.findOne({ _id: id, deleted: { $ne: true } })
-      .populate("registeredBy", "centerName licenseeEmail licenseeContactNumber")
+      .populate(
+        "registeredBy",
+        "centerName licenseeEmail licenseeContactNumber",
+      )
       .populate("university", "name")
       .populate("program", "name category duration")
       .populate("programFee");
@@ -48,7 +51,10 @@ export const getStudentById = async (req, res, next) => {
     if (!student) throw createError(404, "Application not found.");
 
     if (req.user.userType === "partner") {
-      if (String(student.registeredBy?._id || student.registeredBy) !== String(req.user.userId)) {
+      if (
+        String(student.registeredBy?._id || student.registeredBy) !==
+        String(req.user.userId)
+      ) {
         throw createError(403, "Access denied.");
       }
     }
@@ -68,17 +74,25 @@ export const enrollStudent = async (req, res, next) => {
 
     const duplicateEmail = await Student.findOne({ email: data.email });
     if (duplicateEmail) {
-      throw createError(400, "A student is already actively enrolled utilizing this Email address.");
+      throw createError(
+        400,
+        "A student is already actively enrolled utilizing this Email address.",
+      );
     }
 
     const duplicatePhone = await Student.findOne({ phone: data.phone });
     if (duplicatePhone) {
-      throw createError(400, "A student is already actively enrolled utilizing this Phone number.");
+      throw createError(
+        400,
+        "A student is already actively enrolled utilizing this Phone number.",
+      );
     }
 
     const files = req.files || {};
-    const extractPath = (field) => (files[field] && files[field].length > 0 ? files[field][0].path : null);
-    const extractPaths = (field) => (files[field] ? files[field].map(f => f.path) : []);
+    const extractPath = (field) =>
+      files[field] && files[field].length > 0 ? files[field][0].path : null;
+    const extractPaths = (field) =>
+      files[field] ? files[field].map((f) => f.path) : [];
 
     const student = new Student({
       name: data.name,
@@ -91,7 +105,7 @@ export const enrollStudent = async (req, res, next) => {
       phone: data.phone,
       alternativePhone: data.alternativePhone,
       otherPhone: data.otherPhone,
-      
+
       fatherName: data.fatherName,
       motherName: data.motherName,
       fatherPhone: data.fatherPhone,
@@ -101,7 +115,7 @@ export const enrollStudent = async (req, res, next) => {
       program: data.program,
       branch: data.branch,
       completionYear: data.completionYear,
-      
+
       tenth: {
         certificate: extractPath("tenthCertificate"),
         completionYear: data.tenthCompletionYear,
@@ -140,14 +154,21 @@ export const enrollStudent = async (req, res, next) => {
       employmentStatus: data.employmentStatus || "Unemployed",
 
       idProof: extractPath("idProof"),
-      applicationStatus: "Draft",
+      applicationStatus: "Pending Eligibility",
+      highestQualification: data.highestQualification,
       registeredBy: req.user?.userId,
     });
 
     if (data.program) {
-      const currentFee = await ProgramFee.findOne({ program: data.program, isCurrent: true });
+      const currentFee = await ProgramFee.findOne({
+        program: data.program,
+        isCurrent: true,
+      });
       if (!currentFee) {
-        throw createError(400, "Program fee is empty, please contact the admin");
+        throw createError(
+          400,
+          "Program fee is empty, please contact the admin",
+        );
       }
       student.programFee = currentFee._id;
       student.programFeeRefId = currentFee.refId;
@@ -180,10 +201,10 @@ export const getMyStudents = async (req, res, next) => {
       registeredBy: partnerId,
       deleted: { $ne: true },
     })
-    .populate("university", "name")
-    .populate("program", "name")
-    .populate("programFee")
-    .sort({ createdAt: -1 });
+      .populate("university", "name")
+      .populate("program", "name")
+      .populate("programFee")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -211,15 +232,35 @@ export const updateStudentDetails = async (req, res, next) => {
     if (!student) throw createError(404, "Application not found.");
 
     if (!["Draft", "Rejected"].includes(student.applicationStatus)) {
-      throw createError(400, "You can only edit applications that are in Draft or Rejected status.");
+      throw createError(
+        400,
+        "You can only edit applications that are in Draft or Rejected status.",
+      );
     }
 
     const allowedFields = [
-      "name", "dob", "gender", "religion", "caste", "address",
-      "email", "phone", "alternativePhone", "otherPhone",
-      "fatherName", "motherName", "fatherPhone", "motherPhone",
-      "university", "program", "branch", "completionYear",
-      "videoKycStatus", "employmentStatus"
+      "name",
+      "dob",
+      "gender",
+      "religion",
+      "caste",
+      "country",
+      "address",
+      "email",
+      "phone",
+      "alternativePhone",
+      "otherPhone",
+      "fatherName",
+      "motherName",
+      "fatherPhone",
+      "motherPhone",
+      "university",
+      "program",
+      "branch",
+      "completionYear",
+      "videoKycStatus",
+      "employmentStatus",
+      "highestQualification",
     ];
 
     allowedFields.forEach((field) => {
@@ -229,32 +270,52 @@ export const updateStudentDetails = async (req, res, next) => {
     });
 
     // Academic nested fields
-    if (req.body.tenthCompletionYear) student.tenth.completionYear = req.body.tenthCompletionYear;
+    if (req.body.tenthCompletionYear)
+      student.tenth.completionYear = req.body.tenthCompletionYear;
     if (req.body.tenthBoard) student.tenth.board = req.body.tenthBoard;
-    if (req.body.tenthPercentage) student.tenth.percentage = req.body.tenthPercentage;
-    if (req.body.tenthTotalMarks) student.tenth.totalMarks = req.body.tenthTotalMarks;
-    if (req.body.tenthObtainedMarks) student.tenth.obtainedMarks = req.body.tenthObtainedMarks;
+    if (req.body.tenthPercentage)
+      student.tenth.percentage = req.body.tenthPercentage;
+    if (req.body.tenthTotalMarks)
+      student.tenth.totalMarks = req.body.tenthTotalMarks;
+    if (req.body.tenthObtainedMarks)
+      student.tenth.obtainedMarks = req.body.tenthObtainedMarks;
 
-    if (req.body.plusTwoCompletionYear) student.plusTwo.completionYear = req.body.plusTwoCompletionYear;
+    if (req.body.plusTwoCompletionYear)
+      student.plusTwo.completionYear = req.body.plusTwoCompletionYear;
     if (req.body.plusTwoBoard) student.plusTwo.board = req.body.plusTwoBoard;
-    if (req.body.plusTwoPercentage) student.plusTwo.percentage = req.body.plusTwoPercentage;
+    if (req.body.plusTwoPercentage)
+      student.plusTwo.percentage = req.body.plusTwoPercentage;
 
-    if (req.body.bachelorsUniversity) student.bachelors.university = req.body.bachelorsUniversity;
-    if (req.body.bachelorsCourse) student.bachelors.course = req.body.bachelorsCourse;
-    if (req.body.bachelorsBranch) student.bachelors.branch = req.body.bachelorsBranch;
-    if (req.body.bachelorsPapersPassed) student.bachelors.papersPassed = req.body.bachelorsPapersPassed;
-    if (req.body.bachelorsPapersEqualised) student.bachelors.papersEqualised = req.body.bachelorsPapersEqualised;
+    if (req.body.bachelorsUniversity)
+      student.bachelors.university = req.body.bachelorsUniversity;
+    if (req.body.bachelorsCourse)
+      student.bachelors.course = req.body.bachelorsCourse;
+    if (req.body.bachelorsBranch)
+      student.bachelors.branch = req.body.bachelorsBranch;
+    if (req.body.bachelorsPapersPassed)
+      student.bachelors.papersPassed = req.body.bachelorsPapersPassed;
+    if (req.body.bachelorsPapersEqualised)
+      student.bachelors.papersEqualised = req.body.bachelorsPapersEqualised;
 
-    if (req.body.mastersUniversity) student.masters.university = req.body.mastersUniversity;
+    if (req.body.mastersUniversity)
+      student.masters.university = req.body.mastersUniversity;
     if (req.body.mastersCourse) student.masters.course = req.body.mastersCourse;
     if (req.body.mastersBranch) student.masters.branch = req.body.mastersBranch;
-    if (req.body.mastersPapersPassed) student.masters.papersPassed = req.body.mastersPapersPassed;
-    if (req.body.mastersPapersEqualised) student.masters.papersEqualised = req.body.mastersPapersEqualised;
+    if (req.body.mastersPapersPassed)
+      student.masters.papersPassed = req.body.mastersPapersPassed;
+    if (req.body.mastersPapersEqualised)
+      student.masters.papersEqualised = req.body.mastersPapersEqualised;
 
     if (req.body.program) {
-      const currentFee = await ProgramFee.findOne({ program: req.body.program, isCurrent: true });
+      const currentFee = await ProgramFee.findOne({
+        program: req.body.program,
+        isCurrent: true,
+      });
       if (!currentFee) {
-        throw createError(400, "Program fee is empty, please contact the admin");
+        throw createError(
+          400,
+          "Program fee is empty, please contact the admin",
+        );
       }
       student.programFee = currentFee._id;
       student.programFeeRefId = currentFee.refId;
@@ -263,10 +324,12 @@ export const updateStudentDetails = async (req, res, next) => {
     // Handle file re-uploads
     const files = req.files || {};
     const updatePath = (field, target) => {
-      if (files[field] && files[field].length > 0) student[target] = files[field][0].path;
+      if (files[field] && files[field].length > 0)
+        student[target] = files[field][0].path;
     };
     const updateNestedPath = (field, obj, subField) => {
-      if (files[field] && files[field].length > 0) student[obj][subField] = files[field][0].path;
+      if (files[field] && files[field].length > 0)
+        student[obj][subField] = files[field][0].path;
     };
 
     updatePath("idProof", "idProof");
@@ -277,10 +340,14 @@ export const updateStudentDetails = async (req, res, next) => {
     updatePath("projectSubmission", "projectSubmission");
 
     if (files.bachelorsCertificates) {
-      student.bachelors.certificates = files.bachelorsCertificates.map(f => f.path);
+      student.bachelors.certificates = files.bachelorsCertificates.map(
+        (f) => f.path,
+      );
     }
     if (files.mastersCertificates) {
-      student.masters.certificates = files.mastersCertificates.map(f => f.path);
+      student.masters.certificates = files.mastersCertificates.map(
+        (f) => f.path,
+      );
     }
 
     await student.save();
@@ -317,11 +384,17 @@ export const submitForEligibility = async (req, res, next) => {
     if (!student) throw createError(404, "Application not found.");
 
     if (!["Draft", "Rejected"].includes(student.applicationStatus)) {
-      throw createError(400, "Only Draft or Rejected applications can be submitted for eligibility.");
+      throw createError(
+        400,
+        "Only Draft or Rejected applications can be submitted for eligibility.",
+      );
     }
 
     if (!student.university || !student.program) {
-      throw createError(400, "Please assign a University and Program before submitting for eligibility review.");
+      throw createError(
+        400,
+        "Please assign a University and Program before submitting for eligibility review.",
+      );
     }
 
     student.applicationStatus = "Pending Eligibility";
@@ -354,6 +427,8 @@ export const getPendingEligibility = async (req, res, next) => {
       deleted: { $ne: true },
     })
       .populate("registeredBy", "centerName licenseeEmail")
+      .populate("university", "name")
+      .populate("program", "name")
       .sort({ updatedAt: 1 }); // Oldest first (FIFO review queue)
 
     res.status(200).json({
@@ -381,7 +456,10 @@ export const updateApplicationStatus = async (req, res, next) => {
     if (!student) throw createError(404, "Application not found.");
 
     if (student.applicationStatus !== "Pending Eligibility") {
-      throw createError(400, "Only applications with 'Pending Eligibility' status can be reviewed.");
+      throw createError(
+        400,
+        "Only applications with 'Pending Eligibility' status can be reviewed.",
+      );
     }
 
     if (action === "approve") {
@@ -389,7 +467,10 @@ export const updateApplicationStatus = async (req, res, next) => {
       student.admin_remarks = "";
     } else {
       if (!admin_remarks || !admin_remarks.trim()) {
-        throw createError(400, "A remark is required when rejecting an application.");
+        throw createError(
+          400,
+          "A remark is required when rejecting an application.",
+        );
       }
       student.applicationStatus = "Rejected";
       student.admin_remarks = admin_remarks.trim();
@@ -405,9 +486,10 @@ export const updateApplicationStatus = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: action === "approve"
-        ? "Application approved. Student is now Eligible."
-        : "Application rejected with remarks.",
+      message:
+        action === "approve"
+          ? "Application approved. Student is now Eligible."
+          : "Application rejected with remarks.",
       data: populatedStudent,
     });
   } catch (error) {

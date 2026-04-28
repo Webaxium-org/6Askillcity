@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { MessageSquare, Plus, Search, Clock, AlertCircle, CheckCircle2, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,6 +36,15 @@ export default function TicketsPage() {
   const { user } = useSelector((s) => s.user);
   const dispatch = useDispatch();
   const { socket } = useSocket();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.openNewTicket) {
+      setSelectedTicket({ isNew: true });
+      // Clear state to prevent reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const fetchTickets = async () => {
     try {

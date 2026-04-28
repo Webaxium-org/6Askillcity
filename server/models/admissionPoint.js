@@ -29,6 +29,14 @@ const AdmissionPointSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
+    adminAccessToken: {
+      type: String,
+      select: false,
+    },
+    adminAccessTokenExpires: {
+      type: Date,
+      select: false,
+    },
 
     status: {
       type: String,

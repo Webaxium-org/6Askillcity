@@ -19,7 +19,11 @@ import {
   Activity,
   FileText,
   ExternalLink,
-  Info
+  Info,
+  Lock,
+  Key,
+  Copy,
+  Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -27,7 +31,9 @@ import {
   togglePartnerActive, 
   getPartnerPermissions, 
   addPartnerPermission, 
-  removePartnerPermission 
+  removePartnerPermission,
+  reviewPartner,
+  generateAdminToken
 } from "../../api/partner.api";
 import { getUniversities, getPrograms } from "../../api/university.api";
 import { useDispatch } from "react-redux";
@@ -50,6 +56,17 @@ export default function PartnerProfile() {
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [permissionType, setPermissionType] = useState("university");
   const [selectedId, setSelectedId] = useState("");
+  
+  // Review Status Modal
+  const [isReviewConfirmOpen, setIsReviewConfirmOpen] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState(null); // 'approved' or 'rejected'
+  const [isReviewing, setIsReviewing] = useState(false);
+
+  // Admin Access Token State
+  const [generatedToken, setGeneratedToken] = useState("");
+  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchPartnerData();
@@ -103,6 +120,49 @@ export default function PartnerProfile() {
     }
   };
 
+  const handleGenerateToken = async () => {
+    setIsGeneratingToken(true);
+    try {
+      const res = await generateAdminToken(id);
+      if (res.success) {
+        setGeneratedToken(res.token);
+        setIsTokenModalOpen(true);
+        dispatch(showAlert({ type: "success", message: "Access token generated" }));
+        // Refresh partner data to show new log
+        fetchPartnerData();
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsGeneratingToken(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedToken);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleReviewPartner = async (status) => {
+    setIsReviewing(true);
+    try {
+      const res = await reviewPartner(id, status);
+      if (res.success) {
+        setPartner(res.data);
+        dispatch(showAlert({ 
+          type: "success", 
+          message: `Partner ${status === 'approved' ? 'approved' : 'rejected'} successfully` 
+        }));
+        setIsReviewConfirmOpen(false);
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+
   const handleAddPermission = async (e) => {
     e.preventDefault();
     if (!selectedId) return;
@@ -153,6 +213,7 @@ export default function PartnerProfile() {
 
   const tabs = [
     { id: "info", label: "Basic Information", icon: FileText },
+    { id: "documents", label: "Documents", icon: FileText },
     { id: "permissions", label: "Permissions", icon: ShieldCheck },
     { id: "history", label: "Activity History", icon: History },
   ];
@@ -169,22 +230,63 @@ export default function PartnerProfile() {
             <ChevronLeft className="w-4 h-4" />
             Back to Partners
           </button>
-
+          
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleToggleActive}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-                partner.isActive 
-                  ? "bg-red-500/10 border-red-500/20 text-red-600 hover:bg-red-500 hover:text-white"
-                  : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white"
-              }`}
-            >
-              {partner.isActive ? <UserMinus className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-              {partner.isActive ? "Deactivate Partner" : "Activate Partner"}
-            </button>
+            {partner.status === "pending" ? (
+              <>
+                <button
+                  onClick={() => {
+                    setReviewStatus("rejected");
+                    setIsReviewConfirmOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-red-500/20 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white transition-all"
+                >
+                  <UserMinus className="w-4 h-4" />
+                  Reject Partner
+                </button>
+                <button
+                  onClick={() => {
+                    setReviewStatus("approved");
+                    setIsReviewConfirmOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/10"
+                >
+                  <UserCheck className="w-4 h-4" />
+                  Approve Partner
+                </button>
+              </>
+            ) : (
+              <>
+                {partner.status === "approved" && (
+                  <button
+                    onClick={handleGenerateToken}
+                    disabled={isGeneratingToken}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                  >
+                    {isGeneratingToken ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Key className="w-4 h-4" />
+                    )}
+                    Generate Admin Token
+                  </button>
+                )}
+                <button
+                  onClick={handleToggleActive}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                    partner.isActive 
+                      ? "bg-red-500/10 border-red-500/20 text-red-600 hover:bg-red-500 hover:text-white"
+                      : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white"
+                  }`}
+                >
+                  {partner.isActive ? <UserMinus className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                  {partner.isActive ? "Deactivate Partner" : "Activate Partner"}
+                </button>
+              </>
+            )}
           </div>
         </div>
-
+        
         {/* Profile Card */}
         <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
           <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent relative">
@@ -350,6 +452,90 @@ export default function PartnerProfile() {
               </div>
             )}
 
+            {activeTab === "documents" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Individual Documents */}
+                {[
+                  { label: "Licensee Photo", path: partner.documents?.licenseePhoto },
+                  { label: "Aadhar Card", path: partner.documents?.licenseeAadharCard },
+                  { label: "Business License", path: partner.documents?.businessLicense },
+                  { label: "Office Agreement", path: partner.documents?.ownershipRentalAgreement },
+                ].map((doc, idx) => (
+                  <div key={idx} className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-4 shadow-sm group hover:border-primary/30 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                         <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                            <FileText className="w-5 h-5" />
+                         </div>
+                         <p className="font-bold text-sm">{doc.label}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {doc.path && (
+                          <>
+                            <a 
+                              href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${doc.path.replace(/\\/g, "/")}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-all"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {doc.path ? (
+                      <div className="aspect-video rounded-2xl overflow-hidden bg-muted border border-border">
+                         <img 
+                           src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${doc.path.replace(/\\/g, "/")}`} 
+                           alt={doc.label}
+                           className="w-full h-full object-cover"
+                           onError={(e) => {
+                             e.target.style.display = 'none';
+                             e.target.nextSibling.style.display = 'flex';
+                           }}
+                         />
+                         <div className="hidden w-full h-full items-center justify-center text-[10px] font-black uppercase text-muted-foreground tracking-widest text-center p-4">
+                            Preview not available<br/>(PDF or Invalid Path)
+                         </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-video rounded-2xl bg-muted/50 border border-dashed border-border flex items-center justify-center">
+                         <p className="text-xs font-bold text-muted-foreground">Not Uploaded</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Office Photos Gallery */}
+                {partner.documents?.officePhotos?.length > 0 && (
+                  <div className="col-span-full bg-card border border-border rounded-3xl p-8 space-y-6 shadow-sm">
+                    <h3 className="text-xl font-black flex items-center gap-2">
+                       <Building2 className="w-5 h-5 text-primary" />
+                       Office Photos Gallery
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                       {partner.documents.officePhotos.map((photo, idx) => (
+                         <a 
+                           key={idx}
+                           href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${photo.replace(/\\/g, "/")}`}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="aspect-square rounded-2xl overflow-hidden border border-border hover:border-primary transition-all group"
+                         >
+                            <img 
+                              src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${photo.replace(/\\/g, "/")}`}
+                              alt={`Office ${idx + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-all duration-500"
+                            />
+                         </a>
+                       ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === "permissions" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center bg-card border border-border p-5 rounded-3xl shadow-sm">
@@ -437,12 +623,13 @@ export default function PartnerProfile() {
                   partner.activityLogs?.map((log) => (
                     <div key={log._id} className="bg-card border border-border rounded-2xl p-5 flex gap-4 items-start hover:shadow-md transition-all">
                       <div className={`mt-1 p-2.5 rounded-xl flex-shrink-0 ${
+                        log.action.includes("TOKEN") ? "bg-purple-500/10 text-purple-500" :
                         log.action.includes("TOGGLE") ? "bg-amber-500/10 text-amber-500" :
                         log.action.includes("ADD") ? "bg-emerald-500/10 text-emerald-500" :
                         log.action.includes("REMOVE") ? "bg-red-500/10 text-red-500" :
                         "bg-primary/10 text-primary"
                       }`}>
-                        <Activity className="w-5 h-5" />
+                        {log.action.includes("TOKEN") ? <Lock className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-1">
@@ -545,6 +732,108 @@ export default function PartnerProfile() {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+        {/* Admin Token Modal */}
+        <AnimatePresence>
+          {isTokenModalOpen && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-card w-full max-w-lg p-10 rounded-[3rem] shadow-2xl border border-border text-center relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-purple-500 to-primary animate-gradient-x" />
+                
+                <div className="w-20 h-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto mb-8">
+                  <ShieldCheck className="w-10 h-10" />
+                </div>
+
+                <h3 className="text-3xl font-black mb-4 tracking-tight">One-Time Access Token</h3>
+                <p className="text-muted-foreground font-medium mb-10 leading-relaxed">
+                  Use this token as the password along with the partner email to login. 
+                  <span className="block mt-2 font-bold text-red-500">This token is valid for 15 minutes and will expire after one use.</span>
+                </p>
+
+                <div className="relative group mb-10">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+                  <div className="relative flex items-center bg-card border-2 border-border/50 p-6 rounded-2xl">
+                    <code className="flex-1 text-2xl font-black tracking-wider text-primary select-all">
+                      {generatedToken}
+                    </code>
+                    <button
+                      onClick={copyToClipboard}
+                      className="ml-4 p-3 rounded-xl bg-muted hover:bg-primary hover:text-white transition-all flex items-center gap-2"
+                    >
+                      {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsTokenModalOpen(false)}
+                  className="w-full py-5 rounded-[1.5rem] bg-foreground text-background font-black uppercase tracking-widest hover:opacity-90 transition-all"
+                >
+                  Got it, close
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Review Confirmation Modal */}
+        <AnimatePresence>
+          {isReviewConfirmOpen && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="bg-card w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-border"
+              >
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${
+                  reviewStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                }`}>
+                  {reviewStatus === 'approved' ? <UserCheck className="w-8 h-8" /> : <UserMinus className="w-8 h-8" />}
+                </div>
+
+                <h3 className="text-2xl font-black mb-2">
+                  {reviewStatus === 'approved' ? 'Confirm Approval' : 'Confirm Rejection'}
+                </h3>
+                <p className="text-muted-foreground font-medium mb-8 leading-relaxed">
+                  {reviewStatus === 'approved' 
+                    ? `You are about to approve ${partner.centerName}. They will receive their login credentials via email immediately.`
+                    : `Are you sure you want to reject the application for ${partner.centerName}? This action can be undone later if needed.`
+                  }
+                </p>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setIsReviewConfirmOpen(false)}
+                    disabled={isReviewing}
+                    className="flex-1 py-4 rounded-2xl border border-border hover:bg-muted font-bold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleReviewPartner(reviewStatus)}
+                    disabled={isReviewing}
+                    className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl ${
+                      reviewStatus === 'approved' 
+                        ? 'bg-emerald-500 text-white shadow-emerald-500/20 hover:bg-emerald-600' 
+                        : 'bg-red-500 text-white shadow-red-500/20 hover:bg-red-600'
+                    }`}
+                  >
+                    {isReviewing ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                    ) : (
+                      reviewStatus === 'approved' ? 'Approve Now' : 'Reject Now'
+                    )}
+                  </button>
+                </div>
               </motion.div>
             </div>
           )}

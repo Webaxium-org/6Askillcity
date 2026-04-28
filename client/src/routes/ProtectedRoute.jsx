@@ -20,8 +20,13 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
   }
 
   // 2️⃣ Role-based access control (only checked when allowedRoles is specified)
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles.length > 0) {
+    const hasRole = allowedRoles.includes(user.role);
+    const hasType = allowedRoles.includes(user.type);
+    
+    if (!hasRole && !hasType) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return <Outlet />;

@@ -16,6 +16,7 @@ import UniversityManagement from "./pages/UniversityManagement/UniversityManagem
 import PartnerList from "./pages/PartnerManagement/PartnerList";
 import PartnerProfile from "./pages/PartnerManagement/PartnerProfile";
 import MyProfile from "./pages/Dashboards/MyProfile";
+import PartnerCourses from "./pages/Dashboards/PartnerCourses";
 import StudentList from "./pages/StudentManagement/StudentList";
 import StudentPaymentDetail from "./pages/StudentManagement/StudentPaymentDetail";
 import PaymentManagement from "./pages/StudentManagement/PaymentManagement";
@@ -45,8 +46,14 @@ function App() {
               <Route path="/register-student" element={<StudentRegistration />} />
               <Route path="/dashboard/tickets" element={<TicketsPage />} />
               <Route path="/dashboard/profile" element={<MyProfile />} />
+              <Route path="/dashboard/courses" element={<PartnerCourses />} />
               <Route path="/dashboard/student-management" element={<StudentList />} />
-              <Route path="/dashboard/student-management/:id" element={<StudentPaymentDetail />} />
+              <Route element={<ProtectedRoute allowedRoles={["partner", "admin"]} />}>
+                <Route
+                  path="/dashboard/student-management/:id"
+                  element={<StudentPaymentDetail />}
+                />
+              </Route>
               <Route path="/dashboard/payment-management" element={<PaymentManagement />} />
 
               {/* Partner: Application lifecycle */}

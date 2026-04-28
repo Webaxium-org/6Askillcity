@@ -19,6 +19,7 @@ import {
   Building2,
   BadgeDollarSign,
   CreditCard,
+  GraduationCap,
 } from "lucide-react";
 import { useTheme } from "../global/ThemeProvider";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -51,6 +52,18 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
             path: "/dashboard/applications",
           },
           {
+            id: "management",
+            label: "Student Management",
+            icon: Users,
+            path: "/dashboard/student-management",
+          },
+          {
+            id: "courses",
+            label: "Courses",
+            icon: GraduationCap,
+            path: "/dashboard/courses",
+          },
+          {
             id: "profile",
             label: "My Profile",
             icon: User,
@@ -66,6 +79,12 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
             label: "Eligibility Queue",
             icon: Clock,
             path: "/dashboard/eligibility-queue",
+          },
+          {
+            id: "management",
+            label: "Student Management",
+            icon: Users,
+            path: "/dashboard/student-management",
           },
           {
             id: "universities",
@@ -86,12 +105,6 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
       label: "Tickets",
       icon: MessageSquare,
       path: "/dashboard/tickets",
-    },
-    {
-      id: "management",
-      label: "Student Management",
-      icon: Users,
-      path: "/dashboard/student-management",
     },
     {
       id: "payments",

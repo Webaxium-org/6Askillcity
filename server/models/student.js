@@ -15,10 +15,11 @@ const StudentSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["Male", "Female", "Other"],
+      required: true,
     },
-    religion: String,
-    caste: String,
-    address: String,
+    religion: { type: String, required: true },
+    caste: { type: String, required: true },
+    address: { type: String, required: true },
     email: {
       type: String,
       required: [true, "Student email is required"],
@@ -31,23 +32,25 @@ const StudentSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    alternativePhone: String,
+    alternativePhone: { type: String, required: true },
     otherPhone: String,
 
     // Family Details
-    fatherName: String,
-    motherName: String,
-    fatherPhone: String,
-    motherPhone: String,
+    fatherName: { type: String, required: true },
+    motherName: { type: String, required: true },
+    fatherPhone: { type: String, required: true },
+    motherPhone: { type: String, required: true },
 
     // Current Academic Selection
     university: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "University",
+      required: [true, "University selection is required"],
     },
     program: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Program",
+      required: [true, "Course selection is required"],
     },
     branch: String,
     completionYear: String,
@@ -62,20 +65,20 @@ const StudentSchema = new mongoose.Schema(
 
     // 10th Standard Details
     tenth: {
-      certificate: String, // path
-      completionYear: String,
-      board: String,
-      percentage: String,
-      totalMarks: Number,
-      obtainedMarks: Number,
+      certificate: { type: String, required: true }, // path
+      completionYear: { type: String, required: true },
+      board: { type: String, required: true },
+      percentage: { type: String, required: true },
+      totalMarks: { type: Number, required: true },
+      obtainedMarks: { type: Number, required: true },
     },
 
     // Plus Two (+2) Details
     plusTwo: {
-      certificate: String, // path
-      completionYear: String,
-      board: String,
-      percentage: String,
+      certificate: { type: String, required: true }, // path
+      completionYear: { type: String, required: true },
+      board: { type: String, required: true },
+      percentage: { type: String, required: true },
     },
 
     // Bachelors Details
@@ -116,7 +119,7 @@ const StudentSchema = new mongoose.Schema(
     // Uploaded Artifacts (Legacy/General)
     idProof: {
       type: String,
-      required: false,
+      required: true,
     },
 
     // Application Lifecycle
@@ -158,6 +161,11 @@ const StudentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "AdmissionPoint",
       required: false,
+    },
+    highestQualification: {
+      type: String,
+      enum: ["Plus Two", "Bachelors", "Masters"],
+      default: "Plus Two",
     },
     deleted: {
       type: Boolean,

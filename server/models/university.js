@@ -7,6 +7,10 @@ const UniversitySchema = new mongoose.Schema(
       required: [true, "University name is required"],
       trim: true,
     },
+    shortName: {
+      type: String,
+      trim: true,
+    },
     location: {
       type: String,
       required: [true, "Location is required"],

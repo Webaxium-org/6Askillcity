@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getGlobalPaymentStats } from "../../api/payment.api";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { useNavigate } from "react-router-dom";
 import InvoiceModal from "../../components/payment/InvoiceModal";
@@ -26,6 +26,9 @@ import InvoiceModal from "../../components/payment/InvoiceModal";
 export default function PaymentManagement() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.user);
+  const isAdmin = user?.role === "admin" || user?.type === "admin";
+
   const [data, setData] = useState({
     recentPayments: [],
     upcomingSchedules: [],
@@ -259,16 +262,16 @@ export default function PaymentManagement() {
                                 >
                                   <Receipt className="w-3.5 h-3.5" /> Invoice
                                 </button>
-                                <button
-                                  onClick={() =>
-                                    navigate(
-                                      `/dashboard/student-management/${p.student?._id}`,
-                                    )
-                                  }
-                                  className="p-2.5 rounded-xl bg-muted/50 text-muted-foreground hover:bg-primary hover:text-white transition-all"
-                                >
-                                  <ChevronRight className="w-4 h-4" />
-                                </button>
+                                  <button
+                                    onClick={() =>
+                                      navigate(
+                                        `/dashboard/student-management/${p.student?._id}`,
+                                      )
+                                    }
+                                    className="p-2.5 rounded-xl bg-muted/50 text-muted-foreground hover:bg-primary hover:text-white transition-all"
+                                  >
+                                    <ChevronRight className="w-4 h-4" />
+                                  </button>
                               </div>
                             </td>
                           </motion.tr>
