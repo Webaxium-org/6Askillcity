@@ -3,20 +3,60 @@ import Payment from "../models/payment.js";
 import PaymentSchedule from "../models/paymentSchedule.js";
 import createError from "http-errors";
 import { v4 as uuidv4 } from "uuid";
+import mongoose from "mongoose";
 
 // ─────────────────────────────────────────────
 // Get all eligible students (Management List)
 // ─────────────────────────────────────────────
 export const getManagementStudents = async (req, res, next) => {
   try {
-    const filter = { applicationStatus: "Eligible", deleted: { $ne: true } };
-    if (req.user.userType === "partner") filter.registeredBy = req.user.userId;
+    const match = { applicationStatus: "Eligible", deleted: { $ne: true } };
+    if (req.user.userType === "partner") match.registeredBy = new mongoose.Types.ObjectId(req.user.userId);
 
-    const students = await Student.find(filter)
-      .populate("university", "name")
-      .populate("program", "name")
-      .populate("programFee")
-      .sort({ updatedAt: -1 });
+    const students = await Student.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: "payments",
+          localField: "_id",
+          foreignField: "student",
+          as: "paymentDetails"
+        }
+      },
+      {
+        $addFields: {
+          lastPaymentDate: { $max: "$paymentDetails.date" }
+        }
+      },
+      {
+        $lookup: {
+          from: "universities",
+          localField: "university",
+          foreignField: "_id",
+          as: "university"
+        }
+      },
+      { $unwind: "$university" },
+      {
+        $lookup: {
+          from: "programs",
+          localField: "program",
+          foreignField: "_id",
+          as: "program"
+        }
+      },
+      { $unwind: "$program" },
+      {
+        $lookup: {
+          from: "programfees",
+          localField: "programFee",
+          foreignField: "_id",
+          as: "programFee"
+        }
+      },
+      { $unwind: { path: "$programFee", preserveNullAndEmptyArrays: true } },
+      { $sort: { updatedAt: -1 } }
+    ]);
 
     res.status(200).json({ success: true, data: students });
   } catch (error) {
@@ -177,8 +217,24 @@ export const getGlobalPaymentStats = async (req, res, next) => {
     if (req.user.userType === "partner") filter.partner = req.user.userId;
 
     const [recentPayments, upcomingSchedules] = await Promise.all([
-      Payment.find(filter).populate("student", "name email").sort({ date: -1 }).limit(50),
-      PaymentSchedule.find({ ...filter, status: "Pending" }).populate("student", "name email").sort({ dueDate: 1 }).limit(50)
+      Payment.find(filter)
+        .populate({
+          path: "student",
+          select: "name email university admissionPoint",
+          populate: { path: "university", select: "name" }
+        })
+        .populate("partner", "name")
+        .sort({ date: -1 })
+        .limit(100),
+      PaymentSchedule.find({ ...filter, status: "Pending" })
+        .populate({
+          path: "student",
+          select: "name email university admissionPoint",
+          populate: { path: "university", select: "name" }
+        })
+        .populate("partner", "name")
+        .sort({ dueDate: 1 })
+        .limit(100)
     ]);
 
     res.status(200).json({

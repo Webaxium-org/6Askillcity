@@ -45,6 +45,7 @@ import universityRoutes from './routes/university.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import ocrRoutes from './routes/ocr.routes.js';
+import reportRoutes from './routes/report.routes.js';
 
 app.use('/api/admission-points', admissionPointRoutes);
 app.use('/api/auth', authRoutes);
@@ -55,6 +56,7 @@ app.use('/api/university-management', universityRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ocr', ocrRoutes);
+app.use('/api/reports', reportRoutes);
 
 // 7. Error Handling
 app.use(errorHandler);

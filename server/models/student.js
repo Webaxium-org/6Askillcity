@@ -128,6 +128,13 @@ const StudentSchema = new mongoose.Schema(
       enum: ["Draft", "Pending Eligibility", "Eligible", "Rejected"],
       default: "Draft",
     },
+    eligibilityApprovalDate: {
+      type: Date,
+    },
+    eligibilityApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     admin_remarks: {
       type: String,
       default: "",

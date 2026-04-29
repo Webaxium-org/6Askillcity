@@ -21,22 +21,22 @@ router.use(requireAuth);
 // POST/PUT routes are restricted to admins
 router.route("/universities")
   .get(getUniversities)
-  .post(isAuthorized({ roles: ["admin"] }), createUniversity);
+  .post(isAuthorized({ roles: ["admin", "manager"] }), createUniversity);
 
 router.route("/universities/:id")
-  .put(isAuthorized({ roles: ["admin"] }), updateUniversity);
+  .put(isAuthorized({ roles: ["admin", "manager"] }), updateUniversity);
 
 router.route("/programs")
   .get(getPrograms)
-  .post(isAuthorized({ roles: ["admin"] }), createProgram);
+  .post(isAuthorized({ roles: ["admin", "manager"] }), createProgram);
 
 router.route("/programs/:id")
-  .put(isAuthorized({ roles: ["admin"] }), updateProgram);
+  .put(isAuthorized({ roles: ["admin", "manager"] }), updateProgram);
 
 router.route("/programs/:programId/fees")
   .get(getProgramFees)
-  .post(isAuthorized({ roles: ["admin"] }), updateProgramFee);
+  .post(isAuthorized({ roles: ["admin", "manager"] }), updateProgramFee);
 
-router.get("/activity-logs", isAuthorized({ roles: ["admin"] }), getActivityLogs);
+router.get("/activity-logs", isAuthorized({ roles: ["admin", "manager"] }), getActivityLogs);
 
 export default router;

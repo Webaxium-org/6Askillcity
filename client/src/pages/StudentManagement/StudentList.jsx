@@ -22,21 +22,89 @@ import { showAlert } from "../../redux/alertSlice";
 import { StatCard } from "../../components/dashboard/StatCard";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { cn } from "../../components/dashboard/StatCard";
 
 export default function StudentList() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const isAdmin = user?.role === "admin" || user?.type === "admin";
+  const isManager = user?.role === "manager";
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all"); // all, paid, pending
 
+  // Advanced Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedUni, setSelectedUni] = useState("all");
+  const [selectedProg, setSelectedProg] = useState("all");
+  const [selectedPartner, setSelectedPartner] = useState("all");
+  const [partners, setPartners] = useState([]);
+  const [dateFilterType, setDateFilterType] = useState("created"); // created, approved
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, startDate, endDate, selectedUni, selectedProg, filterType, selectedPartner, dateFilterType]);
+
+  const setQuickRange = (range) => {
+    const today = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    switch(range) {
+      case 'today':
+        start = today;
+        end = today;
+        break;
+      case 'week':
+        const diff = today.getDate() - today.getDay();
+        start = new Date(today.setDate(diff));
+        end = new Date();
+        break;
+      case 'month':
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date();
+        break;
+      case 'year':
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date();
+        break;
+    }
+
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
+
+  const [universities, setUniversities] = useState([]);
+  const [programs, setPrograms] = useState([]);
+
   useEffect(() => {
     fetchStudents();
+    fetchFilterData();
   }, []);
+
+  const fetchFilterData = async () => {
+    try {
+      const { getUniversities } = await import("../../api/university.api");
+      const { getAllApprovedAdmissionPoints } = await import("../../api/admissionPoint.api");
+      const [uniRes, partnerRes] = await Promise.all([
+        getUniversities(),
+        getAllApprovedAdmissionPoints()
+      ]);
+      if (uniRes.success) setUniversities(uniRes.data);
+      if (partnerRes.success) setPartners(partnerRes.data);
+    } catch (error) {
+      console.error("Failed to load filter data");
+    }
+  };
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -66,11 +134,44 @@ export default function StudentList() {
 
     if (!matchesSearch) return false;
 
-    if (filterType === "paid") return s.paymentStatus === "Paid";
-    if (filterType === "pending") return s.paymentStatus !== "Paid";
+    // Payment Filter
+    if (filterType === "paid" && s.paymentStatus !== "Paid") return false;
+    if (filterType === "pending" && s.paymentStatus === "Paid") return false;
+
+    // University/Program Filter
+    if (selectedUni !== "all" && s.university?._id !== selectedUni)
+      return false;
+    if (selectedProg !== "all" && s.program?._id !== selectedProg) return false;
+
+    // Date Range Filter
+    if (startDate || endDate) {
+      const dateToCompare = dateFilterType === "created" ? s.createdAt : s.eligibilityApprovalDate;
+      
+      if (!dateToCompare) return false;
+
+      const studentDate = new Date(dateToCompare);
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        if (studentDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        if (studentDate > end) return false;
+      }
+    }
+
+    // Partner Filter
+    if (selectedPartner !== "all" && s.admissionPoint !== selectedPartner) return false;
 
     return true;
   });
+
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -112,7 +213,14 @@ export default function StudentList() {
     <DashboardLayout title="Student Management">
       <div className="max-w-7xl mx-auto space-y-8 pb-10">
         {/* Quick Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          className={cn(
+            "grid gap-6",
+            isManager
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+          )}
+        >
           <StatCard
             title="Total Students"
             value={totals.total}
@@ -126,32 +234,36 @@ export default function StudentList() {
                 : ""
             }
           />
-          <StatCard
-            title="Fee Paid Students"
-            value={totals.paidCount}
-            icon={CheckCircle2}
-            subtext={`Collected: ₹${totals.paidAmount.toLocaleString()}`}
-            color="emerald"
-            onClick={() => setFilterType("paid")}
-            className={
-              filterType === "paid"
-                ? "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/20"
-                : ""
-            }
-          />
-          <StatCard
-            title="Fee Pending Students"
-            value={totals.pendingCount}
-            icon={Clock}
-            subtext={`Pending: ₹${totals.pendingAmount.toLocaleString()}`}
-            color="rose"
-            onClick={() => setFilterType("pending")}
-            className={
-              filterType === "pending"
-                ? "ring-2 ring-rose-500 shadow-lg shadow-rose-500/20"
-                : ""
-            }
-          />
+          {!isManager && (
+            <>
+              <StatCard
+                title="Fee Paid Students"
+                value={totals.paidCount}
+                icon={CheckCircle2}
+                subtext={`Collected: ₹${totals.paidAmount.toLocaleString()}`}
+                color="emerald"
+                onClick={() => setFilterType("paid")}
+                className={
+                  filterType === "paid"
+                    ? "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/20"
+                    : ""
+                }
+              />
+              <StatCard
+                title="Fee Pending Students"
+                value={totals.pendingCount}
+                icon={Clock}
+                subtext={`Pending: ₹${totals.pendingAmount.toLocaleString()}`}
+                color="rose"
+                onClick={() => setFilterType("pending")}
+                className={
+                  filterType === "pending"
+                    ? "ring-2 ring-rose-500 shadow-lg shadow-rose-500/20"
+                    : ""
+                }
+              />
+            </>
+          )}
         </div>
 
         {/* Filters and Actions */}
@@ -178,16 +290,87 @@ export default function StudentList() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-border bg-card hover:bg-muted text-sm font-bold transition-all">
-              <Filter className="w-4 h-4" />
-              Filters
-            </button>
-            <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-              <Download className="w-4 h-4" />
-              Export CSV
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(
+                  "relative group px-6 py-4 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 overflow-hidden border",
+                  showFilters || startDate || endDate || selectedUni !== "all"
+                    ? "bg-primary text-white border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
+                    : "bg-card/40 backdrop-blur-xl border-border/50 text-muted-foreground hover:border-primary/30 hover:text-primary",
+                )}
+              >
+                <div className="relative z-10 flex items-center gap-3">
+                  <Filter
+                    className={cn(
+                      "w-4 h-4 transition-transform duration-500",
+                      showFilters && "rotate-180",
+                    )}
+                  />
+                  {showFilters
+                    ? "Collapse"
+                    : startDate || endDate || selectedUni !== "all"
+                      ? "Active"
+                      : "Filters"}
+                </div>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button className="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-card/40 backdrop-blur-xl border border-border/50 text-xs font-black uppercase tracking-[0.2em] hover:bg-muted/50 hover:border-primary/30 transition-all group">
+                <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                Export
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Active Filter Chips */}
+        <AnimatePresence>
+          {(startDate || endDate || selectedUni !== "all") && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="flex flex-wrap items-center gap-2 px-2"
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-2">
+                Active:
+              </span>
+
+              {selectedUni !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-bold text-primary">
+                  University:{" "}
+                  {universities.find((u) => u._id === selectedUni)?.name}
+                  <button
+                    onClick={() => setSelectedUni("all")}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {startDate || endDate ? (
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-emerald-600">
+                  {dateFilterType === "created" ? "Registration" : "Approval"}: {startDate || "Start"} to {endDate || "End"}
+                  <button onClick={() => { setStartDate(""); setEndDate(""); }} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                </div>
+              ) : null}
+
+              <button
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                  setSelectedUni("all");
+                }}
+                className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 hover:underline ml-2"
+              >
+                Clear All
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Table/Card Container */}
         <div className="bg-card border border-border rounded-[2.5rem] shadow-sm overflow-hidden">
@@ -204,12 +387,16 @@ export default function StudentList() {
                   <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
                     University & Program
                   </th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                    Payment Status
-                  </th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
-                    Fee Progress
-                  </th>
+                  {!isManager && (
+                    <>
+                      <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                        Payment Status
+                      </th>
+                      <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
+                        Fee Progress
+                      </th>
+                    </>
+                  )}
                   <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
                     Action
                   </th>
@@ -240,7 +427,7 @@ export default function StudentList() {
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.map((student, idx) => {
+                  paginatedStudents.map((student, idx) => {
                     const totalFee = student.programFee?.totalFee || 1;
                     const percent = Math.round(
                       (student.totalFeePaid / totalFee) * 100,
@@ -290,30 +477,34 @@ export default function StudentList() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-8 py-6">
-                          <span
-                            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getStatusStyle(student.paymentStatus)}`}
-                          >
-                            {student.paymentStatus}
-                          </span>
-                        </td>
-                        <td className="px-8 py-6 text-right min-w-[200px]">
-                          <div className="space-y-1.5 inline-block w-full max-w-[180px]">
-                            <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-muted-foreground">
-                              <span>
-                                ₹{student.totalFeePaid.toLocaleString()}
+                        {!isManager && (
+                          <>
+                            <td className="px-8 py-6">
+                              <span
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getStatusStyle(student.paymentStatus)}`}
+                              >
+                                {student.paymentStatus}
                               </span>
-                              <span>{percent}%</span>
-                            </div>
-                            <div className="h-2 w-full bg-muted rounded-full overflow-hidden border border-border/50 p-[1px]">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percent}%` }}
-                                className={`h-full rounded-full ${percent === 100 ? "bg-emerald-500" : "bg-primary"}`}
-                              />
-                            </div>
-                          </div>
-                        </td>
+                            </td>
+                            <td className="px-8 py-6 text-right min-w-[200px]">
+                              <div className="space-y-1.5 inline-block w-full max-w-[180px]">
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter text-muted-foreground">
+                                  <span>
+                                    ₹{student.totalFeePaid.toLocaleString()}
+                                  </span>
+                                  <span>{percent}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden border border-border/50 p-[1px]">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percent}%` }}
+                                    className={`h-full rounded-full ${percent === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                          </>
+                        )}
                         <td className="px-8 py-6 text-right">
                           <button className="p-3 rounded-2xl bg-muted/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                             <ChevronRight className="w-4 h-4" />
@@ -343,7 +534,7 @@ export default function StudentList() {
                 </p>
               </div>
             ) : (
-              filteredStudents.map((student, idx) => {
+              paginatedStudents.map((student, idx) => {
                 const totalFee = student.programFee?.totalFee || 1;
                 const percent = Math.round(
                   (student.totalFeePaid / totalFee) * 100,
@@ -414,26 +605,250 @@ export default function StudentList() {
             )}
           </div>
 
-          {/* Table Footer / Pagination Placeholder */}
-          <div className="p-6 bg-muted/10 border-t border-border flex items-center justify-between">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              Showing {filteredStudents.length} of {students.length} Students
+          {/* Table Footer / Pagination */}
+          <div className="p-8 bg-muted/10 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+              Displaying {Math.min(paginatedStudents.length, itemsPerPage)} of {filteredStudents.length} results
             </p>
             <div className="flex items-center gap-2">
-              <button className="px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold disabled:opacity-50">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
+              >
                 Previous
               </button>
-              <div className="flex items-center gap-1">
-                <button className="w-8 h-8 rounded-xl bg-primary text-primary-foreground text-xs font-black">
-                  1
-                </button>
+              <div className="flex items-center gap-1.5 px-2">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={cn(
+                      "w-10 h-10 rounded-xl text-[10px] font-black transition-all",
+                      currentPage === i + 1 
+                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20" 
+                        : "bg-white border border-border/50 text-slate-500 hover:bg-muted"
+                    )}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
               </div>
-              <button className="px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold disabled:opacity-50">
+              <button 
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
+              >
                 Next
               </button>
             </div>
           </div>
         </div>
+
+        {/* Futuristic Filter Drawer */}
+        <AnimatePresence>
+          {showFilters && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowFilters(false)}
+                className="fixed inset-0 h-screen w-screen bg-slate-900/40 backdrop-blur-md z-[9999]"
+              />
+
+              {/* Drawer */}
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="fixed right-0 top-0 h-screen w-full max-w-md bg-white border-l border-border/50 z-[10000] shadow-[-20px_0_80px_rgba(0,0,0,0.15)] flex flex-col"
+              >
+                {/* Header */}
+                <div className="p-10 border-b border-border/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">
+                      Filters
+                    </h3>
+                    <button
+                      onClick={() => setShowFilters(false)}
+                      className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Data Filtering Protocol
+                  </p>
+                </div>
+
+                {/* Filter Content */}
+                <div className="flex-1 overflow-y-auto p-10 space-y-12">
+                  {/* University */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          University
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Select partner institution
+                        </p>
+                      </div>
+                    </div>
+                    <select
+                      value={selectedUni}
+                      onChange={(e) => setSelectedUni(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all appearance-none"
+                    >
+                      <option value="all">Global (All)</option>
+                      {universities.map((uni) => (
+                        <option key={uni._id} value={uni._id}>
+                          {uni.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Admission Point */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/5 flex items-center justify-center text-blue-600">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Admission Point
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Filter by registered partner
+                        </p>
+                      </div>
+                    </div>
+                    <select
+                      value={selectedPartner}
+                      onChange={(e) => setSelectedPartner(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-blue-500/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all appearance-none"
+                    >
+                      <option value="all">Global (All Partners)</option>
+                      {partners.map((partner) => (
+                        <option key={partner._id} value={partner._id}>
+                          {partner.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Registration Range */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/5 flex items-center justify-center text-emerald-600">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Date Range
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Select enrollment period
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Date Type Toggle */}
+                    <div className="flex p-1 bg-slate-100 rounded-2xl">
+                      {['created', 'approved'].map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setDateFilterType(type)}
+                          className={cn(
+                            "flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                            dateFilterType === type 
+                              ? "bg-white text-emerald-600 shadow-sm" 
+                              : "text-slate-400 hover:text-slate-600"
+                          )}
+                        >
+                          {type === 'created' ? 'Registration Date' : 'Approval Date'}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Quick Select Buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {["today", "week", "month", "year"].map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setQuickRange(range)}
+                          className="py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-[8px] font-black uppercase tracking-widest text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all"
+                        >
+                          {range === "week"
+                            ? "This Week"
+                            : range === "month"
+                              ? "This Month"
+                              : range === "year"
+                                ? "This Year"
+                                : "Today"}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="group">
+                        <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                        />
+                      </div>
+                      <div className="group">
+                        <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-10 border-t border-border/5 bg-slate-50/50 flex gap-4">
+                  <button
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                      setSelectedUni("all");
+                      setFilterType("all");
+                      setDateFilterType("created");
+                    }}
+                    className="flex-1 py-4 rounded-2xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
+                  >
+                    Reset All
+                  </button>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="flex-1 py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    Close Console
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </DashboardLayout>
   );

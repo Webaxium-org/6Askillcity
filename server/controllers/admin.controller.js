@@ -3,7 +3,9 @@ import AdmissionPoint from "../models/admissionPoint.js";
 import University from "../models/university.js";
 import Payment from "../models/payment.js";
 import Ticket from "../models/ticket.js";
+import User from "../models/user.js";
 import moment from "moment";
+import createError from "http-errors";
 
 export const getAdminStats = async (req, res, next) => {
   try {
@@ -36,6 +38,7 @@ export const getAdminStats = async (req, res, next) => {
     // Chart Data: Monthly Revenue
     const revenueData = [];
     const enrollmentData = [];
+    const applicationData = [];
 
     for (let m = startMonth; m <= endMonth; m++) {
       const monthDate = moment().year(year).month(m);
@@ -62,6 +65,16 @@ export const getAdminStats = async (req, res, next) => {
         name: monthDate.format("MMM YY"),
         students: count,
       });
+
+      // Application Submissions (createdAt)
+      const appCount = await Student.countDocuments({
+        createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+      });
+
+      applicationData.push({
+        name: monthDate.format("MMM YY"),
+        apps: appCount,
+      });
     }
 
     res.status(200).json({
@@ -77,8 +90,25 @@ export const getAdminStats = async (req, res, next) => {
           activeTicketsCount
         },
         revenueData,
-        enrollmentData
+        enrollmentData,
+        applicationData
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAdminProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      throw createError(404, "Admin profile not found");
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user
     });
   } catch (error) {
     next(error);

@@ -4,3 +4,8 @@ export const getAdminDashboardStats = async (year, half) => {
   const response = await axiosInstance.get(`/admin/stats?year=${year}&half=${half}`);
   return response.data;
 };
+
+export const getAdminProfile = async () => {
+  const response = await axiosInstance.get("/admin/profile");
+  return response.data;
+};

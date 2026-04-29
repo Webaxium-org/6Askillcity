@@ -25,6 +25,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import { SocketProvider } from "./context/SocketContext";
 import TicketsPage from "./pages/Tickets/TicketsPage";
 import AlertManager from "./components/global/AlertManager";
+import Reports from "./pages/Reports/Reports";
+import ReportDetail from "./pages/Reports/ReportDetail";
 
 function App() {
   return (
@@ -37,35 +39,78 @@ function App() {
             <Route element={<PublicRoute />}>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/register-admission-point" element={<AdmissionRegistration />} />
+              <Route
+                path="/register-admission-point"
+                element={<AdmissionRegistration />}
+              />
             </Route>
 
             {/* 🔐 Protected — any authenticated user */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/register-student" element={<StudentRegistration />} />
+              <Route
+                path="/register-student"
+                element={<StudentRegistration />}
+              />
               <Route path="/dashboard/tickets" element={<TicketsPage />} />
+              <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+                <Route path="/dashboard/reports" element={<Reports />} />
+                <Route
+                  path="/dashboard/reports/:reportId"
+                  element={<ReportDetail />}
+                />
+              </Route>
               <Route path="/dashboard/profile" element={<MyProfile />} />
               <Route path="/dashboard/courses" element={<PartnerCourses />} />
-              <Route path="/dashboard/student-management" element={<StudentList />} />
-              <Route element={<ProtectedRoute allowedRoles={["partner", "admin"]} />}>
+              <Route
+                element={<ProtectedRoute allowedRoles={["partner", "admin", "manager"]} />}
+              >
+                <Route
+                  path="/dashboard/student-management"
+                  element={<StudentList />}
+                />
                 <Route
                   path="/dashboard/student-management/:id"
                   element={<StudentPaymentDetail />}
                 />
               </Route>
-              <Route path="/dashboard/payment-management" element={<PaymentManagement />} />
+              <Route
+                element={<ProtectedRoute allowedRoles={["partner", "admin"]} />}
+              >
+                <Route
+                  path="/dashboard/payment-management"
+                  element={<PaymentManagement />}
+                />
+              </Route>
 
               {/* Partner: Application lifecycle */}
               <Route path="/dashboard/student/add" element={<AddStudent />} />
-              <Route path="/dashboard/applications" element={<ApplicationsPage />} />
-              <Route path="/dashboard/applications/:id" element={<ApplicationDetailPage />} />
+              <Route
+                path="/dashboard/applications"
+                element={<ApplicationsPage />}
+              />
+              <Route
+                path="/dashboard/applications/:id"
+                element={<ApplicationDetailPage />}
+              />
 
               {/* Admin: Eligibility review queue */}
-              <Route path="/dashboard/eligibility-queue" element={<EligibilityQueuePage />} />
-              <Route path="/dashboard/university-management" element={<UniversityManagement />} />
-              <Route path="/dashboard/partner-management" element={<PartnerList />} />
-              <Route path="/dashboard/partner-management/:id" element={<PartnerProfile />} />
+              <Route
+                path="/dashboard/eligibility-queue"
+                element={<EligibilityQueuePage />}
+              />
+              <Route
+                path="/dashboard/university-management"
+                element={<UniversityManagement />}
+              />
+              <Route
+                path="/dashboard/partner-management"
+                element={<PartnerList />}
+              />
+              <Route
+                path="/dashboard/partner-management/:id"
+                element={<PartnerProfile />}
+              />
             </Route>
 
             {/* Error Pages */}

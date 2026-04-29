@@ -465,6 +465,8 @@ export const updateApplicationStatus = async (req, res, next) => {
     if (action === "approve") {
       student.applicationStatus = "Eligible";
       student.admin_remarks = "";
+      student.eligibilityApprovalDate = new Date();
+      student.eligibilityApprovedBy = req.user?.userId;
     } else {
       if (!admin_remarks || !admin_remarks.trim()) {
         throw createError(

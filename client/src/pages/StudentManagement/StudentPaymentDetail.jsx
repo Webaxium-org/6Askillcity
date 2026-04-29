@@ -63,10 +63,11 @@ export default function StudentPaymentDetail() {
   const [scheduleItems, setScheduleItems] = useState([
     { dueDate: "", amount: "", description: "" },
   ]);
-  const [activeTab, setActiveTab] = useState("payment");
-
   const { user } = useSelector((state) => state.user);
   const isPartner = user?.role === "partner" || user?.type === "partner";
+  const isManager = user?.role === "manager";
+
+  const [activeTab, setActiveTab] = useState(user?.role === "manager" ? "profile" : "payment");
 
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -209,7 +210,7 @@ export default function StudentPaymentDetail() {
     { id: "profile", label: "Student Profile", icon: User },
     { id: "documents", label: "Documents", icon: FileDigit },
     { id: "history", label: "Transaction History", icon: History },
-  ];
+  ].filter((tab) => !isManager || (tab.id !== "payment" && tab.id !== "history"));
 
   return (
     <DashboardLayout title="Student Profile">
@@ -261,6 +262,15 @@ export default function StudentPaymentDetail() {
                 </span>
               </div>
             </div>
+
+            {!isPartner && !isManager && (
+              <div className="flex gap-3 pb-2">
+                <span className="px-4 py-3 rounded-2xl bg-muted text-muted-foreground border border-border font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  View Only
+                </span>
+              </div>
+            )}
 
             {isPartner && (
               <div className="flex gap-3 pb-2">

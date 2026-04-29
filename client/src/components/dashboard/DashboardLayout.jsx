@@ -40,32 +40,100 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
     {
       label: "System",
       items: [
-        { id: "overview", label: "Overview", icon: LayoutDashboard, path: "/dashboard" },
-      ]
+        {
+          id: "overview",
+          label: "Overview",
+          icon: LayoutDashboard,
+          path: "/dashboard",
+        },
+      ],
     },
     {
       label: "Academics",
       items: [
-        ...(user?.type === "partner" ? [
-          { id: "applications", label: "Enrollments", icon: FileText, path: "/dashboard/applications" },
-          { id: "management", label: "My Students", icon: Users, path: "/dashboard/student-management" },
-          { id: "courses", label: "Programs", icon: GraduationCap, path: "/dashboard/courses" },
-        ] : []),
-        ...(user?.type === "admin" ? [
-          { id: "eligibility", label: "Review Queue", icon: Clock, path: "/dashboard/eligibility-queue" },
-          { id: "management", label: "All Students", icon: Users, path: "/dashboard/student-management" },
-          { id: "universities", label: "Universities", icon: Building2, path: "/dashboard/university-management" },
-          { id: "partners", label: "Admission Points", icon: UserPlus, path: "/dashboard/partner-management" },
-        ] : []),
-      ]
+        ...(user?.type === "partner"
+          ? [
+              {
+                id: "applications",
+                label: "Enrollments",
+                icon: FileText,
+                path: "/dashboard/applications",
+              },
+              {
+                id: "management",
+                label: "My Students",
+                icon: Users,
+                path: "/dashboard/student-management",
+              },
+              {
+                id: "courses",
+                label: "Programs",
+                icon: GraduationCap,
+                path: "/dashboard/courses",
+              },
+            ]
+          : []),
+        ...(user?.type === "admin"
+          ? [
+              {
+                id: "eligibility",
+                label: "Review Queue",
+                icon: Clock,
+                path: "/dashboard/eligibility-queue",
+              },
+              {
+                id: "management",
+                label: "All Students",
+                icon: Users,
+                path: "/dashboard/student-management",
+              },
+              {
+                id: "universities",
+                label: "Universities",
+                icon: Building2,
+                path: "/dashboard/university-management",
+              },
+              {
+                id: "partners",
+                label: "Admission Points",
+                icon: UserPlus,
+                path: "/dashboard/partner-management",
+              },
+            ]
+          : []),
+      ],
     },
     {
       label: "Operations",
       items: [
-        { id: "payments", label: "Finance", icon: CreditCard, path: "/dashboard/payment-management" },
-        { id: "tickets", label: "Help Desk", icon: MessageSquare, path: "/dashboard/tickets" },
-      ]
-    }
+        ...(user?.type === "partner" || user?.role === "admin"
+          ? [
+              {
+                id: "payments",
+                label: "Finance",
+                icon: CreditCard,
+                path: "/dashboard/payment-management",
+              },
+            ]
+          : []),
+        ...(user?.role === "admin"
+          ? [
+              {
+                id: "reports",
+                label: "Reports",
+                icon: FileText,
+                path: "/dashboard/reports",
+              },
+            ]
+          : []),
+        {
+          id: "tickets",
+          label: "Help Desk",
+          icon: MessageSquare,
+          path: "/dashboard/tickets",
+        },
+      ],
+    },
   ];
 
   return (
@@ -88,13 +156,13 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5 pointer-events-none rounded-r-[2.5rem]" />
         <div className="h-24 relative flex items-center px-6 border-b border-border/50 bg-background/20 backdrop-blur-md justify-center md:justify-start">
           <div className="flex items-center justify-center w-full">
-            <img 
-              src={logo} 
-              alt="6ASkillCity" 
+            <img
+              src={logo}
+              alt="6ASkillCity"
               className={cn(
                 "h-12 w-auto object-contain transition-all duration-500",
-                isCollapsed ? "scale-110" : "scale-125"
-              )} 
+                isCollapsed ? "scale-110" : "scale-125",
+              )}
             />
           </div>
 
@@ -122,7 +190,8 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
                 {group.items.map((item) => {
                   const isActive =
                     location.pathname === item.path ||
-                    (location.pathname === "/dashboard" && item.id === "overview");
+                    (location.pathname === "/dashboard" &&
+                      item.id === "overview");
                   return (
                     <button
                       key={item.id}
@@ -133,7 +202,9 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
                       title={isCollapsed ? item.label : undefined}
                       className={cn(
                         "w-full flex items-center rounded-xl transition-all duration-300 relative group/item overflow-hidden",
-                        isCollapsed ? "justify-center py-3" : "space-x-3 px-3 py-2.5",
+                        isCollapsed
+                          ? "justify-center py-3"
+                          : "space-x-3 px-3 py-2.5",
                         isActive
                           ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 font-bold"
                           : "text-muted-foreground hover:bg-primary/5 hover:text-primary",
@@ -143,14 +214,20 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
                         <motion.div
                           layoutId="activeTabGlow"
                           className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80 rounded-xl -z-10"
-                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                          transition={{
+                            type: "spring",
+                            bounce: 0.2,
+                            duration: 0.6,
+                          }}
                         />
                       )}
-                      
-                      <div className={cn(
-                        "relative flex items-center justify-center transition-all duration-300",
-                        isActive ? "scale-110" : "group-hover/item:scale-110"
-                      )}>
+
+                      <div
+                        className={cn(
+                          "relative flex items-center justify-center transition-all duration-300",
+                          isActive ? "scale-110" : "group-hover/item:scale-110",
+                        )}
+                      >
                         <item.icon
                           className={cn(
                             "shrink-0",
@@ -163,9 +240,11 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
                       </div>
 
                       {!isCollapsed && (
-                        <span className="text-sm tracking-tight truncate">{item.label}</span>
+                        <span className="text-sm tracking-tight truncate">
+                          {item.label}
+                        </span>
                       )}
-                      
+
                       {!isCollapsed && isActive && (
                         <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-primary-foreground shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                       )}
@@ -200,7 +279,7 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
                   {user?.fullName || user?.centerName}
                 </p>
                 <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em] font-black mt-1 opacity-70">
-                  {user?.type || "User"}
+                  {user?.type === "partner" ? user?.type : user?.role || "User"}
                 </p>
               </div>
             )}

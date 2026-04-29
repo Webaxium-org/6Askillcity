@@ -47,7 +47,7 @@ import {
 } from "../../api/student.api";
 import { getAdminDashboardStats } from "../../api/admin.api";
 import { handleFormError } from "../../utils/handleFormError";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { showAlert } from "../../redux/alertSlice";
 import { ReviewModal } from "../../components/students/ReviewModal";
@@ -62,6 +62,7 @@ const COURSE_LABELS = {
 const ENROLLMENT_GOAL = 500;
 
 export default function AdminDashboard() {
+  const { user } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -204,7 +205,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const { summary = {}, revenueData = [], enrollmentData = [] } = stats || {};
+  const {
+    summary = {},
+    revenueData = [],
+    enrollmentData = [],
+    applicationData = [],
+  } = stats || {};
+
+  const isManager = user?.role === "manager";
 
   return (
     <DashboardLayout title="Admin Dashboard">
@@ -273,9 +281,13 @@ export default function AdminDashboard() {
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
               <div>
-                <h3 className="text-xl font-black">Revenue Performance</h3>
+                <h3 className="text-xl font-black">
+                  {isManager ? "Applications Activity" : "Revenue Performance"}
+                </h3>
                 <p className="text-sm text-muted-foreground font-medium">
-                  Monthly collection trends
+                  {isManager
+                    ? "Monthly submission trends"
+                    : "Monthly collection trends"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -305,17 +317,17 @@ export default function AdminDashboard() {
             </div>
             <div className="flex-1 w-full min-h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
+                <AreaChart data={isManager ? applicationData : revenueData}>
                   <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
                       <stop
                         offset="5%"
-                        stopColor="var(--primary)"
+                        stopColor={isManager ? "#3b82f6" : "var(--primary)"}
                         stopOpacity={0.1}
                       />
                       <stop
                         offset="95%"
-                        stopColor="var(--primary)"
+                        stopColor={isManager ? "#3b82f6" : "var(--primary)"}
                         stopOpacity={0}
                       />
                     </linearGradient>
@@ -345,7 +357,9 @@ export default function AdminDashboard() {
                       fontSize: 12,
                       fontWeight: 700,
                     }}
-                    tickFormatter={(val) => `₹${val / 1000}k`}
+                    tickFormatter={(val) =>
+                      isManager ? val : `₹${val / 1000}k`
+                    }
                   />
                   <Tooltip
                     contentStyle={{
@@ -358,11 +372,11 @@ export default function AdminDashboard() {
                   />
                   <Area
                     type="monotone"
-                    dataKey="revenue"
-                    stroke="var(--primary)"
+                    dataKey={isManager ? "apps" : "revenue"}
+                    stroke={isManager ? "#3b82f6" : "var(--primary)"}
                     strokeWidth={3}
                     fillOpacity={1}
-                    fill="url(#colorRev)"
+                    fill="url(#colorMain)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
