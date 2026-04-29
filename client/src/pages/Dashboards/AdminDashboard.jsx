@@ -81,16 +81,20 @@ export default function AdminDashboard() {
   const [rejectingId, setRejectingId] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedApp, setSelectedApp] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedHalf, setSelectedHalf] = useState(
+    new Date().getMonth() < 6 ? "H1" : "H2",
+  );
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [selectedYear, selectedHalf]);
 
   const fetchAllData = async () => {
     setLoadingStats(true);
     try {
       const [statsRes, partnersRes, appsRes] = await Promise.all([
-        getAdminDashboardStats(),
+        getAdminDashboardStats(selectedYear, selectedHalf),
         getPendingAdmissionPoints(),
         getPendingEligibility(),
       ]);
@@ -274,8 +278,29 @@ export default function AdminDashboard() {
                   Monthly collection trends
                 </p>
               </div>
-              <div className="w-fit px-4 py-2 rounded-xl bg-muted/50 border border-border text-[10px] font-black uppercase tracking-widest">
-                Last 6 Months
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-muted transition-colors"
+                >
+                  {[0, 1, 2, 3].map((i) => {
+                    const y = new Date().getFullYear() - i;
+                    return (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    );
+                  })}
+                </select>
+                <select
+                  value={selectedHalf}
+                  onChange={(e) => setSelectedHalf(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-muted transition-colors"
+                >
+                  <option value="H1">Jan to June</option>
+                  <option value="H2">July to Dec</option>
+                </select>
               </div>
             </div>
             <div className="flex-1 w-full min-h-[300px]">
@@ -626,7 +651,7 @@ export default function AdminDashboard() {
                               className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 hover:border-emerald-500 transition-all duration-200"
                               title="Review & Approve"
                             >
-                               <CheckCircle className="w-4 h-4" />
+                              <CheckCircle className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => {

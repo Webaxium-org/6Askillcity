@@ -21,6 +21,7 @@ import {
   CreditCard,
   GraduationCap,
 } from "lucide-react";
+import logo from "../../assets/logo.png";
 import { useTheme } from "../global/ThemeProvider";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "./StatCard";
@@ -35,83 +36,36 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuItems = [
+  const menuGroups = [
     {
-      id: "overview",
-      label: "Overview",
-      icon: LayoutDashboard,
-      path: "/dashboard",
-    },
-    // Partner specific
-    ...(user?.type === "partner"
-      ? [
-          {
-            id: "applications",
-            label: "Applications",
-            icon: FileText,
-            path: "/dashboard/applications",
-          },
-          {
-            id: "management",
-            label: "Student Management",
-            icon: Users,
-            path: "/dashboard/student-management",
-          },
-          {
-            id: "courses",
-            label: "Courses",
-            icon: GraduationCap,
-            path: "/dashboard/courses",
-          },
-          {
-            id: "profile",
-            label: "My Profile",
-            icon: User,
-            path: "/dashboard/profile",
-          },
-        ]
-      : []),
-    // Admin specific
-    ...(user?.type === "admin"
-      ? [
-          {
-            id: "eligibility",
-            label: "Eligibility Queue",
-            icon: Clock,
-            path: "/dashboard/eligibility-queue",
-          },
-          {
-            id: "management",
-            label: "Student Management",
-            icon: Users,
-            path: "/dashboard/student-management",
-          },
-          {
-            id: "universities",
-            label: "University Management",
-            icon: Building2,
-            path: "/dashboard/university-management",
-          },
-          {
-            id: "partners",
-            label: "Partner Management",
-            icon: UserPlus,
-            path: "/dashboard/partner-management",
-          },
-        ]
-      : []),
-    {
-      id: "tickets",
-      label: "Tickets",
-      icon: MessageSquare,
-      path: "/dashboard/tickets",
+      label: "System",
+      items: [
+        { id: "overview", label: "Overview", icon: LayoutDashboard, path: "/dashboard" },
+      ]
     },
     {
-      id: "payments",
-      label: "Payment Tracking",
-      icon: CreditCard,
-      path: "/dashboard/payment-management",
+      label: "Academics",
+      items: [
+        ...(user?.type === "partner" ? [
+          { id: "applications", label: "Enrollments", icon: FileText, path: "/dashboard/applications" },
+          { id: "management", label: "My Students", icon: Users, path: "/dashboard/student-management" },
+          { id: "courses", label: "Programs", icon: GraduationCap, path: "/dashboard/courses" },
+        ] : []),
+        ...(user?.type === "admin" ? [
+          { id: "eligibility", label: "Review Queue", icon: Clock, path: "/dashboard/eligibility-queue" },
+          { id: "management", label: "All Students", icon: Users, path: "/dashboard/student-management" },
+          { id: "universities", label: "Universities", icon: Building2, path: "/dashboard/university-management" },
+          { id: "partners", label: "Admission Points", icon: UserPlus, path: "/dashboard/partner-management" },
+        ] : []),
+      ]
     },
+    {
+      label: "Operations",
+      items: [
+        { id: "payments", label: "Finance", icon: CreditCard, path: "/dashboard/payment-management" },
+        { id: "tickets", label: "Help Desk", icon: MessageSquare, path: "/dashboard/tickets" },
+      ]
+    }
   ];
 
   return (
@@ -126,89 +80,127 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
 
       <aside
         className={cn(
-          "fixed z-40 top-0 left-0 h-full bg-card border-r border-border shadow-xl transition-all duration-300 ease-in-out flex flex-col",
+          "fixed z-40 top-0 left-0 h-full bg-card/80 backdrop-blur-xl border-r border-border shadow-2xl transition-all duration-500 ease-in-out flex flex-col",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           isCollapsed ? "w-20" : "w-64",
         )}
       >
-        <div className="h-16 relative flex items-center px-6 border-b border-border bg-background/50 backdrop-blur-sm justify-center md:justify-start">
-          {!isCollapsed ? (
-            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent truncate w-full">
-              6ASkillCity
-            </h2>
-          ) : (
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-sm">
-              6A
-            </div>
-          )}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5 pointer-events-none rounded-r-[2.5rem]" />
+        <div className="h-24 relative flex items-center px-6 border-b border-border/50 bg-background/20 backdrop-blur-md justify-center md:justify-start">
+          <div className="flex items-center justify-center w-full">
+            <img 
+              src={logo} 
+              alt="6ASkillCity" 
+              className={cn(
+                "h-12 w-auto object-contain transition-all duration-500",
+                isCollapsed ? "scale-110" : "scale-125"
+              )} 
+            />
+          </div>
 
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden md:flex p-1.5 hover:bg-muted text-muted-foreground transition-all absolute -right-[15px] top-5 bg-background border border-border shadow-sm rounded-full z-50 hover:text-foreground hover:scale-105"
+            className="hidden md:flex p-1.5 hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all absolute -right-[14px] top-7 bg-card border border-border shadow-lg rounded-full z-50 hover:scale-110"
           >
             {isCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             ) : (
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             )}
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5">
-          {menuItems.map((item) => {
-            const isActive =
-              location.pathname === item.path ||
-              (location.pathname === "/dashboard" && item.id === "overview");
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  navigate(item.path);
-                  setSidebarOpen(false);
-                }}
-                title={isCollapsed ? item.label : undefined}
-                className={cn(
-                  "w-full flex items-center rounded-lg transition-all duration-200",
-                  isCollapsed ? "justify-center py-3" : "space-x-3 px-3 py-2.5",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    "shrink-0",
-                    isCollapsed ? "w-6 h-6" : "w-5 h-5",
-                  )}
-                />
-                {!isCollapsed && (
-                  <span className="font-medium truncate">{item.label}</span>
-                )}
-              </button>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-8 scrollbar-hide">
+          {menuGroups.map((group, idx) => (
+            <div key={idx} className="space-y-2">
+              {!isCollapsed && (
+                <h3 className="px-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 mb-3">
+                  {group.label}
+                </h3>
+              )}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const isActive =
+                    location.pathname === item.path ||
+                    (location.pathname === "/dashboard" && item.id === "overview");
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        navigate(item.path);
+                        setSidebarOpen(false);
+                      }}
+                      title={isCollapsed ? item.label : undefined}
+                      className={cn(
+                        "w-full flex items-center rounded-xl transition-all duration-300 relative group/item overflow-hidden",
+                        isCollapsed ? "justify-center py-3" : "space-x-3 px-3 py-2.5",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 font-bold"
+                          : "text-muted-foreground hover:bg-primary/5 hover:text-primary",
+                      )}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeTabGlow"
+                          className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80 rounded-xl -z-10"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      
+                      <div className={cn(
+                        "relative flex items-center justify-center transition-all duration-300",
+                        isActive ? "scale-110" : "group-hover/item:scale-110"
+                      )}>
+                        <item.icon
+                          className={cn(
+                            "shrink-0",
+                            isCollapsed ? "w-6 h-6" : "w-5 h-5",
+                          )}
+                        />
+                        {isActive && (
+                          <span className="absolute inset-0 bg-primary/20 blur-lg rounded-full" />
+                        )}
+                      </div>
+
+                      {!isCollapsed && (
+                        <span className="text-sm tracking-tight truncate">{item.label}</span>
+                      )}
+                      
+                      {!isCollapsed && isActive && (
+                        <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-primary-foreground shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border bg-background/20">
           <div
+            onClick={() => navigate("/dashboard/profile")}
             className={cn(
-              "flex items-center rounded-xl bg-secondary text-secondary-foreground transition-all duration-300",
-              isCollapsed ? "justify-center p-2" : "space-x-3 px-3 py-2.5",
+              "flex items-center rounded-2xl bg-card border border-border shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20 group/user cursor-pointer",
+              isCollapsed ? "justify-center p-2" : "space-x-3 px-3 py-3",
             )}
           >
-            <User
-              className={cn(
-                "shrink-0 rounded-full bg-background border border-border shadow-sm text-foreground",
-                isCollapsed ? "w-10 h-10 p-2" : "w-8 h-8 p-1.5",
-              )}
-            />
+            <div className="relative shrink-0">
+              <User
+                className={cn(
+                  "rounded-full bg-primary/10 text-primary transition-all duration-300 group-hover/user:scale-110",
+                  isCollapsed ? "w-10 h-10 p-2" : "w-9 h-9 p-2",
+                )}
+              />
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-card rounded-full shadow-sm" />
+            </div>
             {!isCollapsed && (
               <div className="flex-1 text-left overflow-hidden">
-                <p className="text-sm font-semibold truncate leading-tight">
+                <p className="text-sm font-black truncate leading-tight text-foreground group-hover/user:text-primary transition-colors">
                   {user?.fullName || user?.centerName}
                 </p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5 truncate">
-                  Dashboard
+                <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em] font-black mt-1 opacity-70">
+                  {user?.type || "User"}
                 </p>
               </div>
             )}

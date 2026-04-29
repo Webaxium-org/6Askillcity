@@ -1,7 +1,7 @@
 import { axiosInstance as API } from "./axiosInstance";
 
-export const getPartnerDashboardStats = async () => {
-  const response = await API.get("/admission-points/stats");
+export const getPartnerDashboardStats = async (year, half) => {
+  const response = await API.get(`/admission-points/stats?year=${year}&half=${half}`);
   return response.data;
 };
 

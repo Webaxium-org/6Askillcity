@@ -7,6 +7,9 @@ import moment from "moment";
 
 export const getAdminStats = async (req, res, next) => {
   try {
+    const year = parseInt(req.query.year) || moment().year();
+    const half = req.query.half || (moment().month() < 6 ? "H1" : "H2");
+
     const [
       totalStudents,
       totalPartners,
@@ -27,35 +30,36 @@ export const getAdminStats = async (req, res, next) => {
 
     const totalRevenue = allPayments.reduce((acc, p) => acc + p.amount, 0);
 
-    // Chart Data: Monthly Revenue (Last 6 Months)
-    const revenueData = [];
-    for (let i = 5; i >= 0; i--) {
-      const startOfMonth = moment().subtract(i, "months").startOf("month").toDate();
-      const endOfMonth = moment().subtract(i, "months").endOf("month").toDate();
+    const startMonth = half === "H1" ? 0 : 6;
+    const endMonth = half === "H1" ? 5 : 11;
 
+    // Chart Data: Monthly Revenue
+    const revenueData = [];
+    const enrollmentData = [];
+
+    for (let m = startMonth; m <= endMonth; m++) {
+      const monthDate = moment().year(year).month(m);
+      const startOfMonth = monthDate.clone().startOf("month").toDate();
+      const endOfMonth = monthDate.clone().endOf("month").toDate();
+
+      // Revenue for this specific month
       const monthlyRevenue = allPayments
         .filter(p => p.date >= startOfMonth && p.date <= endOfMonth)
         .reduce((acc, p) => acc + p.amount, 0);
 
       revenueData.push({
-        name: moment().subtract(i, "months").format("MMM"),
+        name: monthDate.format("MMM YY"),
         revenue: monthlyRevenue,
       });
-    }
 
-    // Chart Data: Monthly Enrollments (Last 6 Months)
-    const enrollmentData = [];
-    for (let i = 5; i >= 0; i--) {
-      const startOfMonth = moment().subtract(i, "months").startOf("month").toDate();
-      const endOfMonth = moment().subtract(i, "months").endOf("month").toDate();
-
+      // Enrollment for this specific month
       const count = await Student.countDocuments({
         applicationStatus: "Eligible",
         updatedAt: { $gte: startOfMonth, $lte: endOfMonth }
       });
 
       enrollmentData.push({
-        name: moment().subtract(i, "months").format("MMM"),
+        name: monthDate.format("MMM YY"),
         students: count,
       });
     }

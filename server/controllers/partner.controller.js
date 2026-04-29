@@ -13,6 +13,9 @@ export const getPartnerDashboardStats = async (req, res, next) => {
     const partnerId = req.user.userId;
     const partnerObjectId = new mongoose.Types.ObjectId(partnerId);
 
+    const year = parseInt(req.query.year) || moment().year();
+    const half = req.query.half || (moment().month() < 6 ? "H1" : "H2");
+
     // 1. Basic Stats
     const [totalStudents, totalApplications, activeTickets, totalRevenueData] =
       await Promise.all([
@@ -51,35 +54,28 @@ export const getPartnerDashboardStats = async (req, res, next) => {
       .populate("program", "name")
       .populate("university", "name");
 
-    // 4. Enrollment Chart Data (Last 6 Months)
-    const enrollmentData = [];
-    for (let i = 5; i >= 0; i--) {
-      const startOfMonth = moment()
-        .subtract(i, "months")
-        .startOf("month")
-        .toDate();
-      const endOfMonth = moment().subtract(i, "months").endOf("month").toDate();
-      const monthName = moment().subtract(i, "months").format("MMM");
+    const startMonth = half === "H1" ? 0 : 6;
+    const endMonth = half === "H1" ? 5 : 11;
 
+    // 4. Enrollment & Revenue Chart Data
+    const enrollmentData = [];
+    const revenueChartData = [];
+
+    for (let m = startMonth; m <= endMonth; m++) {
+      const monthDate = moment().year(year).month(m);
+      const startOfMonth = monthDate.clone().startOf("month").toDate();
+      const endOfMonth = monthDate.clone().endOf("month").toDate();
+      const monthLabel = monthDate.format("MMM YY");
+
+      // Enrollment count
       const count = await Student.countDocuments({
         registeredBy: partnerId,
         applicationStatus: "Eligible",
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
       });
+      enrollmentData.push({ name: monthLabel, students: count });
 
-      enrollmentData.push({ name: monthName, students: count });
-    }
-
-    // 5. Revenue Chart Data (Last 6 Months)
-    const revenueChartData = [];
-    for (let i = 5; i >= 0; i--) {
-      const startOfMonth = moment()
-        .subtract(i, "months")
-        .startOf("month")
-        .toDate();
-      const endOfMonth = moment().subtract(i, "months").endOf("month").toDate();
-      const monthName = moment().subtract(i, "months").format("MMM");
-
+      // Revenue aggregate
       const revenueData = await Payment.aggregate([
         {
           $match: {
@@ -91,7 +87,7 @@ export const getPartnerDashboardStats = async (req, res, next) => {
       ]);
 
       const monthlyRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
-      revenueChartData.push({ name: monthName, revenue: monthlyRevenue });
+      revenueChartData.push({ name: monthLabel, revenue: monthlyRevenue });
     }
 
     res.status(200).json({
