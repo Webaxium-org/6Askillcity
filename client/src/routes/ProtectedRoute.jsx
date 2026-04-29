@@ -27,8 +27,10 @@ const ProtectedRoute = ({ allowedRoles = [], allowedTypes = [] }) => {
   }
 
   // 3️⃣ Role check (e.g., "admin" vs "manager" within "admin" type)
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    console.warn(`[ProtectedRoute] Role mismatch: user.role=${user.role}, allowed=${allowedRoles}`);
+  // We check against user.role OR user.type to support partners who only have a type.
+  const userIdentity = user.role || user.type;
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userIdentity)) {
+    console.warn(`[ProtectedRoute] Role mismatch: identity=${userIdentity}, allowed=${allowedRoles}`);
     return <Navigate to="/dashboard" replace />;
   }
 
