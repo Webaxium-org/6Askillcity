@@ -31,7 +31,14 @@ import { addNotification, markAllAsRead } from "../../redux/notificationSlice";
 import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
 
-const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
+const Sidebar = ({
+  isOpen,
+  setSidebarOpen,
+  isCollapsed,
+  setIsCollapsed,
+  setShowLogoutWarning,
+}) => {
+  const { theme, toggleTheme } = useTheme();
   const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const location = useLocation();
@@ -255,6 +262,34 @@ const Sidebar = ({ isOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) => {
             </div>
           ))}
         </nav>
+        
+        {/* Mobile-only Theme & Logout */}
+        <div className="md:hidden px-4 py-4 space-y-2 border-t border-border/30 bg-background/10">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground hover:text-primary transition-all"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+            <span className="text-sm font-bold">
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </span>
+          </button>
+          
+          <button
+            onClick={() => {
+              setSidebarOpen(false);
+              setShowLogoutWarning(true);
+            }}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-sm font-bold">Logout</span>
+          </button>
+        </div>
 
         <div className="p-4 border-t border-border bg-background/20">
           <div
@@ -336,6 +371,7 @@ export const DashboardLayout = ({ children, title }) => {
         setSidebarOpen={setSidebarOpen}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
+        setShowLogoutWarning={setShowLogoutWarning}
       />
 
       <div
@@ -443,7 +479,7 @@ export const DashboardLayout = ({ children, title }) => {
 
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200 shadow-sm"
+              className="hidden md:flex p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200 shadow-sm"
             >
               {theme === "dark" ? (
                 <Sun className="w-4 h-4" />
@@ -453,7 +489,7 @@ export const DashboardLayout = ({ children, title }) => {
             </button>
             <button
               onClick={() => setShowLogoutWarning(true)}
-              className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200 font-medium text-sm flex items-center space-x-2 shadow-sm"
+              className="hidden md:flex px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200 font-medium text-sm flex items-center space-x-2 shadow-sm"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Logout</span>

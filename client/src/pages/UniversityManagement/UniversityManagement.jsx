@@ -58,6 +58,7 @@ export default function UniversityManagement() {
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [feeHistory, setFeeHistory] = useState([]);
   const [loadingFees, setLoadingFees] = useState(false);
+  const [modalTab, setModalTab] = useState("setup"); // setup or history
   const [feeForm, setFeeForm] = useState({
     applicationFee: 0,
     tuitionFee: 0,
@@ -164,6 +165,7 @@ export default function UniversityManagement() {
   const openFeeModal = async (program) => {
     setSelectedProgram(program);
     setIsFeeModalOpen(true);
+    setModalTab("setup");
     setLoadingFees(true);
     try {
       const res = await getProgramFees(program._id);
@@ -201,8 +203,8 @@ export default function UniversityManagement() {
     <DashboardLayout title="University Management">
       <div className="space-y-6">
         {/* Header & Tabs */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border">
-          <div className="flex p-1 bg-muted rounded-xl w-fit">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border">
+          <div className="flex p-1 bg-muted rounded-xl w-full lg:w-fit overflow-x-auto scrollbar-hide whitespace-nowrap">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -219,7 +221,7 @@ export default function UniversityManagement() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input
@@ -227,7 +229,7 @@ export default function UniversityManagement() {
                 placeholder={`Search ${activeTab}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-muted border-transparent focus:bg-background focus:border-primary/30 rounded-xl text-sm outline-none transition-all w-full md:w-64 border"
+                className="pl-10 pr-4 py-2 bg-muted border-transparent focus:bg-background focus:border-primary/30 rounded-xl text-sm outline-none transition-all w-full lg:w-64 border"
               />
             </div>
             {activeTab === "universities" && (
@@ -315,8 +317,8 @@ export default function UniversityManagement() {
               )}
 
               {activeTab === "programs" && (
-                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-                  <table className="w-full text-left border-collapse">
+                <div className="bg-card border border-border rounded-2xl shadow-sm overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                       <tr className="bg-muted/50 border-b border-border">
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Program Name</th>
@@ -421,7 +423,7 @@ export default function UniversityManagement() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border"
+                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
               >
                 <h3 className="text-xl font-bold mb-4">{editingUniversity ? "Edit" : "Add"} University</h3>
                 <form onSubmit={handleCreateUniversity} className="space-y-4">
@@ -455,7 +457,7 @@ export default function UniversityManagement() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border"
+                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
               >
                 <h3 className="text-xl font-bold mb-4">{editingProgram ? "Edit" : "Add"} Program</h3>
                 <form onSubmit={handleCreateProgram} className="space-y-4">
@@ -544,91 +546,127 @@ export default function UniversityManagement() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-card w-full max-w-4xl p-6 rounded-2xl shadow-xl border border-border flex flex-col md:flex-row gap-8 max-h-[90vh] overflow-hidden"
+                className="bg-card w-full max-w-4xl rounded-3xl shadow-2xl border border-border flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh] overflow-hidden"
               >
-                <div className="flex-1 overflow-y-auto pr-2">
-                  <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                    <IndianRupee className="w-5 h-5" />
-                    <h3 className="text-xl font-bold text-foreground">Set New Fees</h3>
+                {/* Mobile Tab Switcher */}
+                <div className="flex md:hidden border-b border-border p-1 bg-muted/30">
+                  <button 
+                    onClick={() => setModalTab("setup")}
+                    className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${modalTab === "setup" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}
+                  >
+                    Set Fees
+                  </button>
+                  <button 
+                    onClick={() => setModalTab("history")}
+                    className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${modalTab === "history" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}
+                  >
+                    History
+                  </button>
+                </div>
+
+                {/* Form Section */}
+                <div className={`flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 border-b md:border-b-0 md:border-r border-border h-[60vh] md:h-auto ${modalTab !== "setup" ? "hidden md:block" : "block"}`}>
+
+                  <div className="flex items-center gap-3 text-emerald-500 mb-4">
+                    <div className="p-2 bg-emerald-500/10 rounded-xl">
+                      <IndianRupee className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-foreground">Set New Fees</h3>
+                      <p className="text-xs text-muted-foreground font-medium">For {selectedProgram?.name}</p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">Update the fee structure for <b>{selectedProgram?.name}</b>. This will create a new history record.</p>
                   
-                  <form onSubmit={handleUpdateFee} className="space-y-4">
-                    <div className="p-4 bg-muted/50 rounded-xl border border-border space-y-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <div>
-                          <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Application Fee</label>
+                  <form onSubmit={handleUpdateFee} className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Application Fee</label>
                           <input 
                             name="applicationFee" 
                             type="number" 
                             value={feeForm.applicationFee}
                             onChange={(e) => setFeeForm(p => ({...p, applicationFee: Number(e.target.value), totalFee: Number(e.target.value) + p.tuitionFee}))}
                             required 
-                            className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-sm" 
+                            className="w-full px-4 py-3 rounded-2xl border border-input bg-background outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-semibold" 
                             placeholder="0.00" 
                           />
                         </div>
-                        <div>
-                          <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Tuition Fee</label>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Tuition Fee</label>
                           <input 
                             name="tuitionFee" 
                             type="number" 
                             value={feeForm.tuitionFee}
                             onChange={(e) => setFeeForm(p => ({...p, tuitionFee: Number(e.target.value), totalFee: p.applicationFee + Number(e.target.value)}))}
                             required 
-                            className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-sm" 
+                            className="w-full px-4 py-3 rounded-2xl border border-input bg-background outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-semibold" 
                             placeholder="0.00" 
                           />
                         </div>
                       </div>
 
-                      <div className="pt-4 border-t border-border">
-                        <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Total Fee (Calculated)</label>
-                        <div className="w-full px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-black text-lg flex items-center gap-2">
-                          <IndianRupee className="w-5 h-5" />
+                      <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-2">
+                        <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest block">Total Fee (Calculated)</label>
+                        <div className="text-2xl font-black text-emerald-600 flex items-center gap-2">
+                          <IndianRupee className="w-6 h-6" />
                           {feeForm.totalFee.toLocaleString()}
                           <input type="hidden" name="totalFee" value={feeForm.totalFee} />
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-2 italic">Total fee is automatically calculated as App Fee + Tuition Fee</p>
+                        <p className="text-[10px] text-muted-foreground italic">Sum of Application and Tuition fees</p>
                       </div>
                     </div>
-                    <div className="flex gap-3 pt-4">
-                      <button type="button" onClick={() => setIsFeeModalOpen(false)} className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors">Cancel</button>
-                      <button type="submit" className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-emerald-500/20">Update Fee Structure</button>
+
+                    <div className="flex gap-3 pt-2">
+                      <button 
+                        type="button" 
+                        onClick={() => setIsFeeModalOpen(false)} 
+                        className="flex-1 py-3.5 rounded-2xl border border-border hover:bg-muted font-bold transition-all text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="flex-[2] py-3.5 rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-xl shadow-emerald-500/20 text-sm"
+                      >
+                        Update Fee Structure
+                      </button>
                     </div>
                   </form>
                 </div>
 
-                <div className="w-full md:w-80 bg-muted/30 rounded-2xl p-4 flex flex-col border border-border">
-                  <div className="flex items-center gap-2 mb-4">
+                {/* History Section */}
+                <div className={`w-full md:w-80 bg-muted/30 flex flex-col flex-1 md:flex-none shrink-0 min-h-0 h-[60vh] md:h-auto ${modalTab !== "history" ? "hidden md:flex" : "flex"}`}>
+
+                  <div className="p-6 border-b border-border/50 flex items-center gap-2">
                     <History className="w-4 h-4 text-muted-foreground" />
                     <h4 className="font-bold text-sm">Fee History</h4>
                   </div>
-                  <div className="flex-1 overflow-y-auto space-y-3">
+                  <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                     {loadingFees ? (
                       <div className="py-10 text-center text-xs text-muted-foreground">Loading history...</div>
                     ) : feeHistory.length === 0 ? (
                       <div className="py-10 text-center text-xs text-muted-foreground">No history available.</div>
                     ) : (
                       feeHistory.map((fee, idx) => (
-                        <div key={fee._id} className={`p-3 rounded-xl border transition-all ${fee.isCurrent ? 'bg-emerald-500/5 border-emerald-500/20 shadow-sm' : 'bg-background border-border opacity-70'}`}>
+                        <div key={fee._id} className={`p-4 rounded-2xl border transition-all ${fee.isCurrent ? 'bg-card border-emerald-500/30 shadow-md ring-1 ring-emerald-500/10' : 'bg-card/50 border-border opacity-70'}`}>
                           <div className="flex justify-between items-start mb-2">
-                             <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-muted">v{feeHistory.length - idx}</span>
-                             {fee.isCurrent && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">CURRENT</span>}
+                             <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-muted">v{feeHistory.length - idx}</span>
+                             {fee.isCurrent && <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-widest">ACTIVE</span>}
                           </div>
-                          <div className="text-sm font-bold">₹{fee.totalFee.toLocaleString()}</div>
-                          <div className="text-[10px] text-muted-foreground mt-1">
+                          <div className="text-lg font-black">₹{fee.totalFee.toLocaleString()}</div>
+                          <div className="text-[10px] text-muted-foreground font-medium mt-1">
                             Updated: {new Date(fee.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       ))
                     )}
                   </div>
-                  <div className="mt-4 pt-4 border-t border-border">
-                     <div className="flex items-start gap-2 p-2 bg-blue-500/5 rounded-lg border border-blue-500/10">
+                  <div className="p-6 border-t border-border/50">
+                     <div className="flex items-start gap-2 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10">
                         <Info className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
-                        <p className="text-[10px] text-blue-700 leading-relaxed">
-                          Student references are tied to the version active at enrollment time. Updating fees only affects new applications.
+                        <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                          Updating fees only affects new applications.
                         </p>
                      </div>
                   </div>

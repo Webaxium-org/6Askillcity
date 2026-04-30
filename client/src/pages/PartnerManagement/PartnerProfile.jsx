@@ -222,7 +222,7 @@ export default function PartnerProfile() {
     <DashboardLayout title="Partner Profile">
       <div className="space-y-6">
         {/* Back Button & Action Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <button 
             onClick={() => navigate("/dashboard/partner-management")}
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
@@ -231,7 +231,7 @@ export default function PartnerProfile() {
             Back to Partners
           </button>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             {partner.status === "pending" ? (
               <>
                 <button
@@ -249,10 +249,10 @@ export default function PartnerProfile() {
                     setReviewStatus("approved");
                     setIsReviewConfirmOpen(true);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/10"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/10"
                 >
                   <UserCheck className="w-4 h-4" />
-                  Approve Partner
+                  Approve
                 </button>
               </>
             ) : (
@@ -261,7 +261,7 @@ export default function PartnerProfile() {
                   <button
                     onClick={handleGenerateToken}
                     disabled={isGeneratingToken}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                   >
                     {isGeneratingToken ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -273,14 +273,14 @@ export default function PartnerProfile() {
                 )}
                 <button
                   onClick={handleToggleActive}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                     partner.isActive 
                       ? "bg-red-500/10 border-red-500/20 text-red-600 hover:bg-red-500 hover:text-white"
                       : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white"
                   }`}
                 >
                   {partner.isActive ? <UserMinus className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                  {partner.isActive ? "Deactivate Partner" : "Activate Partner"}
+                  {partner.isActive ? "Deactivate" : "Activate"}
                 </button>
               </>
             )}
@@ -297,8 +297,8 @@ export default function PartnerProfile() {
              </div>
           </div>
           
-          <div className="pt-16 pb-8 px-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="pt-16 pb-8 px-4 sm:px-8">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h1 className="text-3xl font-black tracking-tight">{partner.centerName}</h1>
@@ -335,8 +335,8 @@ export default function PartnerProfile() {
             </div>
           </div>
 
-          <div className="border-t border-border bg-muted/20 px-8 py-2">
-             <div className="flex gap-8">
+          <div className="border-t border-border bg-muted/20 px-4 sm:px-8 py-1 overflow-x-auto scrollbar-hide">
+             <div className="flex gap-6 sm:gap-8 whitespace-nowrap min-w-max">
                {tabs.map(tab => (
                  <button
                    key={tab.id}

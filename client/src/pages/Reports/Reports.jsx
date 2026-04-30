@@ -349,15 +349,15 @@ function ReportListItem({ report, onClick }) {
     <motion.button
       whileHover={{ x: 10 }}
       onClick={onClick}
-      className="w-full flex items-center gap-6 p-4 bg-card/80 border border-border rounded-2xl hover:border-primary/30 hover:bg-card transition-all group"
+      className="w-full flex items-center gap-4 sm:gap-6 p-4 bg-card/80 border border-border rounded-2xl hover:border-primary/30 hover:bg-card transition-all group overflow-hidden"
     >
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", report.color)}>
-        <report.icon className="w-6 h-6 text-white" />
+      <div className={cn("w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0", report.color)}>
+        <report.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
       </div>
       
-      <div className="flex-1 text-left">
-        <h4 className="font-black text-base group-hover:text-primary transition-colors">{report.title}</h4>
-        <p className="text-xs text-muted-foreground font-medium truncate max-w-md">{report.description}</p>
+      <div className="flex-1 text-left min-w-0">
+        <h4 className="font-black text-sm sm:text-base group-hover:text-primary transition-colors truncate">{report.title}</h4>
+        <p className="text-xs text-muted-foreground font-medium truncate">{report.description}</p>
       </div>
 
       <div className="flex items-center gap-4">
