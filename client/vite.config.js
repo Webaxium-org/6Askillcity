@@ -10,6 +10,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["axios", "react", "react-dom", "react-router-dom"],
+        },
+      },
+    },
+  },
   preview: {
     allowedHosts: ["six-a-skillcity-m25sx.ondigitalocean.app"],
   },

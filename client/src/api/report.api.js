@@ -1,43 +1,31 @@
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { axiosInstance } from "./axiosInstance";
 
 export const getAcademicReport = async (groupBy) => {
-  const res = await axios.get(`${API_URL}/reports/academic?groupBy=${groupBy}`, {
-    withCredentials: true,
-  });
+  const res = await axiosInstance.get(`/reports/academic?groupBy=${groupBy}`);
   return res.data;
 };
 
 export const getAdmissionReport = async (type, options = {}) => {
   const { startDate, endDate } = options;
-  let url = `${API_URL}/reports/admission?type=${type}`;
+  let url = `/reports/admission?type=${type}`;
   if (startDate) url += `&startDate=${startDate}`;
   if (endDate) url += `&endDate=${endDate}`;
   
-  const res = await axios.get(url, {
-    withCredentials: true,
-  });
+  const res = await axiosInstance.get(url);
   return res.data;
 };
 
 export const getDocumentReport = async (docType) => {
-  const res = await axios.get(`${API_URL}/reports/documents?docType=${docType}`, {
-    withCredentials: true,
-  });
+  const res = await axiosInstance.get(`/reports/documents?docType=${docType}`);
   return res.data;
 };
 
 export const getFinancialReport = async () => {
-  const res = await axios.get(`${API_URL}/reports/financial`, {
-    withCredentials: true,
-  });
+  const res = await axiosInstance.get("/reports/financial");
   return res.data;
 };
 
 export const getFeeWiseReport = async () => {
-  const res = await axios.get(`${API_URL}/reports/fee-wise`, {
-    withCredentials: true,
-  });
+  const res = await axiosInstance.get("/reports/fee-wise");
   return res.data;
 };

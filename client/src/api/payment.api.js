@@ -1,38 +1,36 @@
-import axios from "axios";
-
-const API_URL = `${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/api/payments`;
+import { axiosInstance } from "./axiosInstance";
 
 export const getManagementStudents = async () => {
-  const res = await axios.get(`${API_URL}/students`, { withCredentials: true });
+  const res = await axiosInstance.get("/payments/students");
   return res.data;
 };
 
 export const getGlobalPaymentStats = async () => {
-  const res = await axios.get(`${API_URL}/global-stats`, { withCredentials: true });
+  const res = await axiosInstance.get("/payments/global-stats");
   return res.data;
 };
 
 export const recordPayment = async (studentId, paymentData) => {
-  const res = await axios.post(`${API_URL}/student/${studentId}/payments`, paymentData, { withCredentials: true });
+  const res = await axiosInstance.post(`/payments/student/${studentId}/payments`, paymentData);
   return res.data;
 };
 
 export const getStudentPayments = async (studentId) => {
-  const res = await axios.get(`${API_URL}/student/${studentId}/payments`, { withCredentials: true });
+  const res = await axiosInstance.get(`/payments/student/${studentId}/payments`);
   return res.data;
 };
 
 export const setPaymentSchedule = async (studentId, schedule) => {
-  const res = await axios.post(`${API_URL}/student/${studentId}/schedules`, { schedule }, { withCredentials: true });
+  const res = await axiosInstance.post(`/payments/student/${studentId}/schedules`, { schedule });
   return res.data;
 };
 
 export const getStudentSchedules = async (studentId) => {
-  const res = await axios.get(`${API_URL}/student/${studentId}/schedules`, { withCredentials: true });
+  const res = await axiosInstance.get(`/payments/student/${studentId}/schedules`);
   return res.data;
 };
 
 export const deletePaymentSchedule = async (scheduleId) => {
-  const res = await axios.delete(`${API_URL}/schedules/${scheduleId}`, { withCredentials: true });
+  const res = await axiosInstance.delete(`/payments/schedules/${scheduleId}`);
   return res.data;
 };

@@ -31,7 +31,7 @@ import {
   Baby,
   Cpu,
 } from "lucide-react";
-import axios from "axios";
+import { axiosInstance } from "../../api/axiosInstance";
 import Tesseract from "tesseract.js";
 import { ChevronDown } from "lucide-react";
 import { getPermittedCourses } from "../../api/partner.api";
@@ -583,12 +583,11 @@ export default function AddStudent() {
 
       setScanProgress(30);
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/api/ocr/scan-certificate`,
+      const response = await axiosInstance.post(
+        "/ocr/scan-certificate",
         payload,
         {
           headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true,
         },
       );
 
@@ -775,12 +774,11 @@ export default function AddStudent() {
         payload.append("mastersCertificates", f),
       );
 
-      await axios.post(
-        `${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/api/students/register`,
+      await axiosInstance.post(
+        "/students/register",
         payload,
         {
           headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true,
         },
       );
 
