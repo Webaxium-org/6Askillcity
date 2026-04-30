@@ -10,4 +10,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    allowedHosts: ["six-a-skillcity-m25sx.ondigitalocean.app"],
+  },
 });
