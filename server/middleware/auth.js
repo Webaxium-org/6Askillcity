@@ -10,6 +10,10 @@ export const requireAuth = async (req, res, next) => {
       req.cookies?.access__ || 
       (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null);
 
+    if (process.env.NODE_ENV === "production") {
+      console.log(`Auth check - Token present: ${!!token}, Cookies: ${Object.keys(req.cookies || {}).join(", ")}`);
+    }
+
     if (!token) {
       req.user = { isAuthenticated: false };
       return next(); // Continue without blocking
