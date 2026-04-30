@@ -13,7 +13,8 @@ const Button = React.forwardRef(
       default: "bg-primary text-primary-foreground hover:bg-primary/90",
       primary: "bg-[#17468C] text-white hover:bg-[#17468C]/90 shadow",
       brandRed: "bg-[#B82424] text-white hover:bg-[#B82424]/90 shadow",
-      destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+      destructive:
+        "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       outline:
         "border border-input hover:bg-accent hover:text-accent-foreground",
       secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
@@ -110,6 +111,7 @@ const Navbar = () => {
           <Button
             variant="primary"
             size="sm"
+            onClick={() => navigate("/register-admission-point")}
             className="rounded-full shadow-lg shadow-[#17468C]/20 hover:shadow-[#17468C]/40 hover:-translate-y-0.5 transition-all"
           >
             Partner Now

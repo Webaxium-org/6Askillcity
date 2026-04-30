@@ -15,9 +15,21 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { showAlert } from "../../redux/alertSlice";
 import Navbar from "../../components/Navbar";
 
 import Logo from "../../assets/logo.png";
+import AboutImg from "../../assets/about.png";
+import Ugc from "../../assets/ugc-v.webp";
+import ManipurGovt from "../../assets/Group-1000005110.webp";
+import Aiu from "../../assets/aiu.webp";
+import Ncte from "../../assets/ncte.webp";
+import Bci from "../../assets/bar-council.webp";
+import Pci from "../../assets/pharmacy-council.webp";
+import Reach from "../../assets/Reach.webp";
+import IncreasedAdmission from "../../assets/empower.webp";
+import Holistic from "../../assets/Holistic.webp";
 
 /**
  * UTILITIES
@@ -35,7 +47,8 @@ const Button = React.forwardRef(
       default: "bg-primary text-primary-foreground hover:bg-primary/90",
       primary: "bg-[#17468C] text-white hover:bg-[#17468C]/90 shadow",
       brandRed: "bg-[#B82424] text-white hover:bg-[#B82424]/90 shadow",
-      destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+      destructive:
+        "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       outline:
         "border border-input hover:bg-accent hover:text-accent-foreground",
       secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
@@ -79,6 +92,20 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => {
   );
 });
 Input.displayName = "Input";
+
+const Textarea = React.forwardRef(({ className, ...props }, ref) => {
+  return (
+    <textarea
+      className={cn(
+        "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+      ref={ref}
+      {...props}
+    />
+  );
+});
+Textarea.displayName = "Textarea";
 
 const Label = React.forwardRef(({ className, ...props }, ref) => (
   <label
@@ -152,7 +179,11 @@ const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
 ));
 CardDescription.displayName = "CardDescription";
 
@@ -300,8 +331,29 @@ const LoadingScreen = ({ onFinished }) => {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const dispatch = useDispatch();
 
   const navigate = useNavigate();
+
+  const handlePartnerInquiry = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // Simulate API call for registration
+    setTimeout(() => {
+      setIsSubmitting(false);
+      dispatch(
+        showAlert({
+          type: "success",
+          message:
+            "Registration submitted! Our partnership team will review your application and contact you within 24 hours.",
+        }),
+      );
+      // Optional: clear form fields here if using state
+      e.target.reset();
+    }, 1500);
+  };
 
   return (
     <div className="relative min-h-screen bg-background font-sans selection:bg-[#B82424] selection:text-white overflow-x-hidden">
@@ -376,6 +428,7 @@ export default function App() {
                     <Button
                       variant="brandRed"
                       size="lg"
+                      onClick={() => navigate("/register-admission-point")}
                       className="rounded-full shadow-xl shadow-[#B82424]/20 text-base hover:-translate-y-1 transition-all duration-300"
                     >
                       Join the Network <ArrowRight size={18} className="ml-2" />
@@ -383,6 +436,7 @@ export default function App() {
                     <Button
                       variant="outline"
                       size="lg"
+                      onClick={() => navigate("/login")}
                       className="rounded-full text-base hover:bg-accent border-border shadow-sm hover:-translate-y-1 transition-all duration-300"
                     >
                       View Institutions
@@ -444,59 +498,79 @@ export default function App() {
                       </CardDescription>
                     </CardHeader>
 
-                    <CardContent className="relative z-10 space-y-5 px-8">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="firstName">First Name</Label>
-                          <Input
-                            id="firstName"
-                            placeholder="John"
-                            className="bg-background/50 border-border/60 focus:bg-background transition-colors"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lastName">Last Name</Label>
-                          <Input
-                            id="lastName"
-                            placeholder="Doe"
-                            className="bg-background/50 border-border/60 focus:bg-background transition-colors"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Work Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="john@skillcity.com"
-                          className="bg-background/50 border-border/60 focus:bg-background transition-colors"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="centerType">Center Type</Label>
-                        <div className="relative">
-                          <select
-                            id="centerType"
-                            className="flex h-10 w-full rounded-md border border-border/60 bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 appearance-none focus:bg-background transition-colors"
-                          >
-                            <option>Admission Point</option>
-                            <option>Vocational Hub</option>
-                          </select>
-                          <ChevronDown
-                            size={16}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
-                          />
-                        </div>
-                      </div>
-
-                      <Button
-                        variant="primary"
-                        className="w-full mt-4 rounded-xl shadow-lg shadow-[#17468C]/20 hover:shadow-[#17468C]/40 hover:-translate-y-0.5 transition-all duration-300"
+                    <CardContent className="relative z-10 px-8">
+                      <form
+                        onSubmit={handlePartnerInquiry}
+                        className="space-y-4"
                       >
-                        Submit Registration
-                      </Button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="centerName">Center Name</Label>
+                            <Input
+                              id="centerName"
+                              required
+                              placeholder="Your center name"
+                              className="bg-background/50 border-border/60 focus:bg-background transition-colors"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="contactName">
+                              Contact Person Name
+                            </Label>
+                            <Input
+                              id="contactName"
+                              required
+                              placeholder="John Doe"
+                              className="bg-background/50 border-border/60 focus:bg-background transition-colors"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">
+                            Contact Person Phone Number
+                          </Label>
+                          <Input
+                            id="phone"
+                            required
+                            placeholder="+91 00000 00000"
+                            className="bg-background/50 border-border/60 focus:bg-background transition-colors"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Contact Person Email</Label>
+                          <Input
+                            id="email"
+                            required
+                            type="email"
+                            placeholder="john@example.com"
+                            className="bg-background/50 border-border/60 focus:bg-background transition-colors"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="address">Center Address</Label>
+                          <Textarea
+                            id="address"
+                            required
+                            placeholder="Enter complete office address"
+                            className="bg-background/50 border-border/60 focus:bg-background transition-colors resize-none"
+                          />
+                        </div>
+
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          disabled={isSubmitting}
+                          className="w-full mt-4 rounded-xl shadow-lg shadow-[#17468C]/20 hover:shadow-[#17468C]/40 hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                          {isSubmitting
+                            ? "Submitting..."
+                            : "Submit Registration"}
+                        </Button>
+                      </form>
                     </CardContent>
 
                     <CardFooter className="justify-center pt-4 pb-8 relative z-10 bg-muted/50 mt-6 border-t border-border/50">
@@ -612,7 +686,11 @@ export default function App() {
                     color:
                       "bg-gradient-to-br from-[#B82424] to-red-600 shadow-red-500/30",
                     icon: <School className="text-white" size={28} />,
-                    desc: "State Government established university ensuring high-quality human resource development.",
+                    desc: "Established by the Manipur Government (Act No. 9 of 2020) and under u/s 2(f) of UGC Act 1956. We aim to create world-level research facilities and provide state-of-the-art education to empower youth with global human resources.",
+                    stats: [
+                      { label: "Legislation", value: "Act No. 9 of 2020" },
+                      { label: "Recognition", value: "UGC u/s 2(f)" },
+                    ],
                   },
                   {
                     title: "The Global University",
@@ -620,7 +698,11 @@ export default function App() {
                     color:
                       "bg-gradient-to-br from-[#17468C] to-blue-600 shadow-blue-500/30",
                     icon: <Globe className="text-white" size={28} />,
-                    desc: "An innovative academic hub focused on community engagement and technological growth.",
+                    desc: "Widely recognized as a beacon of academic excellence and innovation in Arunachal Pradesh. Since 2024, it has been known among the top education institutions in India, shaping minds and empowering positive impact.",
+                    stats: [
+                      { label: "Recognition", value: "Prominent Institution" },
+                      { label: "Focus", value: "Innovation & Impact" },
+                    ],
                   },
                 ].map((uni, i) => (
                   <motion.div
@@ -666,22 +748,16 @@ export default function App() {
                       </CardContent>
                       <CardFooter className="border-t border-border pt-6 pb-8 px-8 bg-muted relative z-10 mt-6">
                         <div className="flex items-center gap-12 w-full">
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                              Approvals
-                            </p>
-                            <p className="text-sm font-bold text-foreground">
-                              UGC, AIU, BCI
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                              Programs
-                            </p>
-                            <p className="text-sm font-bold text-foreground">
-                              UG, PG, PhD
-                            </p>
-                          </div>
+                          {uni.stats.map((stat, idx) => (
+                            <div key={idx} className="space-y-1">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                {stat.label}
+                              </p>
+                              <p className="text-sm font-bold text-foreground">
+                                {stat.value}
+                              </p>
+                            </div>
+                          ))}
                         </div>
                       </CardFooter>
                     </Card>
@@ -722,29 +798,37 @@ export default function App() {
                   {
                     title: "Admission Centres",
                     subtitle: "Application Recruitment",
+                    description:
+                      "6A Skillcity invites ADMISSION APPLICATION CENTRE from across India to partner and facilitate the admission process for students. Partnering with us allows admission recruiters to streamline the admission process for students, providing them with access to a diverse range of UGC-approved courses.",
                     color: "text-blue-400",
                     hoverGradient:
                       "from-[#17468C]/20 via-[#17468C]/5 to-transparent",
                     bgBadge:
                       "bg-[#17468C]/20 text-blue-300 border border-[#17468C]/30",
                     points: [
-                      "Application Facilitation",
-                      "Counseling Support",
-                      "Documentation Help",
+                      "Assist students in the application process for Bir Tikendrajit University & The Global University programs.",
+                      "Provide guidance and support to applicants throughout the admission journey.",
+                      "Serve as a local point of contact for prospective students in your region.",
+                      "Contribute to the promotion of Bir Tikendrajit University & The Global University academic offerings.",
+                      "Play a key role in expanding access to quality education and fostering growth.",
                     ],
                   },
                   {
                     title: "Vocational Centres",
                     subtitle: "Skill-Based Learning",
+                    description:
+                      "6A Skillcity recognizes the importance of vocational education in preparing students for the dynamic demands of the workforce. We invite vocational education centers across India to partner with us in offering specialized courses that cater to the needs of various industries.",
                     color: "text-red-400",
                     hoverGradient:
                       "from-[#B82424]/20 via-[#B82424]/5 to-transparent",
                     bgBadge:
                       "bg-[#B82424]/20 text-red-300 border border-[#B82424]/30",
                     points: [
-                      "Practical Training",
-                      "Industry Certifications",
-                      "Job Placement Support",
+                      "Offer Bir Tikendrajit University & The Global University skill-enhancing programs to your students.",
+                      "Provide hands-on training and practical experience in alignment with industry requirements.",
+                      "Empower students with the skills and knowledge necessary for successful career pathways.",
+                      "Enhance your institution’s reputation as a provider of holistic education with a focus on employability.",
+                      "Contribute to bridging the gap between academia and industry.",
                     ],
                   },
                 ].map((path, i) => (
@@ -786,6 +870,12 @@ export default function App() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="flex-grow space-y-6 px-10 relative z-10">
+                        {path.description && (
+                          <p className="text-white/50 text-sm leading-relaxed mb-6 line-clamp-4 group-hover:line-clamp-none transition-all duration-500">
+                            {path.description}
+                          </p>
+                        )}
+
                         {path.points.map((point, idx) => (
                           <div key={idx} className="flex items-center gap-4">
                             <CheckCircle
@@ -817,8 +907,273 @@ export default function App() {
             </div>
           </section>
 
+          {/* ABOUT SECTION */}
+          <section
+            id="about"
+            className="py-24 bg-background relative overflow-hidden"
+          >
+            <div className="container mx-auto px-6">
+              <div className="grid lg:grid-cols-2 gap-16 items-center">
+                <motion.div
+                  initial={{ opacity: 0, x: -50, filter: "blur(10px)" }}
+                  whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 0.8, type: "spring" }}
+                  className="space-y-8"
+                >
+                  <div className="space-y-4">
+                    <Badge variant="brandRed" className="px-3 py-1 shadow-sm">
+                      Who We Are
+                    </Badge>
+                    <h2 className="text-4xl lg:text-5xl font-bold text-foreground tracking-tight leading-tight">
+                      About <span className="text-[#17468C]">6A Skillcity</span>
+                    </h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                      6A Skillcity serves as an academic partner of{" "}
+                      <span className="text-foreground font-semibold">
+                        Bir Tikendrajit University & The Global University
+                      </span>{" "}
+                      handling all academic affairs. The foundation connects
+                      admission application centers and vocational education
+                      centers with Bir Tikendrajit University & The Global
+                      University.
+                    </p>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                      With a commitment to fostering educational growth and
+                      facilitating access to quality education, 6A Skillcity
+                      plays a pivotal role in connecting aspiring students with
+                      Bir Tikendrajit University, The Global University’s
+                      diverse range of programs.
+                    </p>
+                    <p className="text-lg text-muted-foreground leading-relaxed italic border-l-4 border-[#B82424] pl-6 py-2">
+                      "As an academic partner, 6A Skillcity contributes to the
+                      advancement of education by promoting collaboration and
+                      synergy between educational institutions and Bir
+                      Tikendrajit University & The Global University."
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-6 pt-4">
+                    <div className="flex -space-x-3">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className="w-12 h-12 rounded-full border-4 border-background bg-slate-200 overflow-hidden shadow-lg"
+                        >
+                          <img
+                            src={`https://i.pravatar.cc/150?u=${i + 10}`}
+                            alt="User"
+                          />
+                        </div>
+                      ))}
+                      <div className="w-12 h-12 rounded-full border-4 border-background bg-[#17468C] flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                        +80k
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-bold text-foreground">
+                        Trusted by Students
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, filter: "blur(20px)" }}
+                  whileInView={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 1, type: "spring", bounce: 0.3 }}
+                  className="relative"
+                >
+                  {/* Decorative Elements */}
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#17468C]/10 rounded-full blur-3xl animate-pulse" />
+                  <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[#B82424]/10 rounded-full blur-3xl animate-pulse" />
+
+                  <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-border group">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-[#17468C]/20 to-transparent mix-blend-overlay z-10" />
+                    <img
+                      src={AboutImg}
+                      alt="Education Building"
+                      className="w-full h-[500px] object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+
+                    <div className="absolute bottom-8 left-8 right-8 z-20">
+                      <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white shadow-2xl">
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-white/20">
+                              <GraduationCap className="text-white" size={32} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white/80">
+                                Academic Partner
+                              </p>
+                              <p className="text-xl font-bold">
+                                Official BTU Partner
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </section>
+
+          {/* WHY PARTNER SECTION */}
+          <section
+            id="why-partner"
+            className="py-24 bg-background relative overflow-hidden"
+          >
+            <div className="container mx-auto px-6 text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                className="mb-16 space-y-4"
+              >
+                <h2 className="text-4xl lg:text-5xl font-bold tracking-tight">
+                  Why Partner with <br />
+                  <span className="text-[#17468C]">6A Skillcity?</span>
+                </h2>
+              </motion.div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(24,minmax(0,1fr))] [grid-auto-rows:1fr] gap-6 mb-20">
+                {[
+                  {
+                    title: "UGC Approved Course Certificate:",
+                    desc: "Our partner institution courses are approved by the University Grants Commission (UGC), guaranteeing quality education and recognized certifications.",
+                    color: "bg-[#B82424]",
+                    image: Ugc,
+                  },
+                  {
+                    title: "Government of Manipur",
+                    desc: "Recognized and supported by the Government of Manipur for academic excellence.",
+                    color: "bg-[#A59200]",
+                    image: ManipurGovt,
+                  },
+                  {
+                    title: "Association of Indian Universities (AIU)",
+                    desc: "Membership and recognition by AIU ensuring global equivalence.",
+                    color: "bg-[#4338CA]",
+                    image: Aiu,
+                  },
+                  {
+                    title: "National Council for Teacher Education (NCTE)",
+                    desc: "Approval for teacher education programs across the network.",
+                    color: "bg-[#1E1B4B]",
+                    image: Ncte,
+                  },
+                  {
+                    title: "Bar Council of India (BCI)",
+                    desc: "Legal education programs approved by BCI.",
+                    color: "bg-[#DC2626]",
+                    image: Bci,
+                  },
+                  {
+                    title: "Pharmacy Council of India (PCI)",
+                    desc: "Pharmacy courses recognized by PCI standards.",
+                    color: "bg-[#0284C7]",
+                    image: Pci,
+                  },
+                  {
+                    title: "Expanded Reach:",
+                    desc: "Partnering with us allows admission application centers and vocational education centers to expand their reach and attract more students.",
+                    color: "bg-[#E11D48]",
+                    image: Reach,
+                  },
+                  {
+                    title: "Increased Admissions:",
+                    desc: "As our esteemed partner, you can benefit from increased admissions and expand your student base.",
+                    color: "bg-[#4F46E5]",
+                    image: IncreasedAdmission,
+                  },
+                  {
+                    title: "Holistic Development",
+                    desc: "Our focus on holistic education ensures that students not only excel academically but also develop essential life skills and prepare them for success in both academic and professional spheres.",
+                    color: "bg-[#A59200]",
+                    image: Holistic,
+                  },
+                ].map((item, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1, duration: 0.5 }}
+                    className={cn(
+                      "col-span-1 lg:col-span-6",
+                      idx === 8 &&
+                        "sm:col-span-2 lg:col-span-6 lg:col-start-10",
+                      "rounded-3xl p-6 text-left flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow",
+                      item.color,
+                    )}
+                  >
+                    <div className="bg-white rounded-2xl p-4 mb-6 flex items-center justify-center overflow-hidden h-32">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="max-h-full object-contain"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <h4 className="text-white font-bold leading-tight">
+                        {item.title}
+                      </h4>
+                      {item.desc && (
+                        <p className="text-white/80 text-sm leading-relaxed">
+                          {item.desc}
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="max-w-3xl mx-auto space-y-8"
+              >
+                <div className="space-y-4 text-muted-foreground text-sm font-medium leading-relaxed">
+                  <p>
+                    Whether you're an admission recruiter, a vocational
+                    education center, or an educational institution, 6A
+                    Skillcity & BTU, TGU welcomes you to join our family of
+                    partners. Let's work together to make a difference in the
+                    lives of students and shape the future of education.
+                  </p>
+                  <p>
+                    Contact us today to learn more about partnership
+                    opportunities and be a part of our mission to transform
+                    education.
+                  </p>
+                </div>
+
+                <Button
+                  variant="brandRed"
+                  size="lg"
+                  className="rounded-xl px-12 py-6 text-lg font-bold shadow-xl shadow-[#B82424]/20 hover:-translate-y-1 transition-all"
+                  onClick={() => (window.location.href = "#contact")}
+                >
+                  CONTACT US
+                </Button>
+              </motion.div>
+            </div>
+          </section>
+
           {/* FOOTER */}
-          <footer className="pt-24 pb-10 bg-background border-t border-border">
+          <footer
+            className="pt-24 pb-10 bg-background border-t border-border"
+            id="contact"
+          >
             <div className="container mx-auto px-6">
               <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-border">
                 <div className="lg:col-span-4 space-y-6">
@@ -830,17 +1185,23 @@ export default function App() {
                     and a commitment to student success.
                   </p>
                   <div className="flex gap-3">
-                    {[Phone, Mail, Globe].map((Icon, i) => (
+                    {[
+                      { Icon: Phone, href: "tel:+919633331014" },
+                      { Icon: Mail, href: "mailto:info@6askillcity.com" },
+                      { Icon: Globe, href: "https://6askillcity.com" },
+                    ].map(({ Icon, href }, i) => (
                       <Button
                         key={i}
                         variant="outline"
                         size="icon"
                         className="rounded-full h-10 w-10 text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
+                        onClick={() => (window.location.href = href)}
                       >
                         <Icon size={18} />
                       </Button>
                     ))}
                   </div>
+
                 </div>
 
                 <div className="lg:col-span-2 space-y-5">
@@ -885,7 +1246,9 @@ export default function App() {
                       className="shrink-0 text-muted-foreground/60 mt-0.5"
                     />
                     <span className="leading-relaxed">
-                      Grace Tower, 1st Floor, Cabin C1, Kochi, Kerala-682018
+                      Grace Tower, First Floor, Cabin No.C1 Door No. 67/1382,
+                      St. Vincent Road, Kacheripady, Ernakulam North,
+                      Kerala-682018
                     </span>
                   </div>
                 </div>
