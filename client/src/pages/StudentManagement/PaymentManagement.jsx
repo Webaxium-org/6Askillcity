@@ -101,15 +101,36 @@ export default function PaymentManagement() {
 
   const fetchUniversities = async () => {
     try {
-      const res = await getUniversities();
-      const { getAllApprovedAdmissionPoints } =
-        await import("../../api/admissionPoint.api");
-      const partnerRes = await getAllApprovedAdmissionPoints();
+      const { getUniversities } = await import("../../api/university.api");
 
-      if (res.success) setUniversities(res.data);
-      if (partnerRes.success) setPartners(partnerRes.data);
+      if (isAdmin) {
+        const { getAllApprovedAdmissionPoints } = await import(
+          "../../api/admissionPoint.api"
+        );
+        const [uniRes, partnerRes] = await Promise.all([
+          getUniversities(),
+          getAllApprovedAdmissionPoints(),
+        ]);
+        if (uniRes.success) setUniversities(uniRes.data);
+        if (partnerRes.success) setPartners(partnerRes.data);
+      } else {
+        const { getPermittedCourses } = await import("../../api/partner.api");
+        const res = await getPermittedCourses();
+        if (res.success) {
+          const permittedUnis = [];
+          const uniIds = new Set();
+          res.data.forEach((item) => {
+            const uni = item.university;
+            if (uni && !uniIds.has(uni._id)) {
+              uniIds.add(uni._id);
+              permittedUnis.push(uni);
+            }
+          });
+          setUniversities(permittedUnis);
+        }
+      }
     } catch (error) {
-      console.error("Failed to load filter data");
+      console.error("Failed to load filter data", error);
     }
   };
 
@@ -148,7 +169,7 @@ export default function PaymentManagement() {
         return false;
 
       // Partner Filter
-      if (selectedPartner !== "all" && item.partner?._id !== selectedPartner)
+      if (isAdmin && selectedPartner !== "all" && item.partner?._id !== selectedPartner)
         return false;
 
       // Date Range Filter
@@ -347,10 +368,10 @@ export default function PaymentManagement() {
                 </div>
               )}
 
-              {selectedPartner !== "all" && (
+              {selectedPartner !== "all" && isAdmin && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-[10px] font-bold text-blue-600">
                   Partner:{" "}
-                  {partners.find((p) => p._id === selectedPartner)?.name}
+                  {partners.find((p) => p._id === selectedPartner)?.centerName}
                   <button
                     onClick={() => setSelectedPartner("all")}
                     className="hover:text-rose-500"
@@ -813,33 +834,35 @@ export default function PaymentManagement() {
                   </select>
                 </div>
 
-                <div className="space-y-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/5 flex items-center justify-center text-blue-600">
-                      <Users className="w-5 h-5" />
+                {isAdmin && (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/5 flex items-center justify-center text-blue-600">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Admission Point
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Filter by registered partner
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
-                        Admission Point
-                      </h4>
-                      <p className="text-[9px] font-bold text-muted-foreground">
-                        Filter by registered partner
-                      </p>
-                    </div>
+                    <select
+                      value={selectedPartner}
+                      onChange={(e) => setSelectedPartner(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-blue-500/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all appearance-none"
+                    >
+                      <option value="all">Global (All Partners)</option>
+                      {partners.map((partner) => (
+                        <option key={partner._id} value={partner._id}>
+                          {partner.centerName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    value={selectedPartner}
-                    onChange={(e) => setSelectedPartner(e.target.value)}
-                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-blue-500/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all appearance-none"
-                  >
-                    <option value="all">Global (All Partners)</option>
-                    {partners.map((partner) => (
-                      <option key={partner._id} value={partner._id}>
-                        {partner.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                )}
 
                 <div className="space-y-5">
                   <div className="flex items-center gap-4">

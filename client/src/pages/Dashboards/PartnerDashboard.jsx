@@ -369,7 +369,7 @@ export default function PartnerDashboard() {
                 <thead>
                   <tr className="border-b border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
                     <th className="px-6 py-4">Student</th>
-                    <th className="px-6 py-4">Course</th>
+                    <th className="px-6 py-4">Program</th>
                     <th className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
@@ -393,6 +393,11 @@ export default function PartnerDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        {app.program?.category && (
+                          <div className="text-[10px] font-black uppercase tracking-widest text-primary/70">
+                            {app.program.category}
+                          </div>
+                        )}
                         <div className="text-xs font-bold">
                           {app.program?.name || "N/A"}
                         </div>
@@ -459,8 +464,8 @@ export default function PartnerDashboard() {
                 <thead>
                   <tr className="border-b border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
                     <th className="px-6 py-4">Student</th>
+                    <th className="px-6 py-4">Program</th>
                     <th className="px-6 py-4">Payment</th>
-                    <th className="px-6 py-4 text-right">Progress</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -483,6 +488,21 @@ export default function PartnerDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        <div className="flex flex-col gap-0.5">
+                          {stu.program?.category && (
+                            <div className="text-[10px] font-black uppercase tracking-widest text-primary/70">
+                              {stu.program.category}
+                            </div>
+                          )}
+                          <div className="text-xs font-bold text-foreground">
+                            {stu.program?.name || "N/A"}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {stu.university?.name || "N/A"}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <span
                           className={cn(
                             "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
@@ -495,19 +515,6 @@ export default function PartnerDashboard() {
                         >
                           {stu.paymentStatus}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] font-bold mb-1">
-                            {stu.progress || 0}%
-                          </span>
-                          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-purple-500 rounded-full"
-                              style={{ width: `${stu.progress || 0}%` }}
-                            />
-                          </div>
-                        </div>
                       </td>
                     </tr>
                   ))}

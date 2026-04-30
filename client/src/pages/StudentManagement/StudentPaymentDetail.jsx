@@ -66,6 +66,7 @@ export default function StudentPaymentDetail() {
   const { user } = useSelector((state) => state.user);
   const isPartner = user?.role === "partner" || user?.type === "partner";
   const isManager = user?.role === "manager";
+  const isAdmin = user?.role === "admin" || user?.type === "admin";
 
   const [activeTab, setActiveTab] = useState(user?.role === "manager" ? "profile" : "payment");
 
@@ -229,29 +230,31 @@ export default function StudentPaymentDetail() {
             </div>
           </div>
 
-          <div className="absolute -bottom-10 left-12 flex flex-col md:flex-row md:items-end gap-6 w-[calc(100%-6rem)]">
-            <div className="p-1.5 bg-card rounded-[2.5rem] border border-border shadow-2xl">
-              <div className="w-32 h-32 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary text-5xl font-black">
+          <div className="relative px-6 md:px-12 -mt-16 flex flex-col md:flex-row md:items-end gap-6">
+            <div className="p-1.5 bg-card rounded-[2.5rem] border border-border shadow-2xl w-fit">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary text-3xl md:text-5xl font-black">
                 {student.name.charAt(0)}
               </div>
             </div>
             <div className="flex-1 pb-2">
-              <div className="flex flex-wrap items-center gap-3 mb-1">
-                <h1 className="text-4xl font-black tracking-tight">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <h1 className="text-2xl md:text-4xl font-black tracking-tight">
                   {student.name}
                 </h1>
-                <span
-                  className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${student.paymentStatus === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}
-                >
-                  {student.paymentStatus}
-                </span>
-                {!isPartner && (
-                  <span className="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground border border-border">
-                    Read-Only Mode
+                <div className="flex flex-wrap gap-2">
+                  <span
+                    className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${student.paymentStatus === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}
+                  >
+                    {student.paymentStatus}
                   </span>
-                )}
+                  {!isPartner && (
+                    <span className="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground border border-border">
+                      Read-Only Mode
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-4 text-sm font-bold text-muted-foreground">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs md:text-sm font-bold text-muted-foreground">
                 <span className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-primary" />
                   {student.university?.name}
@@ -260,30 +263,34 @@ export default function StudentPaymentDetail() {
                   <GraduationCap className="w-4 h-4 text-primary" />
                   {student.program?.name}
                 </span>
+                {(isAdmin || isManager) && (
+                  <span className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    {student.registeredBy?.centerName || "Head Office"}
+                  </span>
+                )}
               </div>
             </div>
 
-            {!isPartner && !isManager && (
-              <div className="flex gap-3 pb-2">
+            <div className="flex flex-wrap gap-3 pb-2">
+              {!isPartner && !isManager && (
                 <span className="px-4 py-3 rounded-2xl bg-muted text-muted-foreground border border-border font-black text-xs uppercase tracking-widest flex items-center gap-2">
                   <Activity className="w-4 h-4" />
                   View Only
                 </span>
-              </div>
-            )}
+              )}
 
-            {isPartner && (
-              <div className="flex gap-3 pb-2">
+              {isPartner && (
                 <button
                   onClick={() => setShowPayModal(true)}
                   disabled={totalFee > 0 && remaining <= 0}
-                  className="px-6 py-3.5 rounded-2xl bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-[0.95] transition-all flex items-center gap-3 disabled:opacity-50 disabled:hover:scale-100"
+                  className="px-6 py-3.5 rounded-2xl bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-[0.95] transition-all flex items-center gap-3 disabled:opacity-50 disabled:hover:scale-100 whitespace-nowrap"
                 >
                   <CreditCard className="w-5 h-5" />
                   Make Payment
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 

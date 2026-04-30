@@ -41,7 +41,7 @@ export const getPartnerDashboardStats = async (req, res, next) => {
     const recentApplications = await Student.find({ registeredBy: partnerId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate("program", "name")
+      .populate("program", "name category")
       .populate("university", "name");
 
     // 3. Recent Students (Eligible, Last 5)
@@ -51,7 +51,7 @@ export const getPartnerDashboardStats = async (req, res, next) => {
     })
       .sort({ updatedAt: -1 })
       .limit(5)
-      .populate("program", "name")
+      .populate("program", "name category")
       .populate("university", "name");
 
     const startMonth = half === "H1" ? 0 : 6;
