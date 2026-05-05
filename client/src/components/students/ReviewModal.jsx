@@ -207,6 +207,9 @@ export const ReviewModal = ({
                         <p className="text-sm font-black text-primary">
                           {app.program?.name || app.course}
                         </p>
+                        <p className="text-[10px] font-bold text-primary/80 uppercase tracking-tight">
+                          {app.branch?.name || "N/A"}
+                        </p>
                         <p className="text-xs font-bold text-muted-foreground mt-1 flex items-center gap-1">
                           <Building2 className="w-3 h-3" />{" "}
                           {app.university?.name || "N/A"}

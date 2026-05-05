@@ -293,6 +293,9 @@ export default function EligibilityQueuePage() {
                         <div className="text-sm font-medium text-foreground truncate max-w-[150px]">
                           {app.program?.name || app.course || "N/A"}
                         </div>
+                        <div className="text-[10px] text-primary/70 font-bold uppercase tracking-tight truncate max-w-[150px]">
+                          {app.branch?.name || "N/A"}
+                        </div>
                         <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
                           <Building2 className="w-3 h-3" />
                           {app.university?.name || "N/A"}
