@@ -12,18 +12,6 @@ const ProgramSchema = new mongoose.Schema(
       ref: "University",
       required: true,
     },
-    duration: {
-      type: String,
-      required: [true, "Duration is required"],
-    },
-    category: {
-      type: String,
-      required: [true, "Category is required"],
-    },
-    type: {
-      type: String,
-      enum: ["CT", "Vocational", "Skilled"],
-    },
     isActive: {
       type: Boolean,
       default: true,

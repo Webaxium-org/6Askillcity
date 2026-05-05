@@ -40,12 +40,13 @@ const PartnerCourses = () => {
     fetchCourses();
   }, []);
 
-  const categories = ["All", ...new Set(courses.map(c => c.category))];
+  const categories = ["All", ...new Set(courses.map(c => c.type))];
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = (course.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         (course.university?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || course.category === selectedCategory;
+                         (course.program?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (course.program?.university?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || course.type === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -127,17 +128,17 @@ const PartnerCourses = () => {
                       <GraduationCap className="w-6 h-6" />
                     </div>
                     <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-bold uppercase tracking-wider">
-                      {course.category}
+                      {course.type}
                     </span>
                   </div>
 
                   <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-2">
-                    {course.name}
+                    {course.program?.name} - {course.name}
                   </h3>
                   
                   <div className="flex items-center text-muted-foreground mb-4">
                     <Building2 className="w-4 h-4 mr-2" />
-                    <span className="text-sm font-medium truncate">{course.university?.name}</span>
+                    <span className="text-sm font-medium truncate">{course.program?.university?.name}</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-auto">

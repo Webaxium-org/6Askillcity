@@ -9,6 +9,9 @@ import {
   getProgramFees,
   updateProgramFee,
   getActivityLogs,
+  getBranches,
+  createBranch,
+  updateBranch,
 } from "../controllers/university.controller.js";
 import { requireAuth, isAuthorized } from "../middleware/auth.js";
 
@@ -33,7 +36,14 @@ router.route("/programs")
 router.route("/programs/:id")
   .put(isAuthorized({ roles: ["admin", "manager"] }), updateProgram);
 
-router.route("/programs/:programId/fees")
+router.route("/branches")
+  .get(getBranches)
+  .post(isAuthorized({ roles: ["admin", "manager"] }), createBranch);
+
+router.route("/branches/:id")
+  .put(isAuthorized({ roles: ["admin", "manager"] }), updateBranch);
+
+router.route("/branches/:branchId/fees")
   .get(getProgramFees)
   .post(isAuthorized({ roles: ["admin", "manager"] }), updateProgramFee);
 

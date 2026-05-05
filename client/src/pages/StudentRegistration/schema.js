@@ -19,7 +19,8 @@ export const studentRegistrationSchema = yup.object().shape({
   course: yup.string().required("Target Course is required"),
   university: yup.string().required("University selection is required"),
   program: yup.string().required("Program selection is required"),
-  programFee: yup.string().required("Fee calculation error. Please select a program again."),
+  branch: yup.string().required("Branch selection is required"),
+  programFee: yup.string().required("Fee calculation error. Please select a branch again."),
 
   // Files validation
   idProof: yup

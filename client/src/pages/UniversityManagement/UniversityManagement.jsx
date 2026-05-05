@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
-import { 
-  Building2, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  GraduationCap, 
-  IndianRupee, 
-  History, 
+import {
+  Building2,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  GraduationCap,
+  IndianRupee,
+  History,
   ChevronRight,
   MoreVertical,
   Activity,
@@ -16,19 +16,23 @@ import {
   XCircle,
   MapPin,
   ExternalLink,
-  Info
+  Info,
+  GitBranch,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  getUniversities, 
-  createUniversity, 
+import {
+  getUniversities,
+  createUniversity,
   updateUniversity,
   getPrograms,
   createProgram,
   updateProgram,
+  getBranches,
+  createBranch,
+  updateBranch,
   getProgramFees,
   updateProgramFee,
-  getActivityLogs
+  getActivityLogs,
 } from "../../api/university.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -38,6 +42,7 @@ import { useNavigate } from "react-router-dom";
 const tabs = [
   { id: "universities", label: "Universities", icon: Building2 },
   { id: "programs", label: "Programs", icon: GraduationCap },
+  { id: "branches", label: "Branches", icon: GitBranch },
   { id: "history", label: "Activity Logs", icon: History },
 ];
 
@@ -45,29 +50,32 @@ export default function UniversityManagement() {
   const [activeTab, setActiveTab] = useState("universities");
   const [universities, setUniversities] = useState([]);
   const [programs, setPrograms] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Modals state
   const [isUniversityModalOpen, setIsUniversityModalOpen] = useState(false);
   const [editingUniversity, setEditingUniversity] = useState(null);
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState(null);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState(null);
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
-  const [selectedProgram, setSelectedProgram] = useState(null);
+  const [selectedBranch, setSelectedBranch] = useState(null);
   const [feeHistory, setFeeHistory] = useState([]);
   const [loadingFees, setLoadingFees] = useState(false);
   const [modalTab, setModalTab] = useState("setup"); // setup or history
   const [feeForm, setFeeForm] = useState({
     applicationFee: 0,
     tuitionFee: 0,
-    totalFee: 0
+    totalFee: 0,
   });
   const [programFees, setProgramFees] = useState({
     applicationFee: 0,
     tuitionFee: 0,
-    totalFee: 0
+    totalFee: 0,
   });
 
   const dispatch = useDispatch();
@@ -88,6 +96,11 @@ export default function UniversityManagement() {
         if (res.success) setPrograms(res.data);
         const uniRes = await getUniversities();
         if (uniRes.success) setUniversities(uniRes.data);
+      } else if (activeTab === "branches") {
+        const res = await getBranches();
+        if (res.success) setBranches(res.data);
+        const progRes = await getPrograms();
+        if (progRes.success) setPrograms(progRes.data);
       } else if (activeTab === "history") {
         const res = await getActivityLogs();
         if (res.success) setActivityLogs(res.data);
@@ -108,10 +121,20 @@ export default function UniversityManagement() {
       let res;
       if (editingUniversity) {
         res = await updateUniversity(editingUniversity._id, data);
-        dispatch(showAlert({ type: "success", message: "University updated successfully" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "University updated successfully",
+          }),
+        );
       } else {
         res = await createUniversity(data);
-        dispatch(showAlert({ type: "success", message: "University created successfully" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "University created successfully",
+          }),
+        );
       }
       setIsUniversityModalOpen(false);
       setEditingUniversity(null);
@@ -130,13 +153,54 @@ export default function UniversityManagement() {
       let res;
       if (editingProgram) {
         res = await updateProgram(editingProgram._id, data);
-        dispatch(showAlert({ type: "success", message: "Program updated successfully" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Program updated successfully",
+          }),
+        );
       } else {
         res = await createProgram(data);
-        dispatch(showAlert({ type: "success", message: "Program created successfully" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Program created successfully",
+          }),
+        );
       }
       setIsProgramModalOpen(false);
       setEditingProgram(null);
+      fetchData();
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    }
+  };
+
+  const handleCreateBranch = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    data.isActive = formData.get("isActive") === "on";
+    try {
+      if (editingBranch) {
+        await updateBranch(editingBranch._id, data);
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Branch updated successfully",
+          }),
+        );
+      } else {
+        await createBranch(data);
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Branch created successfully",
+          }),
+        );
+      }
+      setIsBranchModalOpen(false);
+      setEditingBranch(null);
       fetchData();
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
@@ -150,11 +214,12 @@ export default function UniversityManagement() {
       totalFee: Number(formData.get("totalFee")),
       applicationFee: Number(formData.get("applicationFee")),
       tuitionFee: Number(formData.get("tuitionFee")),
-      // otherFees could be expanded here
     };
     try {
-      await updateProgramFee(selectedProgram._id, data);
-      dispatch(showAlert({ type: "success", message: "Fees updated. A new fee version has been created." }));
+      await updateProgramFee(selectedBranch._id, data);
+      dispatch(
+        showAlert({ type: "success", message: "Fees updated successfully" }),
+      );
       setIsFeeModalOpen(false);
       fetchData();
     } catch (error) {
@@ -162,21 +227,21 @@ export default function UniversityManagement() {
     }
   };
 
-  const openFeeModal = async (program) => {
-    setSelectedProgram(program);
+  const openFeeModal = async (branch) => {
+    setSelectedBranch(branch);
     setIsFeeModalOpen(true);
     setModalTab("setup");
     setLoadingFees(true);
     try {
-      const res = await getProgramFees(program._id);
+      const res = await getProgramFees(branch._id);
       if (res.success) {
         setFeeHistory(res.data);
-        const current = res.data.find(f => f.isCurrent);
+        const current = res.data.find((f) => f.isCurrent);
         if (current) {
           setFeeForm({
             applicationFee: current.applicationFee,
             tuitionFee: current.tuitionFee,
-            totalFee: current.totalFee
+            totalFee: current.totalFee,
           });
         } else {
           setFeeForm({ applicationFee: 0, tuitionFee: 0, totalFee: 0 });
@@ -189,14 +254,22 @@ export default function UniversityManagement() {
     }
   };
 
-  const filteredUniversities = universities.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUniversities = universities.filter(
+    (u) =>
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.location.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const filteredPrograms = programs.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.university?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPrograms = programs.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.university?.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const filteredBranches = branches.filter(
+    (b) =>
+      b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.program?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -234,7 +307,10 @@ export default function UniversityManagement() {
             </div>
             {activeTab === "universities" && (
               <button
-                onClick={() => { setEditingUniversity(null); setIsUniversityModalOpen(true); }}
+                onClick={() => {
+                  setEditingUniversity(null);
+                  setIsUniversityModalOpen(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
               >
                 <Plus className="w-4 h-4" /> Add University
@@ -242,10 +318,24 @@ export default function UniversityManagement() {
             )}
             {activeTab === "programs" && (
               <button
-                onClick={() => { setEditingProgram(null); setIsProgramModalOpen(true); }}
+                onClick={() => {
+                  setEditingProgram(null);
+                  setIsProgramModalOpen(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
               >
                 <Plus className="w-4 h-4" /> Add Program
+              </button>
+            )}
+            {activeTab === "branches" && (
+              <button
+                onClick={() => {
+                  setEditingBranch(null);
+                  setIsBranchModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+              >
+                <Plus className="w-4 h-4" /> Add Branch
               </button>
             )}
           </div>
@@ -286,8 +376,11 @@ export default function UniversityManagement() {
                           <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
                             <Building2 className="w-6 h-6 text-primary" />
                           </div>
-                          <button 
-                            onClick={() => { setEditingUniversity(uni); setIsUniversityModalOpen(true); }}
+                          <button
+                            onClick={() => {
+                              setEditingUniversity(uni);
+                              setIsUniversityModalOpen(true);
+                            }}
                             className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
                           >
                             <Edit className="w-4 h-4" />
@@ -300,12 +393,17 @@ export default function UniversityManagement() {
                         </div>
                         <div className="pt-4 border-t border-border flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-                            <span className={`w-2 h-2 rounded-full ${uni.isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                            {uni.isActive ? 'Active' : 'Inactive'}
+                            <span
+                              className={`w-2 h-2 rounded-full ${uni.isActive ? "bg-emerald-500" : "bg-red-500"}`}
+                            />
+                            {uni.isActive ? "Active" : "Inactive"}
                           </div>
-                          <button 
-                             onClick={() => { setActiveTab("programs"); setSearchTerm(uni.name); }}
-                             className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                          <button
+                            onClick={() => {
+                              setActiveTab("programs");
+                              setSearchTerm(uni.name);
+                            }}
+                            className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
                           >
                             View Programs <ChevronRight className="w-3 h-3" />
                           </button>
@@ -321,46 +419,149 @@ export default function UniversityManagement() {
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                       <tr className="bg-muted/50 border-b border-border">
-                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Program Name</th>
-                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">University</th>
-                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</th>
-                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Duration</th>
-                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Program Name
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          University
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                       {filteredPrograms.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="px-6 py-20 text-center text-muted-foreground">No programs found.</td>
+                          <td
+                            colSpan="3"
+                            className="px-6 py-20 text-center text-muted-foreground"
+                          >
+                            No programs found.
+                          </td>
                         </tr>
                       ) : (
                         filteredPrograms.map((prog) => (
-                          <tr key={prog._id} className="hover:bg-muted/30 transition-colors group">
+                          <tr
+                            key={prog._id}
+                            className="hover:bg-muted/30 transition-colors group"
+                          >
                             <td className="px-6 py-4">
                               <div className="font-semibold">{prog.name}</div>
                               <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full ${prog.isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                                {prog.isActive ? 'Active' : 'Inactive'}
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${prog.isActive ? "bg-emerald-500" : "bg-red-500"}`}
+                                />
+                                {prog.isActive ? "Active" : "Inactive"}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium">{prog.university?.name || "N/A"}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-primary">{prog.type || "N/A"}</td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground">{prog.category}</td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground">{prog.duration}</td>
+                            <td className="px-6 py-4 text-sm font-medium">
+                              {prog.university?.name || "N/A"}
+                            </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-2">
-                                <button 
-                                  onClick={() => openFeeModal(prog)}
+                                <button
+                                  onClick={() => {
+                                    setActiveTab("branches");
+                                    setSearchTerm(prog.name);
+                                  }}
+                                  className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
+                                  title="View Branches"
+                                >
+                                  <GitBranch className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingProgram(prog);
+                                    setIsProgramModalOpen(true);
+                                  }}
+                                  className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
+                                  title="Edit Program"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {activeTab === "branches" && (
+                <div className="bg-card border border-border rounded-2xl shadow-sm overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[700px]">
+                    <thead>
+                      <tr className="bg-muted/50 border-b border-border">
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Branch Name
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Program
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Duration
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {filteredBranches.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan="5"
+                            className="px-6 py-20 text-center text-muted-foreground"
+                          >
+                            No branches found.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredBranches.map((branch) => (
+                          <tr
+                            key={branch._id}
+                            className="hover:bg-muted/30 transition-colors group"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="font-semibold">{branch.name}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${branch.isActive ? "bg-emerald-500" : "bg-red-500"}`}
+                                />
+                                {branch.isActive ? "Active" : "Inactive"}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium">
+                              {branch.program?.name || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-bold text-primary">
+                              {branch.type || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-muted-foreground">
+                              {branch.duration}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => openFeeModal(branch)}
                                   className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
                                   title="Manage Fees"
                                 >
                                   <IndianRupee className="w-4 h-4" />
                                 </button>
-                                <button 
-                                  onClick={() => { setEditingProgram(prog); setIsProgramModalOpen(true); }}
+                                <button
+                                  onClick={() => {
+                                    setEditingBranch(branch);
+                                    setIsBranchModalOpen(true);
+                                  }}
                                   className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
-                                  title="Edit Program"
+                                  title="Edit Branch"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </button>
@@ -382,27 +583,42 @@ export default function UniversityManagement() {
                     </div>
                   ) : (
                     activityLogs.map((log) => (
-                      <div key={log._id} className="bg-card border border-border rounded-2xl p-4 flex gap-4 items-start hover:shadow-sm transition-all">
-                        <div className={`mt-1 p-2 rounded-xl flex-shrink-0 ${
-                          log.action.includes("CREATE") ? "bg-emerald-500/10 text-emerald-500" :
-                          log.action.includes("UPDATE") ? "bg-blue-500/10 text-blue-500" :
-                          "bg-purple-500/10 text-purple-500"
-                        }`}>
+                      <div
+                        key={log._id}
+                        className="bg-card border border-border rounded-2xl p-4 flex gap-4 items-start hover:shadow-sm transition-all"
+                      >
+                        <div
+                          className={`mt-1 p-2 rounded-xl flex-shrink-0 ${
+                            log.action.includes("CREATE")
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : log.action.includes("UPDATE")
+                                ? "bg-blue-500/10 text-blue-500"
+                                : "bg-purple-500/10 text-purple-500"
+                          }`}
+                        >
                           <Activity className="w-5 h-5" />
                         </div>
                         <div className="flex-1">
                           <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-bold text-sm">{log.action.replace(/_/g, " ")}</h4>
+                            <h4 className="font-bold text-sm">
+                              {log.action.replace(/_/g, " ")}
+                            </h4>
                             <span className="text-xs text-muted-foreground">
                               {new Date(log.createdAt).toLocaleString()}
                             </span>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{log.details}</p>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {log.details}
+                          </p>
                           <div className="flex items-center gap-2 text-xs font-medium bg-muted/50 w-fit px-2 py-1 rounded-lg">
                             <span className="text-muted-foreground">By:</span>
                             <span>{log.performedBy?.fullName || "System"}</span>
-                            <span className="text-muted-foreground mx-1">•</span>
-                            <span className="text-muted-foreground">Target:</span>
+                            <span className="text-muted-foreground mx-1">
+                              •
+                            </span>
+                            <span className="text-muted-foreground">
+                              Target:
+                            </span>
                             <span>{log.targetType}</span>
                           </div>
                         </div>
@@ -419,29 +635,68 @@ export default function UniversityManagement() {
         <AnimatePresence>
           {isUniversityModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
               >
-                <h3 className="text-xl font-bold mb-4">{editingUniversity ? "Edit" : "Add"} University</h3>
+                <h3 className="text-xl font-bold mb-4">
+                  {editingUniversity ? "Edit" : "Add"} University
+                </h3>
                 <form onSubmit={handleCreateUniversity} className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">University Name</label>
-                    <input name="name" defaultValue={editingUniversity?.name} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="Enter name" />
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      University Name
+                    </label>
+                    <input
+                      name="name"
+                      defaultValue={editingUniversity?.name}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                      placeholder="Enter name"
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Location</label>
-                    <input name="location" defaultValue={editingUniversity?.location} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="City, Country" />
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      Location
+                    </label>
+                    <input
+                      name="location"
+                      defaultValue={editingUniversity?.location}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                      placeholder="City, Country"
+                    />
                   </div>
                   <div className="flex items-center gap-2 pt-2">
-                    <input type="checkbox" name="isActive" id="uni-active" defaultChecked={editingUniversity ? editingUniversity.isActive : true} className="w-4 h-4 text-primary rounded" />
-                    <label htmlFor="uni-active" className="text-sm font-medium">Active Status</label>
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      id="uni-active"
+                      defaultChecked={
+                        editingUniversity ? editingUniversity.isActive : true
+                      }
+                      className="w-4 h-4 text-primary rounded"
+                    />
+                    <label htmlFor="uni-active" className="text-sm font-medium">
+                      Active Status
+                    </label>
                   </div>
                   <div className="flex gap-3 pt-4">
-                    <button type="button" onClick={() => setIsUniversityModalOpen(false)} className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20">Save University</button>
+                    <button
+                      type="button"
+                      onClick={() => setIsUniversityModalOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                    >
+                      Save University
+                    </button>
                   </div>
                 </form>
               </motion.div>
@@ -453,84 +708,250 @@ export default function UniversityManagement() {
         <AnimatePresence>
           {isProgramModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
               >
-                <h3 className="text-xl font-bold mb-4">{editingProgram ? "Edit" : "Add"} Program</h3>
+                <h3 className="text-xl font-bold mb-4">
+                  {editingProgram ? "Edit" : "Add"} Program
+                </h3>
                 <form onSubmit={handleCreateProgram} className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Program Name</label>
-                    <input name="name" defaultValue={editingProgram?.name} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="e.g. B.Tech Computer Science" />
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      Program Name
+                    </label>
+                    <input
+                      name="name"
+                      defaultValue={editingProgram?.name}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                      placeholder="e.g. B.Tech"
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">University</label>
-                    <select name="university" defaultValue={editingProgram?.university?._id || ""} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm">
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      University
+                    </label>
+                    <select
+                      name="university"
+                      defaultValue={editingProgram?.university?._id || ""}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                    >
                       <option value="">Select University</option>
-                      {universities.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
+                      {universities.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      id="prog-active"
+                      defaultChecked={
+                        editingProgram ? editingProgram.isActive : true
+                      }
+                      className="w-4 h-4 text-primary rounded"
+                    />
+                    <label
+                      htmlFor="prog-active"
+                      className="text-sm font-medium"
+                    >
+                      Active Status
+                    </label>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsProgramModalOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                    >
+                      Save Program
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Branch Modal */}
+        <AnimatePresence>
+          {isBranchModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
+              >
+                <h3 className="text-xl font-bold mb-4">
+                  {editingBranch ? "Edit" : "Add"} Branch
+                </h3>
+                <form onSubmit={handleCreateBranch} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      Branch Name
+                    </label>
+                    <input
+                      name="name"
+                      defaultValue={editingBranch?.name}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                      placeholder="e.g. Computer Science"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      Program
+                    </label>
+                    <select
+                      name="program"
+                      defaultValue={editingBranch?.program?._id || ""}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                    >
+                      <option value="">Select Program</option>
+                      {programs.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Category</label>
-                      <input name="category" defaultValue={editingProgram?.category} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="e.g. Engineering" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Type</label>
-                      <select name="type" defaultValue={editingProgram?.type || ""} className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm">
+                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                        Type
+                      </label>
+                      <select
+                        name="type"
+                        defaultValue={editingBranch?.type || ""}
+                        required
+                        className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                      >
                         <option value="">Select Type</option>
                         <option value="CT">CT</option>
                         <option value="Vocational">Vocational</option>
                         <option value="Skilled">Skilled</option>
                       </select>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Duration</label>
-                    <input name="duration" defaultValue={editingProgram?.duration} required className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm" placeholder="e.g. 4 Years" />
+                    <div>
+                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                        Duration
+                      </label>
+                      <input
+                        name="duration"
+                        defaultValue={editingBranch?.duration}
+                        required
+                        className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                        placeholder="e.g. 4 Years"
+                      />
+                    </div>
                   </div>
 
-                  {!editingProgram && (
+                  {!editingBranch && (
                     <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 space-y-3">
-                      <h4 className="text-[10px] font-black uppercase text-emerald-600">Initial Fee Structure (Optional)</h4>
+                      <h4 className="text-[10px] font-black uppercase text-emerald-600">
+                        Initial Fee Structure (Optional)
+                      </h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] font-bold text-muted-foreground mb-1 block uppercase">App Fee</label>
-                          <input 
-                            name="applicationFee" 
-                            type="number" 
-                            onChange={(e) => setProgramFees(p => ({...p, applicationFee: Number(e.target.value), totalFee: Number(e.target.value) + p.tuitionFee}))}
-                            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs outline-none focus:ring-1 focus:ring-emerald-500" 
-                            placeholder="0" 
+                          <label className="text-[10px] font-bold text-muted-foreground mb-1 block uppercase">
+                            App Fee
+                          </label>
+                          <input
+                            name="applicationFee"
+                            type="number"
+                            onChange={(e) =>
+                              setProgramFees((p) => ({
+                                ...p,
+                                applicationFee: Number(e.target.value),
+                                totalFee: Number(e.target.value) + p.tuitionFee,
+                              }))
+                            }
+                            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs outline-none focus:ring-1 focus:ring-emerald-500"
+                            placeholder="0"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-muted-foreground mb-1 block uppercase">Tuition Fee</label>
-                          <input 
-                            name="tuitionFee" 
-                            type="number" 
-                            onChange={(e) => setProgramFees(p => ({...p, tuitionFee: Number(e.target.value), totalFee: p.applicationFee + Number(e.target.value)}))}
-                            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs outline-none focus:ring-1 focus:ring-emerald-500" 
-                            placeholder="0" 
+                          <label className="text-[10px] font-bold text-muted-foreground mb-1 block uppercase">
+                            Tuition Fee
+                          </label>
+                          <input
+                            name="tuitionFee"
+                            type="number"
+                            onChange={(e) =>
+                              setProgramFees((p) => ({
+                                ...p,
+                                tuitionFee: Number(e.target.value),
+                                totalFee:
+                                  p.applicationFee + Number(e.target.value),
+                              }))
+                            }
+                            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs outline-none focus:ring-1 focus:ring-emerald-500"
+                            placeholder="0"
                           />
                         </div>
                       </div>
                       <div className="pt-2 border-t border-emerald-500/10 flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Amount:</span>
-                        <span className="text-sm font-black text-emerald-600">₹{programFees.totalFee.toLocaleString()}</span>
-                        <input type="hidden" name="totalFee" value={programFees.totalFee} />
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                          Total Amount:
+                        </span>
+                        <span className="text-sm font-black text-emerald-600">
+                          ₹{programFees.totalFee.toLocaleString()}
+                        </span>
+                        <input
+                          type="hidden"
+                          name="totalFee"
+                          value={programFees.totalFee}
+                        />
                       </div>
                     </div>
                   )}
                   <div className="flex items-center gap-2 pt-2">
-                    <input type="checkbox" name="isActive" id="prog-active" defaultChecked={editingProgram ? editingProgram.isActive : true} className="w-4 h-4 text-primary rounded" />
-                    <label htmlFor="prog-active" className="text-sm font-medium">Active Status</label>
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      id="prog-active"
+                      defaultChecked={
+                        editingProgram ? editingProgram.isActive : true
+                      }
+                      className="w-4 h-4 text-primary rounded"
+                    />
+                    <label
+                      htmlFor="prog-active"
+                      className="text-sm font-medium"
+                    >
+                      Active Status
+                    </label>
                   </div>
                   <div className="flex gap-3 pt-4">
-                    <button type="button" onClick={() => setIsProgramModalOpen(false)} className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20">Save Program</button>
+                    <button
+                      type="button"
+                      onClick={() => setIsBranchModalOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                    >
+                      Save Branch
+                    </button>
                   </div>
                 </form>
               </motion.div>
@@ -542,7 +963,7 @@ export default function UniversityManagement() {
         <AnimatePresence>
           {isFeeModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
@@ -550,13 +971,13 @@ export default function UniversityManagement() {
               >
                 {/* Mobile Tab Switcher */}
                 <div className="flex md:hidden border-b border-border p-1 bg-muted/30">
-                  <button 
+                  <button
                     onClick={() => setModalTab("setup")}
                     className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${modalTab === "setup" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}
                   >
                     Set Fees
                   </button>
-                  <button 
+                  <button
                     onClick={() => setModalTab("history")}
                     className={`flex-1 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${modalTab === "history" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}
                   >
@@ -565,68 +986,98 @@ export default function UniversityManagement() {
                 </div>
 
                 {/* Form Section */}
-                <div className={`flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 border-b md:border-b-0 md:border-r border-border h-[60vh] md:h-auto ${modalTab !== "setup" ? "hidden md:block" : "block"}`}>
-
+                <div
+                  className={`flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 border-b md:border-b-0 md:border-r border-border h-[60vh] md:h-auto ${modalTab !== "setup" ? "hidden md:block" : "block"}`}
+                >
                   <div className="flex items-center gap-3 text-emerald-500 mb-4">
                     <div className="p-2 bg-emerald-500/10 rounded-xl">
                       <IndianRupee className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-foreground">Set New Fees</h3>
-                      <p className="text-xs text-muted-foreground font-medium">For {selectedProgram?.name}</p>
+                      <h3 className="text-xl font-black text-foreground">
+                        Set New Fees
+                      </h3>
+                      <p className="text-xs text-muted-foreground font-medium">
+                        For {selectedBranch?.name}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <form onSubmit={handleUpdateFee} className="space-y-6">
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Application Fee</label>
-                          <input 
-                            name="applicationFee" 
-                            type="number" 
+                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">
+                            Application Fee
+                          </label>
+                          <input
+                            name="applicationFee"
+                            type="number"
                             value={feeForm.applicationFee}
-                            onChange={(e) => setFeeForm(p => ({...p, applicationFee: Number(e.target.value), totalFee: Number(e.target.value) + p.tuitionFee}))}
-                            required 
-                            className="w-full px-4 py-3 rounded-2xl border border-input bg-background outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-semibold" 
-                            placeholder="0.00" 
+                            onChange={(e) =>
+                              setFeeForm((p) => ({
+                                ...p,
+                                applicationFee: Number(e.target.value),
+                                totalFee: Number(e.target.value) + p.tuitionFee,
+                              }))
+                            }
+                            required
+                            className="w-full px-4 py-3 rounded-2xl border border-input bg-background outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-semibold"
+                            placeholder="0.00"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Tuition Fee</label>
-                          <input 
-                            name="tuitionFee" 
-                            type="number" 
+                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">
+                            Tuition Fee
+                          </label>
+                          <input
+                            name="tuitionFee"
+                            type="number"
                             value={feeForm.tuitionFee}
-                            onChange={(e) => setFeeForm(p => ({...p, tuitionFee: Number(e.target.value), totalFee: p.applicationFee + Number(e.target.value)}))}
-                            required 
-                            className="w-full px-4 py-3 rounded-2xl border border-input bg-background outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-semibold" 
-                            placeholder="0.00" 
+                            onChange={(e) =>
+                              setFeeForm((p) => ({
+                                ...p,
+                                tuitionFee: Number(e.target.value),
+                                totalFee:
+                                  p.applicationFee + Number(e.target.value),
+                              }))
+                            }
+                            required
+                            className="w-full px-4 py-3 rounded-2xl border border-input bg-background outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-semibold"
+                            placeholder="0.00"
                           />
                         </div>
                       </div>
 
                       <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-2">
-                        <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest block">Total Fee (Calculated)</label>
+                        <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest block">
+                          Total Fee (Calculated)
+                        </label>
                         <div className="text-2xl font-black text-emerald-600 flex items-center gap-2">
                           <IndianRupee className="w-6 h-6" />
                           {feeForm.totalFee.toLocaleString()}
-                          <input type="hidden" name="totalFee" value={feeForm.totalFee} />
+                          <input
+                            type="hidden"
+                            name="totalFee"
+                            value={feeForm.totalFee}
+                          />
                         </div>
-                        <p className="text-[10px] text-muted-foreground italic">Sum of Application and Tuition fees</p>
+                        <p className="text-[10px] text-muted-foreground italic">
+                          Sum of Application and Tuition fees
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                      <button 
-                        type="button" 
-                        onClick={() => setIsFeeModalOpen(false)} 
+                      <button
+                        type="button"
+                        onClick={() => setIsFeeModalOpen(false)}
                         className="flex-1 py-3.5 rounded-2xl border border-border hover:bg-muted font-bold transition-all text-sm"
                       >
                         Cancel
                       </button>
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         className="flex-[2] py-3.5 rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-xl shadow-emerald-500/20 text-sm"
                       >
                         Update Fee Structure
@@ -636,39 +1087,56 @@ export default function UniversityManagement() {
                 </div>
 
                 {/* History Section */}
-                <div className={`w-full md:w-80 bg-muted/30 flex flex-col flex-1 md:flex-none shrink-0 min-h-0 h-[60vh] md:h-auto ${modalTab !== "history" ? "hidden md:flex" : "flex"}`}>
-
+                <div
+                  className={`w-full md:w-80 bg-muted/30 flex flex-col flex-1 md:flex-none shrink-0 min-h-0 h-[60vh] md:h-auto ${modalTab !== "history" ? "hidden md:flex" : "flex"}`}
+                >
                   <div className="p-6 border-b border-border/50 flex items-center gap-2">
                     <History className="w-4 h-4 text-muted-foreground" />
                     <h4 className="font-bold text-sm">Fee History</h4>
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                     {loadingFees ? (
-                      <div className="py-10 text-center text-xs text-muted-foreground">Loading history...</div>
+                      <div className="py-10 text-center text-xs text-muted-foreground">
+                        Loading history...
+                      </div>
                     ) : feeHistory.length === 0 ? (
-                      <div className="py-10 text-center text-xs text-muted-foreground">No history available.</div>
+                      <div className="py-10 text-center text-xs text-muted-foreground">
+                        No history available.
+                      </div>
                     ) : (
                       feeHistory.map((fee, idx) => (
-                        <div key={fee._id} className={`p-4 rounded-2xl border transition-all ${fee.isCurrent ? 'bg-card border-emerald-500/30 shadow-md ring-1 ring-emerald-500/10' : 'bg-card/50 border-border opacity-70'}`}>
+                        <div
+                          key={fee._id}
+                          className={`p-4 rounded-2xl border transition-all ${fee.isCurrent ? "bg-card border-emerald-500/30 shadow-md ring-1 ring-emerald-500/10" : "bg-card/50 border-border opacity-70"}`}
+                        >
                           <div className="flex justify-between items-start mb-2">
-                             <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-muted">v{feeHistory.length - idx}</span>
-                             {fee.isCurrent && <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-widest">ACTIVE</span>}
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-muted">
+                              v{feeHistory.length - idx}
+                            </span>
+                            {fee.isCurrent && (
+                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                                ACTIVE
+                              </span>
+                            )}
                           </div>
-                          <div className="text-lg font-black">₹{fee.totalFee.toLocaleString()}</div>
+                          <div className="text-lg font-black">
+                            ₹{fee.totalFee.toLocaleString()}
+                          </div>
                           <div className="text-[10px] text-muted-foreground font-medium mt-1">
-                            Updated: {new Date(fee.createdAt).toLocaleDateString()}
+                            Updated:{" "}
+                            {new Date(fee.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       ))
                     )}
                   </div>
                   <div className="p-6 border-t border-border/50">
-                     <div className="flex items-start gap-2 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10">
-                        <Info className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
-                        <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
-                          Updating fees only affects new applications.
-                        </p>
-                     </div>
+                    <div className="flex items-start gap-2 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10">
+                      <Info className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                        Updating fees only affects new applications.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </motion.div>

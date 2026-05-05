@@ -32,13 +32,30 @@ export const updateProgram = async (id, data) => {
   return response.data;
 };
 
-export const getProgramFees = async (programId) => {
-  const response = await axiosInstance.get(`/university-management/programs/${programId}/fees`);
+export const getBranches = async (programId) => {
+  const response = await axiosInstance.get("/university-management/branches", {
+    params: { programId },
+  });
   return response.data;
 };
 
-export const updateProgramFee = async (programId, data) => {
-  const response = await axiosInstance.post(`/university-management/programs/${programId}/fees`, data);
+export const createBranch = async (data) => {
+  const response = await axiosInstance.post("/university-management/branches", data);
+  return response.data;
+};
+
+export const updateBranch = async (id, data) => {
+  const response = await axiosInstance.put(`/university-management/branches/${id}`, data);
+  return response.data;
+};
+
+export const getProgramFees = async (branchId) => {
+  const response = await axiosInstance.get(`/university-management/branches/${branchId}/fees`);
+  return response.data;
+};
+
+export const updateProgramFee = async (branchId, data) => {
+  const response = await axiosInstance.post(`/university-management/branches/${branchId}/fees`, data);
   return response.data;
 };
 

@@ -9,7 +9,7 @@ const PartnerPermissionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["university", "program"],
+      enum: ["university", "program", "branch"],
       required: true,
     },
     universityId: {
@@ -21,6 +21,11 @@ const PartnerPermissionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Program",
       required: function() { return this.type === "program"; }
+    },
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: function() { return this.type === "branch"; }
     },
     grantedAt: {
       type: Date,

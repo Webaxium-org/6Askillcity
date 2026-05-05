@@ -85,6 +85,7 @@ function App() {
 
               {/* Partner: Application lifecycle */}
               <Route path="/dashboard/student/add" element={<AddStudent />} />
+              <Route path="/dashboard/student/edit/:id" element={<AddStudent />} />
               <Route
                 path="/dashboard/applications"
                 element={<ApplicationsPage />}

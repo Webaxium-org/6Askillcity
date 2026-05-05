@@ -6,6 +6,7 @@ import moment from "moment";
 import mongoose from "mongoose";
 import PartnerPermission from "../models/partnerPermission.js";
 import Program from "../models/program.js";
+import Branch from "../models/branch.js";
 import ProgramFee from "../models/programFee.js";
 
 export const getPartnerDashboardStats = async (req, res, next) => {
@@ -41,7 +42,8 @@ export const getPartnerDashboardStats = async (req, res, next) => {
     const recentApplications = await Student.find({ registeredBy: partnerId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate("program", "name category")
+      .populate("program", "name")
+      .populate("branch", "name duration type")
       .populate("university", "name");
 
     // 3. Recent Students (Eligible, Last 5)
@@ -51,7 +53,8 @@ export const getPartnerDashboardStats = async (req, res, next) => {
     })
       .sort({ updatedAt: -1 })
       .limit(5)
-      .populate("program", "name category")
+      .populate("program", "name")
+      .populate("branch", "name duration type")
       .populate("university", "name");
 
     const startMonth = half === "H1" ? 0 : 6;
@@ -113,54 +116,60 @@ export const getPartnerDashboardStats = async (req, res, next) => {
 export const getPermittedCourses = async (req, res, next) => {
   try {
     const partnerId = req.user.userId;
-    const partnerObjectId = new mongoose.Types.ObjectId(partnerId);
 
     // 1. Get all active permissions for this partner
     const permissions = await PartnerPermission.find({
-      partnerId: partnerObjectId,
+      partnerId: partnerId,
       status: "active",
-    });
+    }).lean();
 
-    const programIds = new Set();
-    const universityIds = new Set();
+    if (!permissions.length) {
+      return res.status(200).json({ success: true, data: [] });
+    }
 
-    permissions.forEach((p) => {
-      if (p.type === "university" && p.universityId) {
-        universityIds.add(p.universityId.toString());
-      } else if (p.type === "program" && p.programId) {
-        programIds.add(p.programId.toString());
-      }
-    });
+    const universityIds = permissions
+      .filter(p => p.type === "university" && p.universityId)
+      .map(p => p.universityId.toString());
+      
+    const programIds = permissions
+      .filter(p => p.type === "program" && p.programId)
+      .map(p => p.programId.toString());
+      
+    const branchIds = permissions
+      .filter(p => p.type === "branch" && p.branchId)
+      .map(p => p.branchId.toString());
 
-    // 2. Fetch programs from universities
-    const universityPrograms = await Program.find({
-      university: { $in: Array.from(universityIds) },
-      isActive: true,
-    }).populate("university", "name");
+    // 2. Fetch programs for permitted universities
+    let allProgramIds = new Set(programIds);
+    if (universityIds.length > 0) {
+      const programsInUnis = await Program.find({ 
+        university: { $in: universityIds } 
+      }).select("_id").lean();
+      programsInUnis.forEach(p => allProgramIds.add(p._id.toString()));
+    }
+    
+    // 3. Fetch all permitted branches
+    const allBranches = await Branch.find({
+      $or: [
+        { program: { $in: Array.from(allProgramIds) } },
+        { _id: { $in: branchIds } }
+      ]
+    })
+    .populate({
+      path: "program",
+      populate: { path: "university" }
+    })
+    .lean();
 
-    // 3. Fetch specific programs
-    const specificPrograms = await Program.find({
-      _id: { $in: Array.from(programIds) },
-      isActive: true,
-    }).populate("university", "name");
-
-    // Combine and unique
-    const allProgramsMap = new Map();
-    [...universityPrograms, ...specificPrograms].forEach((p) => {
-      allProgramsMap.set(p._id.toString(), p);
-    });
-
-    const allPrograms = Array.from(allProgramsMap.values());
-
-    // 4. Fetch fees for each program
-    const coursesWithFees = await Promise.all(
-      allPrograms.map(async (p) => {
+    // 4. Fetch current fees for each branch
+    const branchesWithFees = await Promise.all(
+      allBranches.map(async (b) => {
         const fee = await ProgramFee.findOne({
-          program: p._id,
+          branch: b._id,
           isCurrent: true,
-        });
+        }).lean();
         return {
-          ...p.toObject(),
+          ...b,
           fee,
         };
       }),
@@ -168,7 +177,7 @@ export const getPermittedCourses = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: coursesWithFees,
+      data: branchesWithFees,
     });
   } catch (error) {
     next(error);

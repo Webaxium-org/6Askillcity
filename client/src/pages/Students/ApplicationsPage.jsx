@@ -18,14 +18,50 @@ import {
   RotateCcw,
   UserPlus,
   Bell,
+  Loader2,
+  ChevronRight,
+  User,
+  Users,
+  GraduationCap,
 } from "lucide-react";
 
 // ── Status config ───────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Draft: { color: "text-slate-500 bg-slate-500/10 border-slate-500/20", icon: FileText, label: "Draft" },
-  "Pending Eligibility": { color: "text-amber-500 bg-amber-500/10 border-amber-500/20", icon: Clock, label: "Pending Review" },
-  Eligible: { color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", icon: CheckCircle2, label: "Eligible" },
-  Rejected: { color: "text-red-500 bg-red-500/10 border-red-500/20", icon: XCircle, label: "Rejected" },
+  Draft: {
+    color: "text-slate-500 bg-slate-500/10 border-slate-500/20",
+    icon: FileText,
+    label: "Draft",
+  },
+  Identity: {
+    color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+    icon: User,
+    label: "Identity Filled",
+  },
+  Family: {
+    color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+    icon: Users,
+    label: "Family Filled",
+  },
+  Academic: {
+    color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
+    icon: GraduationCap,
+    label: "Academic Filled",
+  },
+  "Pending Eligibility": {
+    color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+    icon: Clock,
+    label: "Pending Review",
+  },
+  Eligible: {
+    color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+    icon: CheckCircle2,
+    label: "Eligible",
+  },
+  Rejected: {
+    color: "text-red-500 bg-red-500/10 border-red-500/20",
+    icon: XCircle,
+    label: "Rejected",
+  },
 };
 
 const COURSE_LABELS = {
@@ -50,6 +86,7 @@ export default function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [submittingId, setSubmittingId] = useState(null);
+  const [activeTab, setActiveTab] = useState("active");
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);
@@ -57,36 +94,67 @@ export default function ApplicationsPage() {
       const res = await getMyApplications();
       if (res.success) setApplications(res.data);
     } catch {
-      dispatch(showAlert({ type: "error", message: "Failed to load applications." }));
+      dispatch(
+        showAlert({ type: "error", message: "Failed to load applications." }),
+      );
     } finally {
       setLoading(false);
     }
   }, [dispatch]);
 
-  useEffect(() => { fetchApplications(); }, [fetchApplications]);
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
   const handleSubmit = async (app) => {
     setSubmittingId(app._id);
     try {
       const res = await submitApplication(app._id);
       if (res.success) {
-        setApplications((prev) => prev.map((a) => (a._id === app._id ? res.data : a)));
-        dispatch(showAlert({ type: "success", message: "Application submitted for eligibility review!" }));
+        setApplications((prev) =>
+          prev.map((a) => (a._id === app._id ? res.data : a)),
+        );
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Application submitted for eligibility review!",
+          }),
+        );
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Submission failed." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Submission failed.",
+        }),
+      );
     } finally {
       setSubmittingId(null);
     }
   };
 
-  const filtered = applications.filter(
-    (a) =>
+  const filtered = applications.filter((a) => {
+    const matchesSearch =
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (COURSE_LABELS[a.course] || a.course).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      (a.program?.name || a.course || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
-  const canSubmit = (status) => ["Draft", "Rejected"].includes(status);
+    if (!matchesSearch) return false;
+
+    if (activeTab === "draft")
+      return ["Draft", "Identity", "Family", "Academic"].includes(
+        a.applicationStatus,
+      );
+    if (activeTab === "rejected") return a.applicationStatus === "Rejected";
+    // Active includes Pending Eligibility and Eligible
+    return ["Pending Eligibility", "Eligible", "Completed"].includes(
+      a.applicationStatus,
+    );
+  });
+
+  const canSubmit = (status) =>
+    ["Draft", "Identity", "Family", "Academic", "Rejected"].includes(status);
 
   return (
     <DashboardLayout title="My Applications">
@@ -98,12 +166,12 @@ export default function ApplicationsPage() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FileText className="w-6 h-6 text-blue-500" />
+            <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
+              <FileText className="w-6 h-6 text-primary" />
               Applications
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Click <strong>View</strong> on any row to open the full detail page with editing and follow-up notes.
+            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">
+              Management & Lifecycle Tracking
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
@@ -112,11 +180,13 @@ export default function ApplicationsPage() {
               className="p-2.5 rounded-xl border border-border hover:bg-muted text-muted-foreground transition-colors"
               title="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
             <button
               onClick={() => navigate("/dashboard/student/add")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white hover:scale-105 transition-all shadow-lg font-black text-xs uppercase"
             >
               <UserPlus className="w-4 h-4" />
               New Application
@@ -124,15 +194,57 @@ export default function ApplicationsPage() {
           </div>
         </motion.div>
 
+        {/* Tabs */}
+        <div className="flex items-center gap-2 border-b border-border p-1 bg-muted/20 rounded-2xl w-fit max-w-full overflow-x-auto flex-nowrap scrollbar-hide">
+          {[
+            { id: "active", label: "Applications", icon: Clock },
+            { id: "draft", label: "Drafts", icon: FileText },
+            { id: "rejected", label: "Rejected", icon: XCircle },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const count = applications.filter((a) => {
+              if (tab.id === "draft")
+                return ["Draft", "Identity", "Family", "Academic"].includes(
+                  a.applicationStatus,
+                );
+              if (tab.id === "rejected")
+                return a.applicationStatus === "Rejected";
+              return ["Pending Eligibility", "Eligible", "Completed"].includes(
+                a.applicationStatus,
+              );
+            }).length;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all shrink-0 ${
+                  activeTab === tab.id
+                    ? "bg-card text-primary shadow-sm border border-border"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label.toUpperCase()}
+                <span
+                  className={`ml-1 px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === tab.id ? "bg-primary/10" : "bg-muted"}`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Search */}
         <div className="relative">
-          <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-muted-foreground absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search by name or course..."
+            placeholder="Search applicants..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2.5 w-full sm:max-w-xs rounded-xl bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm transition-all"
+            className="pl-12 pr-4 py-3.5 w-full sm:max-w-sm rounded-[1.25rem] bg-card border border-border focus:border-primary/20 focus:bg-background outline-none text-sm transition-all shadow-sm font-bold"
           />
         </div>
 
@@ -141,16 +253,22 @@ export default function ApplicationsPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-card border border-border rounded-xl shadow-sm overflow-hidden"
+          className="bg-card border border-border rounded-[2rem] shadow-sm overflow-hidden"
         >
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  {["Applicant", "Course", "Status", "Next Follow-up", "Actions"].map((h) => (
+                <tr className="border-b border-border bg-muted/10">
+                  {[
+                    "Applicant",
+                    "Course / University",
+                    "Status",
+                    "Schedule",
+                    "Actions",
+                  ].map((h) => (
                     <th
                       key={h}
-                      className={`px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider ${h === "Actions" ? "text-right" : ""}`}
+                      className={`px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest ${h === "Actions" ? "text-right" : ""}`}
                     >
                       {h}
                     </th>
@@ -160,33 +278,38 @@ export default function ApplicationsPage() {
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="py-16 text-center">
+                    <td colSpan={5} className="py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        Loading applications...
+                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Loading Records...
+                        </span>
                       </div>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-16 text-center">
-                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                          <FileText className="w-7 h-7 text-muted-foreground/50" />
+                    <td colSpan={5} className="py-20 text-center">
+                      <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                        <div className="w-16 h-16 rounded-[1.5rem] bg-muted/50 flex items-center justify-center">
+                          <FileText className="w-8 h-8 opacity-20" />
                         </div>
-                        <p className="font-medium">No applications found.</p>
-                        <button
-                          onClick={() => navigate("/dashboard/student/add")}
-                          className="text-sm text-primary hover:underline"
-                        >
-                          Create your first application →
-                        </button>
+                        <div>
+                          <p className="font-black text-xs uppercase tracking-widest">
+                            No Records Found
+                          </p>
+                          <p className="text-[10px] font-bold mt-1">
+                            Try adjusting your search or filter.
+                          </p>
+                        </div>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   filtered.map((app, idx) => {
-                    const cfg = STATUS_CONFIG[app.applicationStatus] || STATUS_CONFIG.Draft;
+                    const cfg =
+                      STATUS_CONFIG[app.applicationStatus] ||
+                      STATUS_CONFIG.Draft;
                     const StatusIcon = cfg.icon;
                     const isSubmitting = submittingId === app._id;
 
@@ -195,95 +318,104 @@ export default function ApplicationsPage() {
                         key={app._id}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.04 }}
-                        onClick={() => navigate(`/dashboard/applications/${app._id}`)}
-                        className="hover:bg-muted/40 transition-colors cursor-pointer"
+                        transition={{ delay: idx * 0.03 }}
+                        onClick={() => {
+                          if (
+                            ["Draft", "Identity", "Family", "Academic"].includes(
+                              app.applicationStatus,
+                            )
+                          ) {
+                            navigate(`/dashboard/student/edit/${app._id}`);
+                          } else {
+                            navigate(`/dashboard/applications/${app._id}`);
+                          }
+                        }}
+                        className="hover:bg-muted/30 transition-colors cursor-pointer group"
                       >
                         {/* Applicant */}
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center font-bold text-sm shrink-0">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center font-black text-xs shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
                               {app.name.charAt(0)}
                             </div>
                             <div>
-                              <div className="font-medium text-sm">{app.name}</div>
-                              <div className="text-xs text-muted-foreground">{app.email}</div>
+                              <div className="font-black text-sm tracking-tight">
+                                {app.name}
+                              </div>
+                              <div className="text-[10px] font-bold text-muted-foreground">
+                                {app.email || "No Email Provided"}
+                              </div>
                             </div>
                           </div>
                         </td>
 
                         {/* Course */}
-                        <td className="px-5 py-4">
-                          <div className="font-medium text-sm text-foreground">
-                            {app.program?.name || app.course}
+                        <td className="px-6 py-5">
+                          <div className="font-black text-xs tracking-tight text-foreground">
+                            {app.program?.name || app.course || "N/A"}
                           </div>
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                            {app.university?.name || "Other"}
+                          <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-black mt-0.5">
+                            {app.university?.name || "University Not Selected"}
                           </div>
-                          {app.programFee && (
-                            <div className="text-[10px] font-bold text-emerald-600 mt-0.5">
-                              Fee: ₹{app.programFee.totalFee.toLocaleString()}
-                            </div>
-                          )}
                         </td>
 
                         {/* Status */}
-                        <td className="px-5 py-4">
-                          <div className="space-y-1.5">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${cfg.color}`}>
-                              <StatusIcon className="w-3 h-3" />
-                              {cfg.label}
-                            </span>
-                          </div>
+                        <td className="px-6 py-5">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border ${cfg.color}`}
+                          >
+                            <StatusIcon className="w-3 h-3" />
+                            {cfg.label}
+                          </span>
                         </td>
 
-                        {/* Next Follow-up */}
-                        <td className="px-5 py-4">
+                        {/* Schedule */}
+                        <td className="px-6 py-5">
                           {app.nextFollowupDate ? (
-                            <div className={`flex items-center gap-1.5 text-xs font-medium ${new Date(app.nextFollowupDate) < new Date() ? "text-red-500" : "text-amber-600"}`}>
+                            <div
+                              className={`flex items-center gap-1.5 text-[10px] font-black uppercase ${new Date(app.nextFollowupDate) < new Date() ? "text-rose-500" : "text-amber-500"}`}
+                            >
                               <Bell className="w-3.5 h-3.5" />
-                              {new Date(app.nextFollowupDate).toLocaleDateString([], { dateStyle: 'medium' })}
-                              {new Date(app.nextFollowupDate) < new Date() && (
-                                <span className="text-[10px] bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">Overdue</span>
-                              )}
+                              {new Date(
+                                app.nextFollowupDate,
+                              ).toLocaleDateString([], {
+                                month: "short",
+                                day: "numeric",
+                              })}
                             </div>
                           ) : (
-                            <span className="text-xs text-muted-foreground italic">No schedule</span>
+                            <span className="text-[10px] text-muted-foreground/40 font-black uppercase tracking-widest italic">
+                              No Task
+                            </span>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                        <td
+                          className="px-6 py-5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => navigate(`/dashboard/applications/${app._id}`)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border hover:bg-muted text-xs font-medium transition-colors text-muted-foreground hover:text-foreground"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              View
-                            </button>
-                            {canSubmit(app.applicationStatus) && (
+                            {["Draft", "Identity", "Family", "Academic"].includes(
+                              app.applicationStatus,
+                            ) ? (
                               <button
-                                onClick={() => handleSubmit(app)}
-                                disabled={isSubmitting}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
+                                onClick={() =>
+                                  navigate(`/dashboard/student/edit/${app._id}`)
+                                }
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-foreground text-background text-[10px] font-black uppercase hover:scale-105 transition-all shadow-sm"
                               >
-                                {isSubmitting ? (
-                                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : app.applicationStatus === "Rejected" ? (
-                                  <><RotateCcw className="w-3.5 h-3.5" /> Re-submit</>
-                                ) : (
-                                  <><Send className="w-3.5 h-3.5" /> Submit</>
-                                )}
+                                Continue <ChevronRight className="w-3 h-3" />
                               </button>
-                            )}
-                            {app.applicationStatus === "Pending Eligibility" && (
-                              <span className="text-xs text-amber-500 italic">Under Review</span>
-                            )}
-                            {app.applicationStatus === "Eligible" && (
-                              <span className="text-xs text-emerald-500 flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Approved
-                              </span>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  navigate(`/dashboard/applications/${app._id}`)
+                                }
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-muted text-[10px] font-black uppercase transition-all"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View
+                              </button>
                             )}
                           </div>
                         </td>
@@ -296,8 +428,9 @@ export default function ApplicationsPage() {
           </div>
 
           {!loading && filtered.length > 0 && (
-            <div className="px-5 py-3.5 border-t border-border bg-muted/20 text-sm text-muted-foreground">
-              Showing {filtered.length} of {applications.length} applications
+            <div className="px-6 py-4 border-t border-border bg-muted/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+              Displaying {filtered.length} of {applications.length} Student
+              Records
             </div>
           )}
         </motion.div>

@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const ProgramFeeSchema = new mongoose.Schema(
   {
-    program: {
+    branch: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Program",
+      ref: "Branch",
       required: true,
     },
     totalFee: {

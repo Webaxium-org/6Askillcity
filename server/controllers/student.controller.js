@@ -45,7 +45,8 @@ export const getStudentById = async (req, res, next) => {
         "centerName licenseeEmail licenseeContactNumber",
       )
       .populate("university", "name")
-      .populate("program", "name category duration")
+      .populate("program", "name")
+      .populate("branch", "name duration type")
       .populate("programFee");
 
     if (!student) throw createError(404, "Application not found.");
@@ -72,20 +73,32 @@ export const enrollStudent = async (req, res, next) => {
   try {
     const data = req.body;
 
-    const duplicateEmail = await Student.findOne({ email: data.email });
-    if (duplicateEmail) {
-      throw createError(
-        400,
-        "A student is already actively enrolled utilizing this Email address.",
-      );
+    if (data.email) {
+      const duplicateEmail = await Student.findOne({ 
+        email: data.email, 
+        registeredBy: req.user.userId,
+        deleted: { $ne: true }
+      });
+      if (duplicateEmail) {
+        throw createError(
+          400,
+          "You have already registered a student with this Email address.",
+        );
+      }
     }
 
-    const duplicatePhone = await Student.findOne({ phone: data.phone });
-    if (duplicatePhone) {
-      throw createError(
-        400,
-        "A student is already actively enrolled utilizing this Phone number.",
-      );
+    if (data.phone) {
+      const duplicatePhone = await Student.findOne({ 
+        phone: data.phone, 
+        registeredBy: req.user.userId,
+        deleted: { $ne: true }
+      });
+      if (duplicatePhone) {
+        throw createError(
+          400,
+          "You have already registered a student with this Phone number.",
+        );
+      }
     }
 
     const files = req.files || {};
@@ -96,13 +109,13 @@ export const enrollStudent = async (req, res, next) => {
 
     const student = new Student({
       name: data.name,
-      dob: data.dob,
+      dob: data.dob || undefined,
       gender: data.gender,
       religion: data.religion,
       caste: data.caste,
       address: data.address,
-      email: data.email,
-      phone: data.phone,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
       alternativePhone: data.alternativePhone,
       otherPhone: data.otherPhone,
 
@@ -111,9 +124,9 @@ export const enrollStudent = async (req, res, next) => {
       fatherPhone: data.fatherPhone,
       motherPhone: data.motherPhone,
 
-      university: data.university,
-      program: data.program,
-      branch: data.branch,
+      university: data.university || undefined,
+      program: data.program || undefined,
+      branch: data.branch || undefined,
       completionYear: data.completionYear,
 
       tenth: {
@@ -121,8 +134,8 @@ export const enrollStudent = async (req, res, next) => {
         completionYear: data.tenthCompletionYear,
         board: data.tenthBoard,
         percentage: data.tenthPercentage,
-        totalMarks: data.tenthTotalMarks,
-        obtainedMarks: data.tenthObtainedMarks,
+        totalMarks: data.tenthTotalMarks || undefined,
+        obtainedMarks: data.tenthObtainedMarks || undefined,
       },
       plusTwo: {
         certificate: extractPath("plusTwoCertificate"),
@@ -135,16 +148,16 @@ export const enrollStudent = async (req, res, next) => {
         university: data.bachelorsUniversity,
         course: data.bachelorsCourse,
         branch: data.bachelorsBranch,
-        papersPassed: data.bachelorsPapersPassed,
-        papersEqualised: data.bachelorsPapersEqualised,
+        papersPassed: data.bachelorsPapersPassed || undefined,
+        papersEqualised: data.bachelorsPapersEqualised || undefined,
       },
       masters: {
         certificates: extractPaths("mastersCertificates"),
         university: data.mastersUniversity,
         course: data.mastersCourse,
         branch: data.mastersBranch,
-        papersPassed: data.mastersPapersPassed,
-        papersEqualised: data.mastersPapersEqualised,
+        papersPassed: data.mastersPapersPassed || undefined,
+        papersEqualised: data.mastersPapersEqualised || undefined,
       },
 
       affidavit: extractPath("affidavit"),
@@ -154,31 +167,29 @@ export const enrollStudent = async (req, res, next) => {
       employmentStatus: data.employmentStatus || "Unemployed",
 
       idProof: extractPath("idProof"),
-      applicationStatus: "Pending Eligibility",
+      applicationStatus: data.applicationStatus || "Draft",
+      enrollmentStatus: data.enrollmentStatus || "Identity",
       highestQualification: data.highestQualification,
       registeredBy: req.user?.userId,
     });
 
-    if (data.program) {
+    if (data.branch) {
       const currentFee = await ProgramFee.findOne({
-        program: data.program,
+        branch: data.branch,
         isCurrent: true,
       });
-      if (!currentFee) {
-        throw createError(
-          400,
-          "Program fee is empty, please contact the admin",
-        );
+      if (currentFee) {
+        student.programFee = currentFee._id;
+        student.programFeeRefId = currentFee.refId;
       }
-      student.programFee = currentFee._id;
-      student.programFeeRefId = currentFee.refId;
     }
 
     await student.save();
 
     const populatedStudent = await Student.findById(student._id)
       .populate("university", "name")
-      .populate("program", "name category duration")
+      .populate("program", "name")
+      .populate("branch", "name duration type")
       .populate("programFee");
 
     res.status(201).json({
@@ -203,6 +214,7 @@ export const getMyStudents = async (req, res, next) => {
     })
       .populate("university", "name")
       .populate("program", "name")
+      .populate("branch", "name")
       .populate("programFee")
       .sort({ createdAt: -1 });
 
@@ -261,13 +273,29 @@ export const updateStudentDetails = async (req, res, next) => {
       "videoKycStatus",
       "employmentStatus",
       "highestQualification",
+      "applicationStatus",
+      "enrollmentStatus",
     ];
 
+    const idFields = ["university", "program", "branch", "programFee"];
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
-        student[field] = req.body[field];
+        // Handle empty strings for unique or ObjectId fields
+        const isEmpty = req.body[field] === "";
+        const isIdField = idFields.includes(field);
+        const isUniqueField = field === "email" || field === "phone";
+
+        if (isEmpty && (isIdField || isUniqueField)) {
+          student[field] = undefined;
+        } else {
+          student[field] = req.body[field];
+        }
       }
     });
+
+    if (req.body.applicationStatus) {
+      student.applicationStatus = req.body.applicationStatus;
+    }
 
     // Academic nested fields
     if (req.body.tenthCompletionYear)
@@ -306,15 +334,15 @@ export const updateStudentDetails = async (req, res, next) => {
     if (req.body.mastersPapersEqualised)
       student.masters.papersEqualised = req.body.mastersPapersEqualised;
 
-    if (req.body.program) {
+    if (req.body.branch) {
       const currentFee = await ProgramFee.findOne({
-        program: req.body.program,
+        branch: req.body.branch,
         isCurrent: true,
       });
       if (!currentFee) {
         throw createError(
           400,
-          "Program fee is empty, please contact the admin",
+          "Branch fee is empty, please contact the admin",
         );
       }
       student.programFee = currentFee._id;
@@ -354,7 +382,8 @@ export const updateStudentDetails = async (req, res, next) => {
 
     const populatedStudent = await Student.findById(student._id)
       .populate("university", "name")
-      .populate("program", "name category duration")
+      .populate("program", "name")
+      .populate("branch", "name duration type")
       .populate("programFee");
 
     res.status(200).json({
@@ -390,11 +419,42 @@ export const submitForEligibility = async (req, res, next) => {
       );
     }
 
-    if (!student.university || !student.program) {
+    // Comprehensive validation before submission
+    const requiredFields = [
+      "name",
+      "dob",
+      "gender",
+      "religion",
+      "caste",
+      "address",
+      "email",
+      "phone",
+      "alternativePhone",
+      "fatherName",
+      "motherName",
+      "fatherPhone",
+      "motherPhone",
+      "university",
+      "program",
+      "branch",
+      "idProof",
+    ];
+
+    const missing = requiredFields.filter((f) => !student[f]);
+
+    if (missing.length > 0) {
       throw createError(
         400,
-        "Please assign a University and Program before submitting for eligibility review.",
+        `Please complete all required fields before submitting: ${missing.join(", ")}`,
       );
+    }
+
+    // Academic nested validation
+    if (!student.tenth?.certificate || !student.tenth?.completionYear) {
+      throw createError(400, "10th Standard details and certificate are required.");
+    }
+    if (!student.plusTwo?.certificate || !student.plusTwo?.completionYear) {
+      throw createError(400, "Plus Two details and certificate are required.");
     }
 
     student.applicationStatus = "Pending Eligibility";
@@ -404,7 +464,8 @@ export const submitForEligibility = async (req, res, next) => {
 
     const populatedStudent = await Student.findById(student._id)
       .populate("university", "name")
-      .populate("program", "name category duration")
+      .populate("program", "name")
+      .populate("branch", "name duration type")
       .populate("programFee");
 
     res.status(200).json({
@@ -429,6 +490,7 @@ export const getPendingEligibility = async (req, res, next) => {
       .populate("registeredBy", "centerName licenseeEmail")
       .populate("university", "name")
       .populate("program", "name")
+      .populate("branch", "name")
       .sort({ updatedAt: 1 }); // Oldest first (FIFO review queue)
 
     res.status(200).json({
@@ -483,7 +545,8 @@ export const updateApplicationStatus = async (req, res, next) => {
     const populatedStudent = await Student.findById(student._id)
       .populate("registeredBy", "centerName licenseeEmail")
       .populate("university", "name")
-      .populate("program", "name category duration")
+      .populate("program", "name")
+      .populate("branch", "name duration type")
       .populate("programFee");
 
     res.status(200).json({

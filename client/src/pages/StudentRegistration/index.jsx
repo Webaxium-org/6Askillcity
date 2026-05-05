@@ -12,7 +12,7 @@ import { useDispatch } from "react-redux";
 import { handleFormError } from "../../utils/handleFormError";
 import { showAlert } from "../../redux/alertSlice";
 import { registerStudent } from "../../api/student.api";
-import { getUniversities, getPrograms, getProgramFees } from "../../api/university.api";
+import { getUniversities, getPrograms, getBranches, getProgramFees } from "../../api/university.api";
 
 export default function StudentRegistration() {
   const navigate = useNavigate();
@@ -22,6 +22,7 @@ export default function StudentRegistration() {
   
   const [universities, setUniversities] = useState([]);
   const [programs, setPrograms] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [selectedFee, setSelectedFee] = useState(null);
 
   const {
@@ -38,6 +39,7 @@ export default function StudentRegistration() {
 
   const selectedUniversity = watch("university");
   const selectedProgram = watch("program");
+  const selectedBranch = watch("branch");
 
   React.useEffect(() => {
     const fetchUnis = async () => {
@@ -58,6 +60,8 @@ export default function StudentRegistration() {
           const res = await getPrograms(selectedUniversity);
           if (res.success) setPrograms(res.data);
           setValue("program", "");
+          setBranches([]);
+          setValue("branch", "");
           setSelectedFee(null);
           setValue("programFee", "");
         } catch (err) {
@@ -67,22 +71,43 @@ export default function StudentRegistration() {
       fetchProgs();
     } else {
       setPrograms([]);
+      setBranches([]);
     }
   }, [selectedUniversity, setValue]);
 
   React.useEffect(() => {
     if (selectedProgram) {
+      const fetchBranches = async () => {
+        try {
+          const res = await getBranches(selectedProgram);
+          if (res.success) setBranches(res.data);
+          setValue("branch", "");
+          setSelectedFee(null);
+          setValue("programFee", "");
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      fetchBranches();
+    } else {
+      setBranches([]);
+    }
+  }, [selectedProgram, setValue]);
+
+  React.useEffect(() => {
+    if (selectedBranch) {
       const fetchFee = async () => {
         try {
-          const res = await getProgramFees(selectedProgram);
+          const res = await getProgramFees(selectedBranch);
           if (res.success) {
             const currentFee = res.data.find(f => f.isCurrent);
             if (currentFee) {
               setSelectedFee(currentFee);
               setValue("programFee", currentFee._id);
               // Auto-fill course for backward compatibility
+              const branchName = branches.find(b => b._id === selectedBranch)?.name;
               const progName = programs.find(p => p._id === selectedProgram)?.name;
-              setValue("course", progName || "Course Selected");
+              setValue("course", `${progName} - ${branchName}` || "Course Selected");
             }
           }
         } catch (err) {
@@ -94,7 +119,7 @@ export default function StudentRegistration() {
       setSelectedFee(null);
       setValue("programFee", "");
     }
-  }, [selectedProgram, setValue, programs]);
+  }, [selectedBranch, setValue, branches, programs, selectedProgram]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -298,6 +323,31 @@ export default function StudentRegistration() {
                   </select>
                   {errors.program && (
                     <p className="text-red-400 text-xs font-semibold">{errors.program.message}</p>
+                  )}
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <div className="space-y-2">
+                  <label htmlFor="branch" className="text-sm font-semibold text-white">
+                    Target Branch
+                  </label>
+                  <select
+                    id="branch"
+                    {...register("branch")}
+                    disabled={!selectedProgram}
+                    className={cn(
+                      "w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl outline-none transition-all placeholder:text-white/40 focus:border-[#B82424] focus:ring-1 focus:ring-[#B82424] text-white disabled:opacity-50",
+                      errors.branch && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    )}
+                  >
+                    <option value="" className="text-black">Select Branch</option>
+                    {branches.map(b => (
+                      <option key={b._id} value={b._id} className="text-black">{b.name}</option>
+                    ))}
+                  </select>
+                  {errors.branch && (
+                    <p className="text-red-400 text-xs font-semibold">{errors.branch.message}</p>
                   )}
                 </div>
               </motion.div>

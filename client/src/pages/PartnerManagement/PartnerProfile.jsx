@@ -23,7 +23,8 @@ import {
   Lock,
   Key,
   Copy,
-  Check
+  Check,
+  GitBranch
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -35,7 +36,7 @@ import {
   reviewPartner,
   generateAdminToken
 } from "../../api/partner.api";
-import { getUniversities, getPrograms } from "../../api/university.api";
+import { getUniversities, getPrograms, getBranches } from "../../api/university.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { handleFormError } from "../../utils/handleFormError";
@@ -49,6 +50,7 @@ export default function PartnerProfile() {
   const [permissions, setPermissions] = useState([]);
   const [universities, setUniversities] = useState([]);
   const [programs, setPrograms] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("info");
   
@@ -67,6 +69,11 @@ export default function PartnerProfile() {
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [isGeneratingToken, setIsGeneratingToken] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Delete Permission Modal State
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [permissionToDelete, setPermissionToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchPartnerData();
@@ -94,12 +101,14 @@ export default function PartnerProfile() {
 
   const fetchSupportData = async () => {
     try {
-      const [uniRes, progRes] = await Promise.all([
+      const [uniRes, progRes, branchRes] = await Promise.all([
         getUniversities(),
-        getPrograms()
+        getPrograms(),
+        getBranches()
       ]);
       if (uniRes.success) setUniversities(uniRes.data);
       if (progRes.success) setPrograms(progRes.data);
+      if (branchRes.success) setBranches(branchRes.data);
     } catch (error) {
       console.error("Error fetching support data", error);
     }
@@ -171,7 +180,7 @@ export default function PartnerProfile() {
       const data = {
         partnerId: id,
         type: permissionType,
-        [permissionType === "university" ? "universityId" : "programId"]: selectedId
+        [permissionType === "university" ? "universityId" : permissionType === "program" ? "programId" : "branchId"]: selectedId
       };
       
       const res = await addPartnerPermission(data);
@@ -188,16 +197,26 @@ export default function PartnerProfile() {
     }
   };
 
-  const handleRemovePermission = async (permId) => {
-    if (!window.confirm("Are you sure you want to remove this permission?")) return;
+  const handleRemovePermission = (perm) => {
+    setPermissionToDelete(perm);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDeletePermission = async () => {
+    if (!permissionToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await removePartnerPermission(permId);
+      const res = await removePartnerPermission(permissionToDelete._id);
       if (res.success) {
-        dispatch(showAlert({ type: "success", message: "Permission removed" }));
-        setPermissions(permissions.filter(p => p._id !== permId));
+        dispatch(showAlert({ type: "success", message: "Permission removed successfully" }));
+        setPermissions(permissions.filter(p => p._id !== permissionToDelete._id));
+        setIsDeleteConfirmOpen(false);
+        setPermissionToDelete(null);
       }
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -570,7 +589,7 @@ export default function PartnerProfile() {
                                <p className="text-[10px] text-muted-foreground">Granted: {new Date(perm.grantedAt).toLocaleDateString()}</p>
                              </div>
                              <button 
-                               onClick={() => handleRemovePermission(perm._id)}
+                               onClick={() => handleRemovePermission(perm)}
                                className="p-2 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-xl transition-all"
                              >
                                <Trash2 className="w-4 h-4" />
@@ -598,7 +617,35 @@ export default function PartnerProfile() {
                                <p className="text-[10px] text-muted-foreground">Granted: {new Date(perm.grantedAt).toLocaleDateString()}</p>
                              </div>
                              <button 
-                               onClick={() => handleRemovePermission(perm._id)}
+                               onClick={() => handleRemovePermission(perm)}
+                               className="p-2 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-xl transition-all"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </button>
+                           </div>
+                         ))
+                       )}
+                    </div>
+                  </div>
+
+                  {/* Branches Column */}
+                  <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 bg-muted/50 border-b border-border flex items-center gap-2">
+                       <GitBranch className="w-4 h-4 text-primary" />
+                       <h4 className="font-bold text-sm">Assigned Branches</h4>
+                    </div>
+                    <div className="divide-y divide-border">
+                       {permissions.filter(p => p.type === "branch").length === 0 ? (
+                         <div className="p-10 text-center text-muted-foreground text-sm">No branches assigned</div>
+                       ) : (
+                         permissions.filter(p => p.type === "branch").map(perm => (
+                           <div key={perm._id} className="px-6 py-4 flex items-center justify-between group hover:bg-muted/30 transition-colors">
+                             <div>
+                               <p className="font-bold text-sm">{perm.branchId?.name}</p>
+                               <p className="text-[10px] text-muted-foreground">Granted: {new Date(perm.grantedAt).toLocaleDateString()}</p>
+                             </div>
+                             <button 
+                               onClick={() => handleRemovePermission(perm)}
                                className="p-2 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-xl transition-all"
                              >
                                <Trash2 className="w-4 h-4" />
@@ -675,24 +722,33 @@ export default function PartnerProfile() {
                 <form onSubmit={handleAddPermission} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase text-muted-foreground tracking-widest ml-1">Type</label>
-                    <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-2xl">
+                    <div className="grid grid-cols-3 gap-2 bg-muted p-1 rounded-2xl">
                       <button 
                         type="button" 
                         onClick={() => { setPermissionType("university"); setSelectedId(""); }}
-                        className={`py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
+                        className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                           permissionType === "university" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        University
+                        Univ
                       </button>
                       <button 
                         type="button" 
                         onClick={() => { setPermissionType("program"); setSelectedId(""); }}
-                        className={`py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
+                        className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                           permissionType === "program" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        Program
+                        Prog
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => { setPermissionType("branch"); setSelectedId(""); }}
+                        className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                          permissionType === "branch" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Branch
                       </button>
                     </div>
                   </div>
@@ -710,8 +766,17 @@ export default function PartnerProfile() {
                       <option value="">Choose one...</option>
                       {permissionType === "university" ? (
                         universities.map(u => <option key={u._id} value={u._id}>{u.name}</option>)
+                      ) : permissionType === "program" ? (
+                        programs
+                          .filter(p => !permissions.some(perm => perm.type === "university" && perm.universityId?._id === p.university?._id))
+                          .map(p => <option key={p._id} value={p._id}>{p.name} ({p.university?.name})</option>)
                       ) : (
-                        programs.map(p => <option key={p._id} value={p._id}>{p.name} ({p.university?.name})</option>)
+                        branches
+                          .filter(b => !permissions.some(perm => 
+                            (perm.type === "university" && perm.universityId?._id === b.program?.university?._id) ||
+                            (perm.type === "program" && perm.programId?._id === b.program?._id)
+                          ))
+                          .map(b => <option key={b._id} value={b._id}>{b.name} ({b.program?.name})</option>)
                       )}
                     </select>
                   </div>
@@ -787,55 +852,127 @@ export default function PartnerProfile() {
         {/* Review Confirmation Modal */}
         <AnimatePresence>
           {isReviewConfirmOpen && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+              onClick={() => setIsReviewConfirmOpen(false)}
+            >
               <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="bg-card w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-border"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl border border-border flex flex-col"
               >
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${
-                  reviewStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                <div className={`flex items-center space-x-3 mb-4 ${
+                  reviewStatus === 'approved' ? 'text-emerald-500' : 'text-red-500'
                 }`}>
-                  {reviewStatus === 'approved' ? <UserCheck className="w-8 h-8" /> : <UserMinus className="w-8 h-8" />}
+                  {reviewStatus === 'approved' ? <UserCheck className="w-6 h-6" /> : <UserMinus className="w-6 h-6" />}
+                  <h3 className="text-xl font-bold text-foreground">
+                    {reviewStatus === 'approved' ? 'Confirm Approval' : 'Confirm Rejection'}
+                  </h3>
                 </div>
-
-                <h3 className="text-2xl font-black mb-2">
-                  {reviewStatus === 'approved' ? 'Confirm Approval' : 'Confirm Rejection'}
-                </h3>
-                <p className="text-muted-foreground font-medium mb-8 leading-relaxed">
+                <p className="text-muted-foreground mb-6 text-sm flex-1">
                   {reviewStatus === 'approved' 
                     ? `You are about to approve ${partner.centerName}. They will receive their login credentials via email immediately.`
                     : `Are you sure you want to reject the application for ${partner.centerName}? This action can be undone later if needed.`
                   }
                 </p>
-
-                <div className="flex gap-4">
+                <div className="flex items-center justify-end space-x-3 mt-auto">
                   <button
                     onClick={() => setIsReviewConfirmOpen(false)}
                     disabled={isReviewing}
-                    className="flex-1 py-4 rounded-2xl border border-border hover:bg-muted font-bold transition-all"
+                    className="px-4 py-2 rounded-xl border border-border hover:bg-muted text-foreground transition-colors font-medium text-sm"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => handleReviewPartner(reviewStatus)}
                     disabled={isReviewing}
-                    className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl ${
+                    className={`px-4 py-2 rounded-xl text-white transition-all font-medium text-sm flex items-center space-x-2 shadow-sm ${
                       reviewStatus === 'approved' 
-                        ? 'bg-emerald-500 text-white shadow-emerald-500/20 hover:bg-emerald-600' 
-                        : 'bg-red-500 text-white shadow-red-500/20 hover:bg-red-600'
+                        ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' 
+                        : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
                     }`}
                   >
                     {isReviewing ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
                     ) : (
-                      reviewStatus === 'approved' ? 'Approve Now' : 'Reject Now'
+                      <>
+                        {reviewStatus === 'approved' ? <UserCheck className="w-4 h-4" /> : <UserMinus className="w-4 h-4" />}
+                        <span>{reviewStatus === 'approved' ? 'Approve' : 'Reject'}</span>
+                      </>
                     )}
                   </button>
                 </div>
               </motion.div>
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Permission Confirmation Modal */}
+        <AnimatePresence>
+          {isDeleteConfirmOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+              onClick={() => {
+                setIsDeleteConfirmOpen(false);
+                setPermissionToDelete(null);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl border border-border flex flex-col"
+              >
+                <div className="flex items-center space-x-3 text-red-500 mb-4">
+                  <Trash2 className="w-6 h-6" />
+                  <h3 className="text-xl font-bold text-foreground">
+                    Remove Permission
+                  </h3>
+                </div>
+                <p className="text-muted-foreground mb-6 text-sm flex-1">
+                  Are you sure you want to remove access to <span className="text-foreground font-bold italic underline">
+                    {permissionToDelete?.type === "university" ? permissionToDelete.universityId?.name : 
+                     permissionToDelete?.type === "program" ? permissionToDelete.programId?.name : 
+                     permissionToDelete.branchId?.name}
+                  </span>? This partner will no longer be able to manage students for this {permissionToDelete?.type}.
+                </p>
+                <div className="flex items-center justify-end space-x-3 mt-auto">
+                  <button
+                    onClick={() => {
+                      setIsDeleteConfirmOpen(false);
+                      setPermissionToDelete(null);
+                    }}
+                    disabled={isDeleting}
+                    className="px-4 py-2 rounded-xl border border-border hover:bg-muted text-foreground transition-colors font-medium text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeletePermission}
+                    disabled={isDeleting}
+                    className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors font-medium text-sm flex items-center space-x-2 shadow-sm"
+                  >
+                    {isDeleting ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>Remove Access</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

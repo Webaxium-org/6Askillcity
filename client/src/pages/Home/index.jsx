@@ -30,6 +30,7 @@ import Pci from "../../assets/pharmacy-council.webp";
 import Reach from "../../assets/Reach.webp";
 import IncreasedAdmission from "../../assets/empower.webp";
 import Holistic from "../../assets/Holistic.webp";
+import PartnershipIllustration from "../../assets/partnership_illustration.png";
 
 /**
  * UTILITIES
@@ -1028,144 +1029,210 @@ export default function App() {
           {/* WHY PARTNER SECTION */}
           <section
             id="why-partner"
-            className="py-24 bg-background relative overflow-hidden"
+            className="py-32 bg-slate-50 relative overflow-hidden"
           >
-            <div className="container mx-auto px-6 text-center">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="mb-16 space-y-4"
-              >
-                <h2 className="text-4xl lg:text-5xl font-bold tracking-tight">
-                  Why Partner with <br />
-                  <span className="text-[#17468C]">6A Skillcity?</span>
-                </h2>
-              </motion.div>
+            {/* Background Decorations */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-[#17468C]/5 to-transparent rounded-full blur-[100px] pointer-events-none translate-x-1/3 -translate-y-1/3" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-[#B82424]/5 to-transparent rounded-full blur-[100px] pointer-events-none -translate-x-1/3 translate-y-1/3" />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(24,minmax(0,1fr))] [grid-auto-rows:1fr] gap-6 mb-20">
-                {[
-                  {
-                    title: "UGC Approved Course Certificate:",
-                    desc: "Our partner institution courses are approved by the University Grants Commission (UGC), guaranteeing quality education and recognized certifications.",
-                    color: "bg-[#B82424]",
-                    image: Ugc,
-                  },
-                  {
-                    title: "Government of Manipur",
-                    desc: "Recognized and supported by the Government of Manipur for academic excellence.",
-                    color: "bg-[#A59200]",
-                    image: ManipurGovt,
-                  },
-                  {
-                    title: "Association of Indian Universities (AIU)",
-                    desc: "Membership and recognition by AIU ensuring global equivalence.",
-                    color: "bg-[#4338CA]",
-                    image: Aiu,
-                  },
-                  {
-                    title: "National Council for Teacher Education (NCTE)",
-                    desc: "Approval for teacher education programs across the network.",
-                    color: "bg-[#1E1B4B]",
-                    image: Ncte,
-                  },
-                  {
-                    title: "Bar Council of India (BCI)",
-                    desc: "Legal education programs approved by BCI.",
-                    color: "bg-[#DC2626]",
-                    image: Bci,
-                  },
-                  {
-                    title: "Pharmacy Council of India (PCI)",
-                    desc: "Pharmacy courses recognized by PCI standards.",
-                    color: "bg-[#0284C7]",
-                    image: Pci,
-                  },
-                  {
-                    title: "Expanded Reach:",
-                    desc: "Partnering with us allows admission application centers and vocational education centers to expand their reach and attract more students.",
-                    color: "bg-[#E11D48]",
-                    image: Reach,
-                  },
-                  {
-                    title: "Increased Admissions:",
-                    desc: "As our esteemed partner, you can benefit from increased admissions and expand your student base.",
-                    color: "bg-[#4F46E5]",
-                    image: IncreasedAdmission,
-                  },
-                  {
-                    title: "Holistic Development",
-                    desc: "Our focus on holistic education ensures that students not only excel academically but also develop essential life skills and prepare them for success in both academic and professional spheres.",
-                    color: "bg-[#A59200]",
-                    image: Holistic,
-                  },
-                ].map((item, idx) => (
+            <div className="container mx-auto px-6 relative z-10">
+              <div className="flex flex-col lg:flex-row gap-16">
+                
+                {/* Left Side: Sticky Header & Image */}
+                <div className="lg:w-1/3 lg:sticky lg:top-32 h-fit space-y-8">
                   <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1, duration: 0.5 }}
-                    className={cn(
-                      "col-span-1 lg:col-span-6",
-                      idx === 8 &&
-                        "sm:col-span-2 lg:col-span-6 lg:col-start-10",
-                      "rounded-3xl p-6 text-left flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow",
-                      item.color,
-                    )}
+                    transition={{ duration: 0.8 }}
                   >
-                    <div className="bg-white rounded-2xl p-4 mb-6 flex items-center justify-center overflow-hidden h-32">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="max-h-full object-contain"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <h4 className="text-white font-bold leading-tight">
-                        {item.title}
-                      </h4>
-                      {item.desc && (
-                        <p className="text-white/80 text-sm leading-relaxed">
-                          {item.desc}
-                        </p>
-                      )}
+                    <Badge variant="brandRed" className="mb-4">
+                      Partnership Benefits
+                    </Badge>
+                    <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground leading-tight">
+                      Why Partner with <br />
+                      <span className="text-[#17468C]">6A Skillcity?</span>
+                    </h2>
+                    <p className="mt-4 text-muted-foreground text-lg leading-relaxed">
+                      Join a network of excellence and unlock unparalleled growth for your institution with our comprehensive support and global recognition.
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/20 bg-white"
+                  >
+                    <img 
+                      src={PartnershipIllustration} 
+                      alt="Partnership Illustration" 
+                      className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
+                    />
+                    {/* Overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-end p-6">
+                      <p className="text-white font-semibold text-lg drop-shadow-md">
+                        Empowering Education Together
+                      </p>
                     </div>
                   </motion.div>
-                ))}
-              </div>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                className="max-w-3xl mx-auto space-y-8"
-              >
-                <div className="space-y-4 text-muted-foreground text-sm font-medium leading-relaxed">
-                  <p>
-                    Whether you're an admission recruiter, a vocational
-                    education center, or an educational institution, 6A
-                    Skillcity & BTU, TGU welcomes you to join our family of
-                    partners. Let's work together to make a difference in the
-                    lives of students and shape the future of education.
-                  </p>
-                  <p>
-                    Contact us today to learn more about partnership
-                    opportunities and be a part of our mission to transform
-                    education.
-                  </p>
+                  <motion.div
+                     initial={{ opacity: 0 }}
+                     whileInView={{ opacity: 1 }}
+                     viewport={{ once: true }}
+                     className="hidden lg:block pt-4"
+                  >
+                     <Button
+                       variant="primary"
+                       size="lg"
+                       className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
+                       onClick={() => (window.location.href = "#contact")}
+                     >
+                       Contact Us Now
+                     </Button>
+                  </motion.div>
                 </div>
 
-                <Button
-                  variant="brandRed"
-                  size="lg"
-                  className="rounded-xl px-12 py-6 text-lg font-bold shadow-xl shadow-[#B82424]/20 hover:-translate-y-1 transition-all"
-                  onClick={() => (window.location.href = "#contact")}
-                >
-                  CONTACT US
-                </Button>
-              </motion.div>
+                {/* Right Side: Cards Grid */}
+                <div className="lg:w-2/3">
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    {[
+                      {
+                        title: "UGC Approved Course Certificate",
+                        desc: "Our partner institution courses are approved by the University Grants Commission (UGC), guaranteeing quality education and recognized certifications.",
+                        color: "from-red-50 to-red-100/50",
+                        textColor: "text-[#B82424]",
+                        borderColor: "border-red-200",
+                        image: Ugc,
+                      },
+                      {
+                        title: "Government of Manipur",
+                        desc: "Recognized and supported by the Government of Manipur for academic excellence.",
+                        color: "from-yellow-50 to-yellow-100/50",
+                        textColor: "text-[#A59200]",
+                        borderColor: "border-yellow-200",
+                        image: ManipurGovt,
+                      },
+                      {
+                        title: "Association of Indian Universities (AIU)",
+                        desc: "Membership and recognition by AIU ensuring global equivalence.",
+                        color: "from-indigo-50 to-indigo-100/50",
+                        textColor: "text-indigo-700",
+                        borderColor: "border-indigo-200",
+                        image: Aiu,
+                      },
+                      {
+                        title: "National Council for Teacher Education",
+                        desc: "Approval for teacher education programs across the network.",
+                        color: "from-slate-50 to-slate-100/50",
+                        textColor: "text-slate-800",
+                        borderColor: "border-slate-200",
+                        image: Ncte,
+                      },
+                      {
+                        title: "Bar Council of India (BCI)",
+                        desc: "Legal education programs approved by BCI standards.",
+                        color: "from-rose-50 to-rose-100/50",
+                        textColor: "text-rose-700",
+                        borderColor: "border-rose-200",
+                        image: Bci,
+                      },
+                      {
+                        title: "Pharmacy Council of India (PCI)",
+                        desc: "Pharmacy courses recognized by PCI for excellence.",
+                        color: "from-sky-50 to-sky-100/50",
+                        textColor: "text-sky-700",
+                        borderColor: "border-sky-200",
+                        image: Pci,
+                      },
+                      {
+                        title: "Expanded Reach",
+                        desc: "Partnering with us allows centers to expand their reach and attract more students globally.",
+                        color: "from-pink-50 to-pink-100/50",
+                        textColor: "text-pink-700",
+                        borderColor: "border-pink-200",
+                        image: Reach,
+                      },
+                      {
+                        title: "Increased Admissions",
+                        desc: "As our esteemed partner, you can benefit from increased admissions and expand your student base.",
+                        color: "from-violet-50 to-violet-100/50",
+                        textColor: "text-violet-700",
+                        borderColor: "border-violet-200",
+                        image: IncreasedAdmission,
+                      },
+                      {
+                        title: "Holistic Development",
+                        desc: "Our focus ensures students excel academically and develop essential life skills for success.",
+                        color: "from-amber-50 to-amber-100/50",
+                        textColor: "text-amber-700",
+                        borderColor: "border-amber-200",
+                        image: Holistic,
+                      },
+                    ].map((item, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ delay: (idx % 2) * 0.1, duration: 0.6, type: "spring" }}
+                        className={cn(
+                          "group relative bg-white rounded-[2rem] p-6 shadow-xl shadow-foreground/5 border transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden",
+                          item.borderColor,
+                          idx === 8 && "sm:col-span-2 max-w-md mx-auto w-full" // Center the last item
+                        )}
+                      >
+                        {/* Background subtle gradient hover effect */}
+                        <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none", item.color)} />
+                        
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="mb-6 h-16 flex items-center justify-start">
+                            <div className="p-3 bg-white shadow-sm border border-border/50 rounded-2xl group-hover:scale-110 transition-transform duration-500">
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="h-10 object-contain"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-3 flex-grow">
+                            <h4 className={cn("font-bold text-lg leading-tight transition-colors duration-300", item.textColor)}>
+                              {item.title}
+                            </h4>
+                            <p className="text-muted-foreground text-sm leading-relaxed">
+                              {item.desc}
+                            </p>
+                          </div>
+                          
+                          <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                            Learn more <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Mobile contact button */}
+                  <motion.div
+                     initial={{ opacity: 0 }}
+                     whileInView={{ opacity: 1 }}
+                     viewport={{ once: true }}
+                     className="lg:hidden mt-12"
+                  >
+                     <Button
+                       variant="primary"
+                       size="lg"
+                       className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
+                       onClick={() => (window.location.href = "#contact")}
+                     >
+                       Contact Us Now
+                     </Button>
+                  </motion.div>
+                </div>
+
+              </div>
             </div>
           </section>
 
@@ -1201,7 +1268,6 @@ export default function App() {
                       </Button>
                     ))}
                   </div>
-
                 </div>
 
                 <div className="lg:col-span-2 space-y-5">

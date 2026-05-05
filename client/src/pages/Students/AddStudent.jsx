@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import {
@@ -30,6 +30,7 @@ import {
   MapPin,
   Baby,
   Cpu,
+  GitBranch,
 } from "lucide-react";
 import { axiosInstance } from "../../api/axiosInstance";
 import Tesseract from "tesseract.js";
@@ -344,7 +345,8 @@ const ALL_REQUIRED_FIELDS = [
   { key: "plusTwoBoard", label: "Plus Two Board" },
   { key: "plusTwoPercentage", label: "Plus Two Percentage" },
   { key: "university", label: "University" },
-  { key: "program", label: "Course" },
+  { key: "program", label: "Program" },
+  { key: "branch", label: "Branch" },
   { key: "highestQualification", label: "Highest Qualification" },
 ];
 
@@ -355,8 +357,11 @@ const ALL_REQUIRED_FILES = [
 ];
 
 export default function AddStudent() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const [studentId, setStudentId] = useState(id || null);
 
   const sslcFileInputRef = useRef(null);
 
@@ -368,18 +373,100 @@ export default function AddStudent() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    const fetchPermitted = async () => {
+    const fetchData = async () => {
       try {
-        const res = await getPermittedCourses();
-        if (res.success) {
-          setPermittedCourses(res.data);
+        const [coursesRes, studentRes] = await Promise.all([
+          getPermittedCourses(),
+          studentId
+            ? axiosInstance.get(`/students/${studentId}`)
+            : Promise.resolve(null),
+        ]);
+
+        if (coursesRes.success) {
+          setPermittedCourses(coursesRes.data);
+        }
+
+        if (studentRes?.data?.success) {
+          const s = studentRes.data.data;
+          setFormData({
+            name: s.name || "",
+            dob: s.dob ? s.dob.split("T")[0] : "",
+            gender: s.gender || "",
+            religion: s.religion || "",
+            caste: s.caste || "",
+            address: s.address || "",
+            email: s.email || "",
+            country: s.country || "India",
+            phoneCode: "+91", // Assuming default or extracting from phone if possible
+            phone: s.phone || "",
+            alternativePhoneCode: "+91",
+            alternativePhone: s.alternativePhone || "",
+            otherPhoneCode: "+91",
+            otherPhone: s.otherPhone || "",
+            fatherName: s.fatherName || "",
+            motherName: s.motherName || "",
+            fatherPhoneCode: "+91",
+            fatherPhone: s.fatherPhone || "",
+            motherPhoneCode: "+91",
+            motherPhone: s.motherPhone || "",
+            university: s.university?._id || s.university || "",
+            program: s.program?._id || s.program || "",
+            branch: s.branch?._id || s.branch || "",
+            completionYear: s.completionYear || "",
+            tenthCompletionYear: s.tenth?.completionYear || "",
+            tenthBoard: s.tenth?.board || "",
+            tenthTotalMarks: s.tenth?.totalMarks || "",
+            tenthObtainedMarks: s.tenth?.obtainedMarks || "",
+            tenthPercentage: s.tenth?.percentage || "",
+            plusTwoCompletionYear: s.plusTwo?.completionYear || "",
+            plusTwoBoard: s.plusTwo?.board || "",
+            plusTwoPercentage: s.plusTwo?.percentage || "",
+            bachelorsUniversity: s.bachelors?.university || "",
+            bachelorsCourse: s.bachelors?.course || "",
+            bachelorsBranch: s.bachelors?.branch || "",
+            bachelorsPapersPassed: s.bachelors?.papersPassed || "",
+            bachelorsPapersEqualised: s.bachelors?.papersEqualised || "",
+            mastersUniversity: s.masters?.university || "",
+            mastersCourse: s.masters?.course || "",
+            mastersBranch: s.masters?.branch || "",
+            mastersPapersPassed: s.masters?.papersPassed || "",
+            mastersPapersEqualised: s.masters?.papersEqualised || "",
+            videoKycStatus: s.videoKycStatus || "Pending",
+            employmentStatus: s.employmentStatus || "Unemployed",
+            highestQualification: s.highestQualification || "Plus Two",
+            applicationStatus: s.applicationStatus || "Draft",
+            enrollmentStatus: s.enrollmentStatus || "Identity",
+          });
+
+          // Determine current step from enrollmentStatus
+          const stepIndex = [
+            "Identity",
+            "Family",
+            "Academic",
+            "Completed",
+          ].indexOf(s.enrollmentStatus || "Identity");
+          if (stepIndex !== -1) {
+            setCurrentStep(stepIndex);
+          }
+
+          // Set existing files as paths (string) so they show as "Attached"
+          setFiles({
+            idProof: s.idProof || null,
+            tenthCertificate: s.tenth?.certificate || null,
+            plusTwoCertificate: s.plusTwo?.certificate || null,
+            bachelorsCertificates: s.bachelors?.certificates || [],
+            mastersCertificates: s.masters?.certificates || [],
+            affidavit: s.affidavit || null,
+            migrationCertificate: s.migrationCertificate || null,
+            projectSubmission: s.projectSubmission || null,
+          });
         }
       } catch (error) {
-        console.error("Failed to fetch permitted courses:", error);
+        console.error("Failed to fetch data:", error);
       }
     };
-    fetchPermitted();
-  }, []);
+    fetchData();
+  }, [studentId]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -404,6 +491,7 @@ export default function AddStudent() {
     motherPhone: "",
     university: "",
     program: "",
+    branch: "",
     completionYear: "",
     tenthCompletionYear: "",
     tenthBoard: "",
@@ -426,6 +514,8 @@ export default function AddStudent() {
     videoKycStatus: "Pending",
     employmentStatus: "Unemployed",
     highestQualification: "Plus Two",
+    applicationStatus: "Draft",
+    enrollmentStatus: "Identity",
   });
 
   const [files, setFiles] = useState({
@@ -453,19 +543,36 @@ export default function AddStudent() {
     }
   }, [formData.tenthTotalMarks, formData.tenthObtainedMarks]);
 
-  // Reset program if university changes
+  // Reset program/branch if university changes
   useEffect(() => {
     if (formData.university) {
       const isStillAvailable = permittedCourses.some(
         (c) =>
-          c.university?._id === formData.university &&
-          c._id === formData.program,
+          c.program?.university?._id.toString() === formData.university &&
+          c.program?._id.toString() === formData.program &&
+          c._id.toString() === formData.branch,
       );
       if (!isStillAvailable) {
-        setFormData((prev) => ({ ...prev, program: "" }));
+        // If program changed or no longer available, reset
+        const isProgAvailable = permittedCourses.some(
+          (c) =>
+            c.program?.university?._id.toString() === formData.university &&
+            c.program?._id.toString() === formData.program,
+        );
+        if (!isProgAvailable) {
+          setFormData((prev) => ({ ...prev, program: "", branch: "" }));
+        } else {
+          const isBranchAvailable = permittedCourses.some(
+            (c) =>
+              c.program?._id.toString() === formData.program &&
+              c._id.toString() === formData.branch,
+          );
+          if (!isBranchAvailable)
+            setFormData((prev) => ({ ...prev, branch: "" }));
+        }
       }
     }
-  }, [formData.university, permittedCourses]);
+  }, [formData.university, formData.program, permittedCourses]);
 
   // Auto-sync phone codes with selected country
   useEffect(() => {
@@ -628,135 +735,46 @@ export default function AddStudent() {
     }
   };
 
-  const nextStep = () => {
-    let required = [];
-    let fileRequired = [];
-
-    if (currentStep === 0) {
-      required = [
-        { key: "name", label: "Student Name" },
-        { key: "dob", label: "Date of Birth" },
-        { key: "gender", label: "Gender" },
-        { key: "religion", label: "Religion" },
-        { key: "caste", label: "Caste" },
-        { key: "email", label: "Email" },
-        { key: "phone", label: "Primary Phone" },
-        { key: "alternativePhone", label: "Alternative Phone" },
-        { key: "country", label: "Country" },
-        { key: "address", label: "Permanent Address" },
-      ];
-      fileRequired = [{ key: "idProof", label: "Identity Proof" }];
-    } else if (currentStep === 1) {
-      required = [
-        { key: "fatherName", label: "Father's Name" },
-        { key: "motherName", label: "Mother's Name" },
-        { key: "fatherPhone", label: "Father's Phone" },
-        { key: "motherPhone", label: "Mother's Phone" },
-      ];
-    } else if (currentStep === 2) {
-      required = [
-        { key: "tenthCompletionYear", label: "10th Completion Year" },
-        { key: "tenthBoard", label: "10th Board" },
-        { key: "tenthTotalMarks", label: "10th Total Marks" },
-        { key: "tenthObtainedMarks", label: "10th Obtained Marks" },
-        { key: "plusTwoCompletionYear", label: "Plus Two Completion Year" },
-        { key: "plusTwoBoard", label: "Plus Two Board" },
-        { key: "plusTwoPercentage", label: "Plus Two Percentage" },
-        { key: "highestQualification", label: "Highest Qualification" },
-      ];
-      fileRequired = [
-        { key: "tenthCertificate", label: "10th Certificate" },
-        { key: "plusTwoCertificate", label: "Plus Two Certificate" },
-      ];
+  const saveDraft = async (
+    quiet = true,
+    newStatus = null,
+    newEnrollmentStatus = null,
+  ) => {
+    if (!formData.name) {
+      if (!quiet)
+        dispatch(
+          showAlert({
+            type: "error",
+            message: "Student name is required to save progress.",
+          }),
+        );
+      return null;
     }
 
-    const newErrors = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\d{7,15}$/;
-
-    for (const field of required) {
-      if (!formData[field.key]) {
-        newErrors[field.key] = `${field.label} is required.`;
-      } else if (
-        field.key === "email" &&
-        !emailRegex.test(formData[field.key])
-      ) {
-        newErrors[field.key] = "Invalid email format.";
-      } else if (
-        field.label.toLowerCase().includes("phone") &&
-        !phoneRegex.test(formData[field.key])
-      ) {
-        newErrors[field.key] = "Invalid phone (7-15 digits).";
-      }
-    }
-
-    for (const file of fileRequired) {
-      if (!files[file.key]) {
-        newErrors[file.key] = `${file.label} is required.`;
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      dispatch(
-        showAlert({
-          type: "error",
-          message: "Please fill all required fields.",
-        }),
-      );
-      return;
-    }
-
-    setErrors({});
-    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
-  };
-  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const newErrors = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\d{7,15}$/;
-
-    for (const field of ALL_REQUIRED_FIELDS) {
-      if (!formData[field.key]) {
-        newErrors[field.key] = `${field.label} is required.`;
-      } else if (
-        field.key === "email" &&
-        !emailRegex.test(formData[field.key])
-      ) {
-        newErrors[field.key] = "Invalid email format.";
-      } else if (
-        field.label.toLowerCase().includes("phone") &&
-        !phoneRegex.test(formData[field.key])
-      ) {
-        newErrors[field.key] = "Invalid phone (7-15 digits).";
-      }
-    }
-
-    for (const file of ALL_REQUIRED_FILES) {
-      if (!files[file.key]) {
-        newErrors[file.key] = `${file.label} is required.`;
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      dispatch(
-        showAlert({ type: "error", message: "Please fix the errors below." }),
-      );
-      return;
-    }
-
-    setErrors({});
     setLoading(true);
-
     try {
       const payload = new FormData();
       Object.keys(formData).forEach((key) => {
-        if (formData[key]) payload.append(key, formData[key]);
+        // Send all fields, including empty strings, to ensure the backend can clear them if needed
+        // but skip internal UI state keys if any (none currently identified as problematic)
+        if (formData[key] !== undefined && formData[key] !== null) {
+          payload.append(key, formData[key]);
+        }
       });
+
+      if (newStatus) {
+        payload.set("applicationStatus", newStatus);
+      } else if (formData.applicationStatus) {
+        payload.set("applicationStatus", formData.applicationStatus);
+      }
+
+      if (newEnrollmentStatus) {
+        payload.set("enrollmentStatus", newEnrollmentStatus);
+      } else if (formData.enrollmentStatus) {
+        payload.set("enrollmentStatus", formData.enrollmentStatus);
+      }
+
+      // Files - only append if they are File objects (newly uploaded)
       [
         "idProof",
         "tenthCertificate",
@@ -765,22 +783,93 @@ export default function AddStudent() {
         "migrationCertificate",
         "projectSubmission",
       ].forEach((field) => {
-        if (files[field]) payload.append(field, files[field]);
+        if (files[field] instanceof File) payload.append(field, files[field]);
       });
-      files.bachelorsCertificates.forEach((f) =>
-        payload.append("bachelorsCertificates", f),
-      );
-      files.mastersCertificates.forEach((f) =>
-        payload.append("mastersCertificates", f),
-      );
 
-      await axiosInstance.post(
-        "/students/register",
-        payload,
-        {
+      files.bachelorsCertificates.forEach((f) => {
+        if (f instanceof File) payload.append("bachelorsCertificates", f);
+      });
+      files.mastersCertificates.forEach((f) => {
+        if (f instanceof File) payload.append("mastersCertificates", f);
+      });
+
+      let response;
+      if (studentId) {
+        response = await axiosInstance.put(`/students/${studentId}`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
-        },
+        });
+      } else {
+        response = await axiosInstance.post("/students/register", payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
+      if (response.data.success) {
+        if (!studentId) {
+          setStudentId(response.data.data._id);
+          // Update URL without refreshing
+          window.history.replaceState(
+            null,
+            "",
+            `/dashboard/student/edit/${response.data.data._id}`,
+          );
+        }
+        return response.data.data;
+      }
+    } catch (error) {
+      console.error("Draft Save Error:", error);
+      if (!quiet)
+        dispatch(
+          showAlert({ type: "error", message: "Failed to save draft." }),
+        );
+    } finally {
+      setLoading(false);
+    }
+    return null;
+  };
+
+  const nextStep = async () => {
+    // Basic validation for Step 0 name
+    if (currentStep === 0 && !formData.name) {
+      setErrors({ name: "Student Name is required." });
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please enter the student's name.",
+        }),
       );
+      return;
+    }
+
+    // Determine new enrollment status based on current step
+    const enrollmentStatuses = ["Identity", "Family", "Academic", "Completed"];
+    const newEnrollmentStatus =
+      enrollmentStatuses[currentStep + 1] || "Completed";
+
+    // Sync status to state and then save
+    setFormData((prev) => ({
+      ...prev,
+      enrollmentStatus: newEnrollmentStatus,
+    }));
+
+    const saved = await saveDraft(false, formData.applicationStatus, newEnrollmentStatus);
+    if (saved) {
+      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+    }
+  };
+  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Final Save Draft as Pending Eligibility and set enrollmentStatus to Completed
+    const saved = await saveDraft(false, "Pending Eligibility", "Completed");
+    if (!saved && !studentId) return;
+
+    setLoading(true);
+
+    try {
+      await axiosInstance.post(`/students/${studentId || saved._id}/submit`);
 
       dispatch(
         showAlert({
@@ -794,7 +883,8 @@ export default function AddStudent() {
       dispatch(
         showAlert({
           type: "error",
-          message: error.response?.data?.message || "Failed to enroll student.",
+          message:
+            error.response?.data?.message || "Failed to submit application.",
         }),
       );
     } finally {
@@ -1337,13 +1427,14 @@ export default function AddStudent() {
                       value={formData.university}
                       onChange={handleChange}
                       options={permittedCourses.reduce((acc, curr) => {
+                        const uni = curr.program?.university;
                         if (
-                          curr.university &&
-                          !acc.find((u) => u.value === curr.university._id)
+                          uni &&
+                          !acc.find((u) => u.value === uni._id.toString())
                         ) {
                           acc.push({
-                            label: curr.university.name,
-                            value: curr.university._id,
+                            label: uni.name,
+                            value: uni._id.toString(),
                           });
                         }
                         return acc;
@@ -1352,22 +1443,47 @@ export default function AddStudent() {
                       error={errors.university}
                     />
                     <InputField
-                      label="Course"
+                      label="Program"
                       name="program"
                       value={formData.program}
+                      onChange={handleChange}
+                      options={permittedCourses.reduce((acc, curr) => {
+                        const uni = curr.program?.university;
+                        if (
+                          curr.program &&
+                          (!formData.university ||
+                            uni?._id.toString() === formData.university) &&
+                          !acc.find((p) => p.value === curr.program._id.toString())
+                        ) {
+                          acc.push({
+                            label: curr.program.name,
+                            value: curr.program._id.toString(),
+                          });
+                        }
+                        return acc;
+                      }, [])}
+                      icon={BookOpen}
+                      error={errors.program}
+                    />
+                    <InputField
+                      label="Branch"
+                      name="branch"
+                      value={formData.branch}
                       onChange={handleChange}
                       options={permittedCourses
                         .filter(
                           (c) =>
-                            !formData.university ||
-                            c.university?._id === formData.university,
+                            (!formData.university ||
+                              c.program?.university?._id.toString() === formData.university) &&
+                            (!formData.program ||
+                              c.program?._id.toString() === formData.program),
                         )
                         .map((c) => ({
                           label: c.name,
-                          value: c._id,
+                          value: c._id.toString(),
                         }))}
-                      icon={BookOpen}
-                      error={errors.program}
+                      icon={GitBranch}
+                      error={errors.branch}
                     />
                     <InputField
                       label="Completion Year"
@@ -1428,14 +1544,16 @@ export default function AddStudent() {
           </AnimatePresence>
 
           <div className="flex items-center justify-between bg-card border border-border rounded-[2rem] p-6 shadow-xl sticky bottom-6 z-50">
-            <button
-              type="button"
-              onClick={prevStep}
-              disabled={currentStep === 0}
-              className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-muted hover:bg-muted/80 text-foreground font-black transition-all disabled:opacity-30 text-xs"
-            >
-              <ChevronLeft className="w-4 h-4" /> BACK
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-muted hover:bg-muted/80 text-foreground font-black transition-all disabled:opacity-30 text-xs"
+              >
+                <ChevronLeft className="w-4 h-4" /> BACK
+              </button>
+            </div>
             {currentStep === STEPS.length - 1 ? (
               <button
                 type="button"
@@ -1455,9 +1573,16 @@ export default function AddStudent() {
               <button
                 type="button"
                 onClick={nextStep}
+                disabled={loading}
                 className="group flex items-center gap-2 px-10 py-3 rounded-2xl bg-foreground text-background font-black hover:scale-[1.02] transition-all shadow-xl text-xs"
               >
-                CONTINUE <ChevronRight className="w-4 h-4" />
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    CONTINUE <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             )}
           </div>

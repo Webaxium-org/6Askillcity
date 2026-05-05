@@ -33,6 +33,7 @@ import ActivityLog from "../models/activityLog.js";
 import PartnerPermission from "../models/partnerPermission.js";
 import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
+import Branch from "../models/branch.js";
 
 // Helper to log activity
 const logActivity = async (action, details, performedBy, targetType, targetId) => {
@@ -243,11 +244,13 @@ export const getAllAdmissionPoints = async (req, res, next) => {
       )];
 
       const progCount = permissions.filter(p => p.type === "program").length;
+      const branchCount = permissions.filter(p => p.type === "branch").length;
 
       return {
         ...point,
         assignedUnis: unis,
-        programCount: progCount
+        programCount: progCount,
+        branchCount: branchCount
       };
     }));
 
@@ -335,6 +338,7 @@ export const getPartnerPermissions = async (req, res, next) => {
     const permissions = await PartnerPermission.find({ partnerId })
       .populate("universityId", "name")
       .populate("programId", "name")
+      .populate("branchId", "name")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -348,16 +352,57 @@ export const getPartnerPermissions = async (req, res, next) => {
 
 export const addPartnerPermission = async (req, res, next) => {
   try {
-    const { partnerId, type, universityId, programId } = req.body;
+    const { partnerId, type, universityId, programId, branchId } = req.body;
 
     // Check if permission already exists
     const query = { partnerId, type };
     if (type === "university") query.universityId = universityId;
     if (type === "program") query.programId = programId;
+    if (type === "branch") query.branchId = branchId;
 
     const existing = await PartnerPermission.findOne(query);
     if (existing) {
       throw createError(400, "This permission already exists for the partner");
+    }
+
+    // Redundancy Check: Don't add program if university is already permitted, etc.
+    if (type === "program") {
+      const program = await Program.findById(programId);
+      if (program) {
+        const uniPermitted = await PartnerPermission.findOne({
+          partnerId,
+          type: "university",
+          universityId: program.university
+        });
+        if (uniPermitted) {
+          throw createError(400, "This program is already included in the university-level permission");
+        }
+      }
+    }
+
+    if (type === "branch") {
+      const branch = await Branch.findById(branchId).populate("program");
+      if (branch) {
+        // Check University permission
+        const uniPermitted = await PartnerPermission.findOne({
+          partnerId,
+          type: "university",
+          universityId: branch.program.university
+        });
+        if (uniPermitted) {
+          throw createError(400, "This branch is already included in the university-level permission");
+        }
+
+        // Check Program permission
+        const progPermitted = await PartnerPermission.findOne({
+          partnerId,
+          type: "program",
+          programId: branch.program._id
+        });
+        if (progPermitted) {
+          throw createError(400, "This branch is already included in the program-level permission");
+        }
+      }
     }
 
     const permission = new PartnerPermission({
@@ -365,6 +410,7 @@ export const addPartnerPermission = async (req, res, next) => {
       type,
       universityId,
       programId,
+      branchId,
     });
 
     await permission.save();
@@ -426,14 +472,15 @@ export const getMyPartnerProfile = async (req, res, next) => {
       status: "active",
     })
       .populate("universityId", "name")
-      .populate("programId", "name category duration");
+      .populate("programId", "name")
+      .populate("branchId", "name duration type");
 
-    // Fetch current fees for programs
+    // Fetch current fees for branches
     const permissions = await Promise.all(rawPermissions.map(async (p) => {
       const obj = p.toObject();
-      if (p.type === 'program' && p.programId) {
+      if (p.type === 'branch' && p.branchId) {
         const currentFee = await ProgramFee.findOne({ 
-          program: p.programId._id, 
+          branch: p.branchId._id, 
           isCurrent: true 
         });
         obj.currentFee = currentFee;
