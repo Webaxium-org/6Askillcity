@@ -386,12 +386,7 @@ export default function App() {
                   <motion.div
                     variants={fadeInUp}
                     className="cursor-pointer"
-                    onClick={() =>
-                      window.open(
-                        "https://vidhyaedufoundation.com/admission-point-application-form/",
-                        "_blank",
-                      )
-                    }
+                    onClick={() => navigate("/register-admission-point")}
                   >
                     <Badge
                       variant="brandRed"
@@ -440,7 +435,7 @@ export default function App() {
                       onClick={() => navigate("/login")}
                       className="rounded-full text-base hover:bg-accent border-border shadow-sm hover:-translate-y-1 transition-all duration-300"
                     >
-                      View Institutions
+                      Login to account
                     </Button>
                   </motion.div>
 
@@ -453,9 +448,9 @@ export default function App() {
                     </p>
                     <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
                     <div className="flex gap-6 font-bold text-muted-foreground/50">
-                      <span className="hover:text-[#17468C] transition-colors cursor-default">
+                      {/* <span className="hover:text-[#17468C] transition-colors cursor-default">
                         BTU
-                      </span>
+                      </span> */}
                       <span className="hover:text-[#17468C] transition-colors cursor-default">
                         TGU
                       </span>
@@ -681,18 +676,18 @@ export default function App() {
 
               <div className="grid md:grid-cols-2 gap-10">
                 {[
-                  {
-                    title: "Bir Tikendrajit University",
-                    loc: "Manipur",
-                    color:
-                      "bg-gradient-to-br from-[#B82424] to-red-600 shadow-red-500/30",
-                    icon: <School className="text-white" size={28} />,
-                    desc: "Established by the Manipur Government (Act No. 9 of 2020) and under u/s 2(f) of UGC Act 1956. We aim to create world-level research facilities and provide state-of-the-art education to empower youth with global human resources.",
-                    stats: [
-                      { label: "Legislation", value: "Act No. 9 of 2020" },
-                      { label: "Recognition", value: "UGC u/s 2(f)" },
-                    ],
-                  },
+                  // {
+                  //   title: "Bir Tikendrajit University",
+                  //   loc: "Manipur",
+                  //   color:
+                  //     "bg-gradient-to-br from-[#B82424] to-red-600 shadow-red-500/30",
+                  //   icon: <School className="text-white" size={28} />,
+                  //   desc: "Established by the Manipur Government (Act No. 9 of 2020) and under u/s 2(f) of UGC Act 1956. We aim to create world-level research facilities and provide state-of-the-art education to empower youth with global human resources.",
+                  //   stats: [
+                  //     { label: "Legislation", value: "Act No. 9 of 2020" },
+                  //     { label: "Recognition", value: "UGC u/s 2(f)" },
+                  //   ],
+                  // },
                   {
                     title: "The Global University",
                     loc: "Arunachal Pradesh",
@@ -743,7 +738,7 @@ export default function App() {
                         <CardTitle className="text-3xl font-bold">
                           {uni.title}
                         </CardTitle>
-                        <CardDescription className="text-base text-muted-foreground leading-relaxed">
+                        <CardDescription className="text-[15px] text-muted-foreground leading-relaxed">
                           {uni.desc}
                         </CardDescription>
                       </CardContent>
@@ -807,10 +802,10 @@ export default function App() {
                     bgBadge:
                       "bg-[#17468C]/20 text-blue-300 border border-[#17468C]/30",
                     points: [
-                      "Assist students in the application process for Bir Tikendrajit University & The Global University programs.",
+                      "Assist students in the application process for The Global University programs.",
                       "Provide guidance and support to applicants throughout the admission journey.",
                       "Serve as a local point of contact for prospective students in your region.",
-                      "Contribute to the promotion of Bir Tikendrajit University & The Global University academic offerings.",
+                      "Contribute to the promotion of The Global University academic offerings.",
                       "Play a key role in expanding access to quality education and fostering growth.",
                     ],
                   },
@@ -825,7 +820,7 @@ export default function App() {
                     bgBadge:
                       "bg-[#B82424]/20 text-red-300 border border-[#B82424]/30",
                     points: [
-                      "Offer Bir Tikendrajit University & The Global University skill-enhancing programs to your students.",
+                      "Offer The Global University skill-enhancing programs to your students.",
                       "Provide hands-on training and practical experience in alignment with industry requirements.",
                       "Empower students with the skills and knowledge necessary for successful career pathways.",
                       "Enhance your institution’s reputation as a provider of holistic education with a focus on employability.",
@@ -872,7 +867,7 @@ export default function App() {
                       </CardHeader>
                       <CardContent className="flex-grow space-y-6 px-10 relative z-10">
                         {path.description && (
-                          <p className="text-white/50 text-sm leading-relaxed mb-6 line-clamp-4 group-hover:line-clamp-none transition-all duration-500">
+                          <p className="text-white/50 text-[15px] leading-relaxed mb-6 line-clamp-4 group-hover:line-clamp-none transition-all duration-500">
                             {path.description}
                           </p>
                         )}
@@ -935,25 +930,28 @@ export default function App() {
                     <p className="text-lg text-muted-foreground leading-relaxed">
                       6A Skillcity serves as an academic partner of{" "}
                       <span className="text-foreground font-semibold">
-                        Bir Tikendrajit University & The Global University
+                        {/* Bir Tikendrajit University &  */}
+                        The Global University
                       </span>{" "}
                       handling all academic affairs. The foundation connects
                       admission application centers and vocational education
-                      centers with Bir Tikendrajit University & The Global
-                      University.
+                      centers with {/* Bir Tikendrajit University & */} The
+                      Global University.
                     </p>
                     <p className="text-lg text-muted-foreground leading-relaxed">
                       With a commitment to fostering educational growth and
                       facilitating access to quality education, 6A Skillcity
                       plays a pivotal role in connecting aspiring students with
-                      Bir Tikendrajit University, The Global University’s
-                      diverse range of programs.
+                      {/* Bir Tikendrajit University, */}
+                      The Global University’s diverse range of programs.
                     </p>
                     <p className="text-lg text-muted-foreground leading-relaxed italic border-l-4 border-[#B82424] pl-6 py-2">
                       "As an academic partner, 6A Skillcity contributes to the
                       advancement of education by promoting collaboration and
-                      synergy between educational institutions and Bir
-                      Tikendrajit University & The Global University."
+                      synergy between educational institutions and{" "}
+                      {/* Bir
+                      Tikendrajit University & */}{" "}
+                      The Global University."
                     </p>
                   </div>
 
@@ -1013,7 +1011,7 @@ export default function App() {
                                 Academic Partner
                               </p>
                               <p className="text-xl font-bold">
-                                Official BTU Partner
+                                Official TGU Partner
                               </p>
                             </div>
                           </div>
@@ -1037,7 +1035,6 @@ export default function App() {
 
             <div className="container mx-auto px-6 relative z-10">
               <div className="flex flex-col lg:flex-row gap-16">
-                
                 {/* Left Side: Sticky Header & Image */}
                 <div className="lg:w-1/3 lg:sticky lg:top-32 h-fit space-y-8">
                   <motion.div
@@ -1054,7 +1051,9 @@ export default function App() {
                       <span className="text-[#17468C]">6A Skillcity?</span>
                     </h2>
                     <p className="mt-4 text-muted-foreground text-lg leading-relaxed">
-                      Join a network of excellence and unlock unparalleled growth for your institution with our comprehensive support and global recognition.
+                      Join a network of excellence and unlock unparalleled
+                      growth for your institution with our comprehensive support
+                      and global recognition.
                     </p>
                   </motion.div>
 
@@ -1065,9 +1064,9 @@ export default function App() {
                     transition={{ duration: 0.8, delay: 0.2 }}
                     className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/20 bg-white"
                   >
-                    <img 
-                      src={PartnershipIllustration} 
-                      alt="Partnership Illustration" 
+                    <img
+                      src={PartnershipIllustration}
+                      alt="Partnership Illustration"
                       className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
                     />
                     {/* Overlay gradient */}
@@ -1079,19 +1078,19 @@ export default function App() {
                   </motion.div>
 
                   <motion.div
-                     initial={{ opacity: 0 }}
-                     whileInView={{ opacity: 1 }}
-                     viewport={{ once: true }}
-                     className="hidden lg:block pt-4"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    className="hidden lg:block pt-4"
                   >
-                     <Button
-                       variant="primary"
-                       size="lg"
-                       className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
-                       onClick={() => (window.location.href = "#contact")}
-                     >
-                       Contact Us Now
-                     </Button>
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
+                      onClick={() => (window.location.href = "#contact")}
+                    >
+                      Contact Us Now
+                    </Button>
                   </motion.div>
                 </div>
 
@@ -1177,16 +1176,25 @@ export default function App() {
                         initial={{ opacity: 0, y: 30, scale: 0.95 }}
                         whileInView={{ opacity: 1, y: 0, scale: 1 }}
                         viewport={{ once: true, margin: "-50px" }}
-                        transition={{ delay: (idx % 2) * 0.1, duration: 0.6, type: "spring" }}
+                        transition={{
+                          delay: (idx % 2) * 0.1,
+                          duration: 0.6,
+                          type: "spring",
+                        }}
                         className={cn(
                           "group relative bg-white rounded-[2rem] p-6 shadow-xl shadow-foreground/5 border transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden",
                           item.borderColor,
-                          idx === 8 && "sm:col-span-2 max-w-md mx-auto w-full" // Center the last item
+                          idx === 8 && "sm:col-span-2 max-w-md mx-auto w-full", // Center the last item
                         )}
                       >
                         {/* Background subtle gradient hover effect */}
-                        <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none", item.color)} />
-                        
+                        <div
+                          className={cn(
+                            "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none",
+                            item.color,
+                          )}
+                        />
+
                         <div className="relative z-10 flex flex-col h-full">
                           <div className="mb-6 h-16 flex items-center justify-start">
                             <div className="p-3 bg-white shadow-sm border border-border/50 rounded-2xl group-hover:scale-110 transition-transform duration-500">
@@ -1198,16 +1206,25 @@ export default function App() {
                             </div>
                           </div>
                           <div className="space-y-3 flex-grow">
-                            <h4 className={cn("font-bold text-lg leading-tight transition-colors duration-300", item.textColor)}>
+                            <h4
+                              className={cn(
+                                "font-bold text-lg leading-tight transition-colors duration-300",
+                                item.textColor,
+                              )}
+                            >
                               {item.title}
                             </h4>
                             <p className="text-muted-foreground text-sm leading-relaxed">
                               {item.desc}
                             </p>
                           </div>
-                          
+
                           <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                            Learn more <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                            Learn more{" "}
+                            <ArrowRight
+                              size={14}
+                              className="group-hover:translate-x-1 transition-transform"
+                            />
                           </div>
                         </div>
                       </motion.div>
@@ -1216,22 +1233,21 @@ export default function App() {
 
                   {/* Mobile contact button */}
                   <motion.div
-                     initial={{ opacity: 0 }}
-                     whileInView={{ opacity: 1 }}
-                     viewport={{ once: true }}
-                     className="lg:hidden mt-12"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    className="lg:hidden mt-12"
                   >
-                     <Button
-                       variant="primary"
-                       size="lg"
-                       className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
-                       onClick={() => (window.location.href = "#contact")}
-                     >
-                       Contact Us Now
-                     </Button>
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
+                      onClick={() => (window.location.href = "#contact")}
+                    >
+                      Contact Us Now
+                    </Button>
                   </motion.div>
                 </div>
-
               </div>
             </div>
           </section>

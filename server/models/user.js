@@ -40,6 +40,14 @@ const UserSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+    resetPasswordOTP: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
   },
   { timestamps: true },
 );
