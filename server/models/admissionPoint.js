@@ -103,11 +103,11 @@ const AdmissionPointSchema = new mongoose.Schema(
 
     // File Uploads (Storing file paths/URLs as strings)
     documents: {
-      licenseePhoto: { type: String },
-      licenseeAadharCard: { type: String },
-      businessLicense: { type: String },
-      ownershipRentalAgreement: { type: String },
-      officePhotos: [{ type: String }], // Array since the form says "Photos" (plural)
+      licenseePhoto: [{ type: String }],
+      licenseeAadharCard: [{ type: String }],
+      businessLicense: [{ type: String }],
+      ownershipRentalAgreement: [{ type: String }],
+      officePhotos: [{ type: String }],
     },
 
     isActive: {

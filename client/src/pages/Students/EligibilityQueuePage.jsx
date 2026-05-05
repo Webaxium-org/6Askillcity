@@ -3,7 +3,10 @@ import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
-import { getPendingEligibility, reviewApplication } from "../../api/student.api";
+import {
+  getPendingEligibility,
+  reviewApplication,
+} from "../../api/student.api";
 import { FollowupTimeline } from "../../components/students/FollowupTimeline";
 import { ReviewModal } from "../../components/students/ReviewModal";
 import {
@@ -69,11 +72,16 @@ function RejectModal({ app, onClose, onConfirm }) {
       >
         <div className="flex items-center gap-3 text-red-500 mb-4">
           <ShieldAlert className="w-6 h-6" />
-          <h3 className="text-xl font-bold text-foreground">Reject Application</h3>
+          <h3 className="text-xl font-bold text-foreground">
+            Reject Application
+          </h3>
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Rejecting <span className="font-semibold text-foreground">{app.name}</span>'s application. The partner will be notified and will see your remark before re-submitting.
+          Rejecting{" "}
+          <span className="font-semibold text-foreground">{app.name}</span>'s
+          application. The partner will be notified and will see your remark
+          before re-submitting.
         </p>
 
         <div className="space-y-1.5 mb-6">
@@ -109,7 +117,9 @@ function RejectModal({ app, onClose, onConfirm }) {
             {submitting ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <><XCircle className="w-4 h-4" /> Confirm Rejection</>
+              <>
+                <XCircle className="w-4 h-4" /> Confirm Rejection
+              </>
             )}
           </button>
         </div>
@@ -138,13 +148,17 @@ export default function EligibilityQueuePage() {
       const res = await getPendingEligibility();
       if (res.success) setApplications(res.data);
     } catch {
-      dispatch(showAlert({ type: "error", message: "Failed to load review queue." }));
+      dispatch(
+        showAlert({ type: "error", message: "Failed to load review queue." }),
+      );
     } finally {
       setLoading(false);
     }
   }, [dispatch]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleApprove = async (id) => {
     setApprovingId(id);
@@ -152,11 +166,22 @@ export default function EligibilityQueuePage() {
       const res = await reviewApplication(id, "approve");
       if (res.success) {
         setApplications((prev) => prev.filter((a) => a._id !== id));
+        setIsReviewModalOpen(false);
         if (selectedApp?._id === id) setSelectedApp(null);
-        dispatch(showAlert({ type: "success", message: "Application approved — student is now Eligible!" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Application approved — student is now Eligible!",
+          }),
+        );
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Approval failed." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Approval failed.",
+        }),
+      );
     } finally {
       setApprovingId(null);
     }
@@ -169,17 +194,29 @@ export default function EligibilityQueuePage() {
         setApplications((prev) => prev.filter((a) => a._id !== id));
         if (selectedApp?._id === id) setSelectedApp(null);
         setRejectTarget(null);
-        dispatch(showAlert({ type: "success", message: "Application rejected with remarks." }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Application rejected with remarks.",
+          }),
+        );
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Rejection failed." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Rejection failed.",
+        }),
+      );
     }
   };
 
   const filtered = applications.filter(
     (a) =>
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (a.registeredBy?.centerName || "").toLowerCase().includes(searchTerm.toLowerCase())
+      (a.registeredBy?.centerName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -208,7 +245,9 @@ export default function EligibilityQueuePage() {
               onClick={fetchData}
               className="p-2.5 rounded-xl border border-border hover:bg-muted text-muted-foreground transition-colors"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
           </div>
         </motion.div>
@@ -236,7 +275,13 @@ export default function EligibilityQueuePage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  {["Applicant", "Course", "Submitted By", "Date", "Actions"].map((h) => (
+                  {[
+                    "Applicant",
+                    "Course",
+                    "Submitted By",
+                    "Date",
+                    "Actions",
+                  ].map((h) => (
                     <th
                       key={h}
                       className={`px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider ${h === "Actions" ? "text-right" : ""}`}
@@ -263,7 +308,9 @@ export default function EligibilityQueuePage() {
                         <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
                           <FileText className="w-7 h-7 text-muted-foreground/40" />
                         </div>
-                        <p className="font-medium">No applications pending review.</p>
+                        <p className="font-medium">
+                          No applications pending review.
+                        </p>
                         <p className="text-xs">All caught up! 🎉</p>
                       </div>
                     </td>
@@ -284,8 +331,12 @@ export default function EligibilityQueuePage() {
                             {app.name.charAt(0)}
                           </div>
                           <div>
-                            <div className="font-medium text-sm">{app.name}</div>
-                            <div className="text-xs text-muted-foreground">{app.email}</div>
+                            <div className="font-medium text-sm">
+                              {app.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {app.email}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -304,20 +355,31 @@ export default function EligibilityQueuePage() {
                       <td className="px-5 py-4">
                         {app.registeredBy ? (
                           <div>
-                            <div className="text-sm font-medium">{app.registeredBy.centerName}</div>
-                            <div className="text-xs text-muted-foreground">{app.registeredBy.licenseeEmail}</div>
+                            <div className="text-sm font-medium">
+                              {app.registeredBy.centerName}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {app.registeredBy.licenseeEmail}
+                            </div>
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-sm text-muted-foreground whitespace-nowrap">
-                        {app.applicationSubmittedDate 
-                          ? new Date(app.applicationSubmittedDate).toLocaleDateString() 
+                        {app.applicationSubmittedDate
+                          ? new Date(
+                              app.applicationSubmittedDate,
+                            ).toLocaleDateString()
                           : "N/A"}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
                             onClick={() => setRejectTarget(app)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 text-xs font-medium transition-all"
@@ -326,12 +388,12 @@ export default function EligibilityQueuePage() {
                           </button>
                           <button
                             onClick={() => {
-                               setSelectedApp(app);
-                               setIsReviewModalOpen(true);
+                              setSelectedApp(app);
+                              setIsReviewModalOpen(true);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium transition-all shadow-sm"
                           >
-                             <CheckCircle className="w-3.5 h-3.5" /> Approve
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </button>
                         </div>
                       </td>
@@ -344,7 +406,8 @@ export default function EligibilityQueuePage() {
 
           {!loading && filtered.length > 0 && (
             <div className="px-5 py-3.5 border-t border-border bg-muted/20 text-sm text-muted-foreground">
-              {filtered.length} application{filtered.length !== 1 ? "s" : ""} awaiting review
+              {filtered.length} application{filtered.length !== 1 ? "s" : ""}{" "}
+              awaiting review
             </div>
           )}
         </motion.div>

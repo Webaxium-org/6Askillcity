@@ -586,6 +586,29 @@ export const updateApplicationStatus = async (req, res, next) => {
       student.eligibilityApprovalDate = new Date();
       student.eligibilityApprovedBy = req.user?.userId;
 
+      // Verify all uploaded documents
+      if (student.idProof?.path) student.idProof.status = "Verified";
+      if (student.tenth?.certificate?.path)
+        student.tenth.certificate.status = "Verified";
+      if (student.plusTwo?.certificate?.path)
+        student.plusTwo.certificate.status = "Verified";
+      if (student.affidavit?.path) student.affidavit.status = "Verified";
+      if (student.migrationCertificate?.path)
+        student.migrationCertificate.status = "Verified";
+      if (student.projectSubmission?.path)
+        student.projectSubmission.status = "Verified";
+
+      if (student.bachelors?.certificates) {
+        student.bachelors.certificates.forEach((doc) => {
+          if (doc.path) doc.status = "Verified";
+        });
+      }
+      if (student.masters?.certificates) {
+        student.masters.certificates.forEach((doc) => {
+          if (doc.path) doc.status = "Verified";
+        });
+      }
+
       student.applicationHistory.push({
         status: "Eligible",
         date: new Date(),

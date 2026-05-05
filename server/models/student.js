@@ -69,9 +69,16 @@ const StudentSchema = new mongoose.Schema(
     tenth: {
       certificate: {
         path: String,
-        status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
+        status: {
+          type: String,
+          enum: ["Pending", "Verified", "Rejected"],
+          default: "Pending",
+        },
         uploadedAt: Date,
-        uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "tenth.certificate.onModel" },
+        uploadedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          refPath: "tenth.certificate.onModel",
+        },
         onModel: { type: String, enum: ["User", "AdmissionPoint"] },
       },
       completionYear: { type: String },
@@ -85,9 +92,16 @@ const StudentSchema = new mongoose.Schema(
     plusTwo: {
       certificate: {
         path: String,
-        status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
+        status: {
+          type: String,
+          enum: ["Pending", "Verified", "Rejected"],
+          default: "Pending",
+        },
         uploadedAt: Date,
-        uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "plusTwo.certificate.onModel" },
+        uploadedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          refPath: "plusTwo.certificate.onModel",
+        },
         onModel: { type: String, enum: ["User", "AdmissionPoint"] },
       },
       completionYear: { type: String },
@@ -97,13 +111,22 @@ const StudentSchema = new mongoose.Schema(
 
     // Bachelors Details
     bachelors: {
-      certificates: [{
-        path: String,
-        status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
-        uploadedAt: Date,
-        uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "bachelors.certificates.onModel" },
-        onModel: { type: String, enum: ["User", "AdmissionPoint"] },
-      }],
+      certificates: [
+        {
+          path: String,
+          status: {
+            type: String,
+            enum: ["Pending", "Verified", "Rejected"],
+            default: "Pending",
+          },
+          uploadedAt: Date,
+          uploadedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            refPath: "bachelors.certificates.onModel",
+          },
+          onModel: { type: String, enum: ["User", "AdmissionPoint"] },
+        },
+      ],
       university: String,
       course: String,
       branch: String,
@@ -113,13 +136,22 @@ const StudentSchema = new mongoose.Schema(
 
     // Masters Details
     masters: {
-      certificates: [{
-        path: String,
-        status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
-        uploadedAt: Date,
-        uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "masters.certificates.onModel" },
-        onModel: { type: String, enum: ["User", "AdmissionPoint"] },
-      }],
+      certificates: [
+        {
+          path: String,
+          status: {
+            type: String,
+            enum: ["Pending", "Verified", "Rejected"],
+            default: "Pending",
+          },
+          uploadedAt: Date,
+          uploadedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            refPath: "masters.certificates.onModel",
+          },
+          onModel: { type: String, enum: ["User", "AdmissionPoint"] },
+        },
+      ],
       university: String,
       course: String,
       branch: String,
@@ -130,9 +162,16 @@ const StudentSchema = new mongoose.Schema(
     // Verification & Documents
     affidavit: {
       path: String,
-      status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
+      status: {
+        type: String,
+        enum: ["Pending", "Verified", "Rejected"],
+        default: "Pending",
+      },
       uploadedAt: Date,
-      uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "affidavit.onModel" },
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: "affidavit.onModel",
+      },
       onModel: { type: String, enum: ["User", "AdmissionPoint"] },
     },
     videoKycStatus: {
@@ -142,16 +181,30 @@ const StudentSchema = new mongoose.Schema(
     },
     migrationCertificate: {
       path: String,
-      status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
+      status: {
+        type: String,
+        enum: ["Pending", "Verified", "Rejected"],
+        default: "Pending",
+      },
       uploadedAt: Date,
-      uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "migrationCertificate.onModel" },
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: "migrationCertificate.onModel",
+      },
       onModel: { type: String, enum: ["User", "AdmissionPoint"] },
     },
     projectSubmission: {
       path: String,
-      status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
+      status: {
+        type: String,
+        enum: ["Pending", "Verified", "Rejected"],
+        default: "Pending",
+      },
       uploadedAt: Date,
-      uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "projectSubmission.onModel" },
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: "projectSubmission.onModel",
+      },
       onModel: { type: String, enum: ["User", "AdmissionPoint"] },
     },
     employmentStatus: {
@@ -163,9 +216,16 @@ const StudentSchema = new mongoose.Schema(
     // Uploaded Artifacts (Legacy/General)
     idProof: {
       path: String,
-      status: { type: String, enum: ["Pending", "Verified", "Rejected"], default: "Pending" },
+      status: {
+        type: String,
+        enum: ["Pending", "Verified", "Rejected"],
+        default: "Pending",
+      },
       uploadedAt: Date,
-      uploadedBy: { type: mongoose.Schema.Types.ObjectId, refPath: "idProof.onModel" },
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: "idProof.onModel",
+      },
       onModel: { type: String, enum: ["User", "AdmissionPoint"] },
     },
 

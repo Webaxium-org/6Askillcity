@@ -338,6 +338,29 @@ export default function App() {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Handle hash scrolling when the component mounts or hash changes
+    const handleHashScroll = () => {
+      const { hash } = window.location;
+      if (hash) {
+        const id = hash.replace("#", "");
+        const element = document.getElementById(id);
+        if (element) {
+          setTimeout(() => {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100);
+        }
+      }
+    };
+
+    if (!isLoading) {
+      handleHashScroll();
+      // Also listen for hash changes
+      window.addEventListener("hashchange", handleHashScroll);
+      return () => window.removeEventListener("hashchange", handleHashScroll);
+    }
+  }, [isLoading]);
+
   const handlePartnerInquiry = (e) => {
     e.preventDefault();
     setIsSubmitting(true);

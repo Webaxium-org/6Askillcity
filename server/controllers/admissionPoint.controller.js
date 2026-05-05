@@ -20,13 +20,7 @@ const storage = multer.diskStorage({
 const uploadParams = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per file limit
-}).fields([
-  { name: "licenseePhoto", maxCount: 1 },
-  { name: "licenseeAadharCard", maxCount: 1 },
-  { name: "businessLicense", maxCount: 1 },
-  { name: "ownershipRentalAgreement", maxCount: 1 },
-  { name: "officePhotos", maxCount: 10 }, // Allow up to 10 office photos
-]);
+}).any(); // Allow any field names for flexibility
 
 import AdmissionPoint from "../models/admissionPoint.js";
 import ActivityLog from "../models/activityLog.js";
@@ -74,34 +68,34 @@ export const createAdmissionPoint = async (req, res, next) => {
       );
     }
 
-    // Process uploaded paths
-    const files = req.files || {};
-    const extractPath = (fieldArray) => {
-      if (fieldArray && fieldArray.length > 0) return fieldArray[0].path;
-      return null;
+    // Process uploaded documents
+    const documents = {
+      licenseePhoto: [],
+      licenseeAadharCard: [],
+      businessLicense: [],
+      ownershipRentalAgreement: [],
+      officePhotos: [],
     };
 
-    const documents = {
-      licenseePhoto: extractPath(files.licenseePhoto),
-      licenseeAadharCard: extractPath(files.licenseeAadharCard),
-      businessLicense: extractPath(files.businessLicense),
-      ownershipRentalAgreement: extractPath(files.ownershipRentalAgreement),
-      officePhotos: files.officePhotos
-        ? files.officePhotos.map((f) => f.path)
-        : [],
-    };
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        if (documents.hasOwnProperty(file.fieldname)) {
+          documents[file.fieldname].push(file.path);
+        }
+      });
+    }
 
     // Format structure dynamically according to model
     const admissionPoint = new AdmissionPoint({
       centerName: data.centerName,
       licenseeName: data.licenseeName,
       licenseeEmail: data.licenseeEmail,
-      licenseeContactNumber: data.licenseeContactNumber,
+      licenseeContactNumber: data.licenseeContactNumber || "N/A", // Keep fallback if not in form
 
       contactPerson: {
         name: data.contactPersonName,
         phone: data.contactPersonPhone,
-        email: data.contactPersonEmail,
+        email: data.contactPersonEmail || data.licenseeEmail, // Fallback
       },
 
       references: [
@@ -111,7 +105,7 @@ export const createAdmissionPoint = async (req, res, next) => {
         },
         {
           name: data.localRefName2,
-          mobileNumber2: data.localRefMobile2,
+          mobileNumber1: data.localRefMobile2, // Note: mobileNumber1 used for both in schema/request sometimes
         },
       ],
 

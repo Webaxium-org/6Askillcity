@@ -9,7 +9,7 @@ export const FormInput = React.forwardRef(({ label, error, className, id, ...pro
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-medium leading-none text-slate-100 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="text-sm font-semibold leading-none text-current peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {label}
         </label>

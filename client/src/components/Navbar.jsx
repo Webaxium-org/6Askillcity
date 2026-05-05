@@ -77,11 +77,22 @@ const Navbar = () => {
         </motion.div>
 
         <div className="hidden md:flex items-center space-x-2">
-          {["About", "Universities", "Partnership", "Contact"].map(
-            (item, idx) => (
+          {["About", "Universities", "Partnership", "Contact"].map((item, idx) => {
+            const targetId = item.toLowerCase();
+            return (
               <motion.a
                 key={item}
-                href={`#${item.toLowerCase()}`}
+                href={`/#${targetId}`}
+                onClick={(e) => {
+                  if (window.location.pathname === "/") {
+                    const element = document.getElementById(targetId);
+                    if (element) {
+                      e.preventDefault();
+                      element.scrollIntoView({ behavior: "smooth" });
+                      window.history.pushState(null, "", `/#${targetId}`);
+                    }
+                  }
+                }}
                 initial={{ opacity: 0, y: -20, filter: "blur(5px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ delay: 0.1 * idx, type: "spring", bounce: 0.4 }}
@@ -89,8 +100,8 @@ const Navbar = () => {
               >
                 {item}
               </motion.a>
-            ),
-          )}
+            );
+          })}
         </div>
 
         <motion.div

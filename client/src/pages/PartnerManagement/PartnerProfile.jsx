@@ -485,12 +485,12 @@ export default function PartnerProfile() {
 
             {activeTab === "documents" && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Individual Documents */}
                 {[
-                  { label: "Licensee Photo", path: partner.documents?.licenseePhoto },
-                  { label: "Aadhar Card", path: partner.documents?.licenseeAadharCard },
-                  { label: "Business License", path: partner.documents?.businessLicense },
-                  { label: "Office Agreement", path: partner.documents?.ownershipRentalAgreement },
+                  { id: "licenseePhoto", label: "Licensee Photo" },
+                  { id: "licenseeAadharCard", label: "Aadhar Card" },
+                  { id: "businessLicense", label: "Business License" },
+                  { id: "ownershipRentalAgreement", label: "Ownership / Rental Agreement" },
+                  { id: "officePhotos", label: "Office Photos" },
                 ].map((doc, idx) => (
                   <div key={idx} className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-4 shadow-sm group hover:border-primary/30 transition-all">
                     <div className="flex items-center justify-between">
@@ -500,70 +500,44 @@ export default function PartnerProfile() {
                          </div>
                          <p className="font-bold text-sm">{doc.label}</p>
                       </div>
-                      <div className="flex gap-2">
-                        {doc.path && (
-                          <>
-                            <a 
-                              href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${doc.path.replace(/\\/g, "/")}`} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-all"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </>
-                        )}
-                      </div>
                     </div>
-                    {doc.path ? (
-                      <div className="aspect-video rounded-2xl overflow-hidden bg-muted border border-border">
-                         <img 
-                           src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${doc.path.replace(/\\/g, "/")}`} 
-                           alt={doc.label}
-                           className="w-full h-full object-cover"
-                           onError={(e) => {
-                             e.target.style.display = 'none';
-                             e.target.nextSibling.style.display = 'flex';
-                           }}
-                         />
-                         <div className="hidden w-full h-full items-center justify-center text-[10px] font-black uppercase text-muted-foreground tracking-widest text-center p-4">
-                            Preview not available<br/>(PDF or Invalid Path)
-                         </div>
-                      </div>
-                    ) : (
-                      <div className="aspect-video rounded-2xl bg-muted/50 border border-dashed border-border flex items-center justify-center">
-                         <p className="text-xs font-bold text-muted-foreground">Not Uploaded</p>
-                      </div>
-                    )}
+                    
+                    <div className="space-y-4">
+                      {partner.documents?.[doc.id] && partner.documents[doc.id].length > 0 ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          {partner.documents[doc.id].map((path, pIdx) => (
+                            <div key={pIdx} className="relative aspect-video rounded-2xl overflow-hidden bg-muted border border-border group/img">
+                              <img 
+                                src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${path.replace(/\\/g, "/")}`} 
+                                alt={`${doc.label} ${pIdx + 1}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div className="hidden w-full h-full items-center justify-center text-[8px] font-black uppercase text-muted-foreground tracking-widest text-center p-2 bg-muted">
+                                 Preview not available
+                              </div>
+                              <a 
+                                href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${path.replace(/\\/g, "/")}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-all"
+                              >
+                                <ExternalLink className="w-4 h-4 text-white" />
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="aspect-video rounded-2xl bg-muted/50 border border-dashed border-border flex items-center justify-center">
+                           <p className="text-xs font-bold text-muted-foreground">No Files Uploaded</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
-
-                {/* Office Photos Gallery */}
-                {partner.documents?.officePhotos?.length > 0 && (
-                  <div className="col-span-full bg-card border border-border rounded-3xl p-8 space-y-6 shadow-sm">
-                    <h3 className="text-xl font-black flex items-center gap-2">
-                       <Building2 className="w-5 h-5 text-primary" />
-                       Office Photos Gallery
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                       {partner.documents.officePhotos.map((photo, idx) => (
-                         <a 
-                           key={idx}
-                           href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${photo.replace(/\\/g, "/")}`}
-                           target="_blank"
-                           rel="noreferrer"
-                           className="aspect-square rounded-2xl overflow-hidden border border-border hover:border-primary transition-all group"
-                         >
-                            <img 
-                              src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${photo.replace(/\\/g, "/")}`}
-                              alt={`Office ${idx + 1}`}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-all duration-500"
-                            />
-                         </a>
-                       ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 

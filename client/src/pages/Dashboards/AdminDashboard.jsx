@@ -166,6 +166,8 @@ export default function AdminDashboard() {
       const res = await reviewApplication(id, "approve");
       if (res.success) {
         setPendingApplications((prev) => prev.filter((a) => a._id !== id));
+        setIsReviewModalOpen(false);
+        setSelectedApp(null);
         dispatch(
           showAlert({
             type: "success",
