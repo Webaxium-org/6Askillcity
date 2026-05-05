@@ -342,6 +342,7 @@ export const DashboardLayout = ({ children, title }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLogoutWarning, setShowLogoutWarning] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = React.useRef(null);
   const { socket } = useSocket();
   const { items: notifications, unreadCount } = useSelector(
     (state) => state.notifications,
@@ -370,6 +371,27 @@ export const DashboardLayout = ({ children, title }) => {
       socket.off("notification", handleNotification);
     };
   }, [socket, dispatch]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotifications]);
 
   const handleNotificationClick = (notif) => {
     setShowNotifications(false);
@@ -422,7 +444,7 @@ export const DashboardLayout = ({ children, title }) => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <div className="relative">
+            <div className="relative" ref={notificationRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200 shadow-sm"

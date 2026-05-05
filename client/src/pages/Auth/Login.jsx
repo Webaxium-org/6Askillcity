@@ -201,7 +201,7 @@ const UserLoginForm = (props) => {
           Welcome Back
         </h2>
         <p className="text-muted-foreground text-sm">
-          Sign in to your student/user account
+          Sign in to your admin account
         </p>
       </div>
 
@@ -314,7 +314,7 @@ const PartnerLoginForm = (props) => {
           Partner Portal
         </h2>
         <p className="text-muted-foreground text-sm">
-          Secure access for verified partners
+          Sign in to your partner account
         </p>
       </div>
 
@@ -392,7 +392,9 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
     setError("");
     try {
       await forgotPasswordAPI({ email, userType });
-      dispatch(showAlert({ type: "success", message: "OTP sent to your email!" }));
+      dispatch(
+        showAlert({ type: "success", message: "OTP sent to your email!" }),
+      );
       setStep(2);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP");
@@ -422,7 +424,12 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
     setError("");
     try {
       await resetPasswordAPI({ email, otp, newPassword, userType });
-      dispatch(showAlert({ type: "success", message: "Password reset successful! Please login." }));
+      dispatch(
+        showAlert({
+          type: "success",
+          message: "Password reset successful! Please login.",
+        }),
+      );
       onBack();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to reset password");
@@ -432,7 +439,10 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
   };
 
   const themeColor = userType === "partner" ? "blue" : "purple";
-  const btnBg = userType === "partner" ? "bg-blue-600 hover:bg-blue-500" : "bg-purple-600 hover:bg-purple-500";
+  const btnBg =
+    userType === "partner"
+      ? "bg-blue-600 hover:bg-blue-500"
+      : "bg-purple-600 hover:bg-purple-500";
 
   return (
     <motion.div
@@ -443,14 +453,18 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
     >
       <div className="space-y-1 mb-6 text-center">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent">
-          {step === 1 ? "Forgot Password" : step === 2 ? "Verify OTP" : "Reset Password"}
+          {step === 1
+            ? "Forgot Password"
+            : step === 2
+              ? "Verify OTP"
+              : "Reset Password"}
         </h2>
         <p className="text-muted-foreground text-sm">
           {step === 1
             ? `Enter your ${userType === "partner" ? "corporate" : ""} email to receive an OTP`
             : step === 2
-            ? "Enter the 6-digit code sent to your email"
-            : "Choose a strong new password"}
+              ? "Enter the 6-digit code sent to your email"
+              : "Choose a strong new password"}
         </p>
       </div>
 
@@ -471,7 +485,7 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
             disabled={loading}
             className={cn(
               "w-full relative group mt-6 overflow-hidden rounded-xl text-white font-medium py-3 px-4 transition-all active:scale-[0.98] disabled:opacity-70",
-              btnBg
+              btnBg,
             )}
           >
             {loading ? "Sending..." : "Send OTP"}
@@ -489,7 +503,7 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
             disabled={loading || otp.length !== 6}
             className={cn(
               "w-full relative group mt-6 overflow-hidden rounded-xl text-white font-medium py-3 px-4 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed",
-              btnBg
+              btnBg,
             )}
           >
             {loading ? "Verifying..." : "Verify OTP"}
@@ -512,7 +526,7 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
             disabled={loading}
             className={cn(
               "w-full relative group mt-6 overflow-hidden rounded-xl text-white font-medium py-3 px-4 transition-all active:scale-[0.98] disabled:opacity-70",
-              btnBg
+              btnBg,
             )}
           >
             {loading ? "Resetting..." : "Reset Password"}
@@ -603,7 +617,7 @@ export default function Login() {
                   : "text-muted-foreground hover:text-foreground/70",
               )}
             >
-              <User className="w-4 h-4" /> User
+              <User className="w-4 h-4" /> Administration
             </button>
             <button
               onClick={() => setActiveTab("partner")}
