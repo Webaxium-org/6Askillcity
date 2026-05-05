@@ -8,6 +8,8 @@ import PartnerPermission from "../models/partnerPermission.js";
 import Program from "../models/program.js";
 import Branch from "../models/branch.js";
 import ProgramFee from "../models/programFee.js";
+import University from "../models/university.js";
+
 
 export const getPartnerDashboardStats = async (req, res, next) => {
   try {
@@ -124,7 +126,11 @@ export const getPermittedCourses = async (req, res, next) => {
     }).lean();
 
     if (!permissions.length) {
-      return res.status(200).json({ success: true, data: [] });
+      return res.status(200).json({ 
+        success: true, 
+        data: [], 
+        permittedHierarchy: { universities: [], programs: [], branches: [] } 
+      });
     }
 
     const universityIds = permissions
@@ -139,21 +145,25 @@ export const getPermittedCourses = async (req, res, next) => {
       .filter(p => p.type === "branch" && p.branchId)
       .map(p => p.branchId.toString());
 
-    // 2. Fetch programs for permitted universities
-    let allProgramIds = new Set(programIds);
-    if (universityIds.length > 0) {
-      const programsInUnis = await Program.find({ 
-        university: { $in: universityIds } 
-      }).select("_id").lean();
-      programsInUnis.forEach(p => allProgramIds.add(p._id.toString()));
-    }
-    
-    // 3. Fetch all permitted branches
-    const allBranches = await Branch.find({
-      $or: [
-        { program: { $in: Array.from(allProgramIds) } },
-        { _id: { $in: branchIds } }
-      ]
+    const universitySet = new Set(universityIds);
+    const programSet = new Set(programIds);
+
+    // 2. Fetch and filter Universities (always root level)
+    const validUnis = await University.find({ _id: { $in: universityIds } })
+      .select("name shortName logo")
+      .lean();
+    const validUniIds = validUnis.map(u => u._id.toString());
+
+    // 3. Fetch and filter Programs (must have parent Uni permission)
+    const validProgs = await Program.find({
+      _id: { $in: programIds },
+      university: { $in: validUniIds }
+    }).populate("university", "name").lean();
+    const validProgIds = validProgs.map(p => p._id.toString());
+
+    // 4. Fetch explicitly permitted branches and verify full hierarchy (Uni -> Program -> Branch)
+    const rawBranches = await Branch.find({
+      _id: { $in: branchIds }
     })
     .populate({
       path: "program",
@@ -161,9 +171,15 @@ export const getPermittedCourses = async (req, res, next) => {
     })
     .lean();
 
-    // 4. Fetch current fees for each branch
+    // Only show branches if they have permission across ALL levels
+    const validBranches = rawBranches.filter(b => 
+      programSet.has(b.program?._id?.toString()) &&
+      universitySet.has(b.program?.university?._id?.toString())
+    );
+
+    // 5. Fetch current fees for each branch
     const branchesWithFees = await Promise.all(
-      allBranches.map(async (b) => {
+      validBranches.map(async (b) => {
         const fee = await ProgramFee.findOne({
           branch: b._id,
           isCurrent: true,
@@ -178,6 +194,11 @@ export const getPermittedCourses = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: branchesWithFees,
+      permittedHierarchy: {
+        universities: validUnis,
+        programs: validProgs,
+        branches: branchesWithFees
+      }
     });
   } catch (error) {
     next(error);

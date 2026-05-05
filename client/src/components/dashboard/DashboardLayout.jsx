@@ -262,7 +262,7 @@ const Sidebar = ({
             </div>
           ))}
         </nav>
-        
+
         {/* Mobile-only Theme & Logout */}
         <div className="md:hidden px-4 py-4 space-y-2 border-t border-border/30 bg-background/10">
           <button
@@ -278,7 +278,7 @@ const Sidebar = ({
               {theme === "dark" ? "Light Mode" : "Dark Mode"}
             </span>
           </button>
-          
+
           <button
             onClick={() => {
               setSidebarOpen(false);

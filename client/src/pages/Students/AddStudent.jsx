@@ -370,6 +370,11 @@ export default function AddStudent() {
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [permittedCourses, setPermittedCourses] = useState([]);
+  const [permittedHierarchy, setPermittedHierarchy] = useState({
+    universities: [],
+    programs: [],
+    branches: [],
+  });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -384,6 +389,13 @@ export default function AddStudent() {
 
         if (coursesRes.success) {
           setPermittedCourses(coursesRes.data);
+          setPermittedHierarchy(
+            coursesRes.permittedHierarchy || {
+              universities: [],
+              programs: [],
+              branches: [],
+            },
+          );
         }
 
         if (studentRes?.data?.success) {
@@ -543,36 +555,32 @@ export default function AddStudent() {
     }
   }, [formData.tenthTotalMarks, formData.tenthObtainedMarks]);
 
-  // Reset program/branch if university changes
+  // Reset program/branch if selections become invalid
   useEffect(() => {
     if (formData.university) {
-      const isStillAvailable = permittedCourses.some(
-        (c) =>
-          c.program?.university?._id.toString() === formData.university &&
-          c.program?._id.toString() === formData.program &&
-          c._id.toString() === formData.branch,
+      // 1. Verify if selected program still belongs to the selected university
+      const isProgValid = permittedHierarchy.programs.some(
+        (p) =>
+          (p.university?._id?.toString() || p.university?.toString()) ===
+            formData.university && p._id.toString() === formData.program,
       );
-      if (!isStillAvailable) {
-        // If program changed or no longer available, reset
-        const isProgAvailable = permittedCourses.some(
-          (c) =>
-            c.program?.university?._id.toString() === formData.university &&
-            c.program?._id.toString() === formData.program,
+
+      if (!isProgValid && formData.program) {
+        // Reset program and branch if program is no longer valid for this uni
+        setFormData((prev) => ({ ...prev, program: "", branch: "" }));
+      } else if (formData.program) {
+        // 2. If program is valid, verify if selected branch still belongs to the selected program
+        const isBranchValid = permittedHierarchy.branches.some(
+          (b) =>
+            (b.program?._id?.toString() || b.program?.toString()) ===
+              formData.program && b._id.toString() === formData.branch,
         );
-        if (!isProgAvailable) {
-          setFormData((prev) => ({ ...prev, program: "", branch: "" }));
-        } else {
-          const isBranchAvailable = permittedCourses.some(
-            (c) =>
-              c.program?._id.toString() === formData.program &&
-              c._id.toString() === formData.branch,
-          );
-          if (!isBranchAvailable)
-            setFormData((prev) => ({ ...prev, branch: "" }));
+        if (!isBranchValid && formData.branch) {
+          setFormData((prev) => ({ ...prev, branch: "" }));
         }
       }
     }
-  }, [formData.university, formData.program, permittedCourses]);
+  }, [formData.university, formData.program, permittedHierarchy]);
 
   // Auto-sync phone codes with selected country
   useEffect(() => {
@@ -852,7 +860,11 @@ export default function AddStudent() {
       enrollmentStatus: newEnrollmentStatus,
     }));
 
-    const saved = await saveDraft(false, formData.applicationStatus, newEnrollmentStatus);
+    const saved = await saveDraft(
+      false,
+      formData.applicationStatus,
+      newEnrollmentStatus,
+    );
     if (saved) {
       setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
     }
@@ -862,8 +874,8 @@ export default function AddStudent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Final Save Draft as Pending Eligibility and set enrollmentStatus to Completed
-    const saved = await saveDraft(false, "Pending Eligibility", "Completed");
+    // Final Save Draft before submission and set enrollmentStatus to Completed
+    const saved = await saveDraft(false, formData.applicationStatus, "Completed");
     if (!saved && !studentId) return;
 
     setLoading(true);
@@ -1426,19 +1438,10 @@ export default function AddStudent() {
                       name="university"
                       value={formData.university}
                       onChange={handleChange}
-                      options={permittedCourses.reduce((acc, curr) => {
-                        const uni = curr.program?.university;
-                        if (
-                          uni &&
-                          !acc.find((u) => u.value === uni._id.toString())
-                        ) {
-                          acc.push({
-                            label: uni.name,
-                            value: uni._id.toString(),
-                          });
-                        }
-                        return acc;
-                      }, [])}
+                      options={permittedHierarchy.universities.map((u) => ({
+                        label: u.name,
+                        value: u._id.toString(),
+                      }))}
                       icon={Building2}
                       error={errors.university}
                     />
@@ -1447,22 +1450,17 @@ export default function AddStudent() {
                       name="program"
                       value={formData.program}
                       onChange={handleChange}
-                      options={permittedCourses.reduce((acc, curr) => {
-                        const uni = curr.program?.university;
-                        if (
-                          curr.program &&
-                          (!formData.university ||
-                            uni?._id.toString() === formData.university) &&
-                          !acc.find((p) => p.value === curr.program._id.toString())
-                        ) {
-                          acc.push({
-                            label: curr.program.name,
-                            value: curr.program._id.toString(),
-                          });
-                        }
-                        return acc;
-                      }, [])}
-                      icon={BookOpen}
+                      options={permittedHierarchy.programs
+                        .filter(
+                          (p) =>
+                            (p.university?._id?.toString() ||
+                              p.university?.toString()) === formData.university,
+                        )
+                        .map((p) => ({
+                          label: p.name,
+                          value: p._id.toString(),
+                        }))}
+                      icon={GraduationCap}
                       error={errors.program}
                     />
                     <InputField
@@ -1470,17 +1468,15 @@ export default function AddStudent() {
                       name="branch"
                       value={formData.branch}
                       onChange={handleChange}
-                      options={permittedCourses
+                      options={permittedHierarchy.branches
                         .filter(
-                          (c) =>
-                            (!formData.university ||
-                              c.program?.university?._id.toString() === formData.university) &&
-                            (!formData.program ||
-                              c.program?._id.toString() === formData.program),
+                          (b) =>
+                            (b.program?._id?.toString() ||
+                              b.program?.toString()) === formData.program,
                         )
-                        .map((c) => ({
-                          label: c.name,
-                          value: c._id.toString(),
+                        .map((b) => ({
+                          label: b.name,
+                          value: b._id.toString(),
                         }))}
                       icon={GitBranch}
                       error={errors.branch}

@@ -34,9 +34,16 @@ import PartnerPermission from "../models/partnerPermission.js";
 import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
 import Branch from "../models/branch.js";
+import Program from "../models/program.js";
 
 // Helper to log activity
-const logActivity = async (action, details, performedBy, targetType, targetId) => {
+const logActivity = async (
+  action,
+  details,
+  performedBy,
+  targetType,
+  targetId,
+) => {
   try {
     await ActivityLog.create({
       action,
@@ -61,7 +68,10 @@ export const createAdmissionPoint = async (req, res, next) => {
       licenseeEmail: data.licenseeEmail,
     });
     if (existing) {
-      throw createError(400, "An admission point with this email is already registered.");
+      throw createError(
+        400,
+        "An admission point with this email is already registered.",
+      );
     }
 
     // Process uploaded paths
@@ -226,33 +236,43 @@ export const getAllAdmissionPoints = async (req, res, next) => {
       ];
     }
 
-    const admissionPoints = await AdmissionPoint.find(filter).sort({
-      createdAt: -1,
-    }).lean();
+    const admissionPoints = await AdmissionPoint.find(filter)
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
 
     // Enhance with permission summaries
-    const data = await Promise.all(admissionPoints.map(async (point) => {
-      const permissions = await PartnerPermission.find({ 
-        partnerId: point._id,
-        status: "active" 
-      }).populate("universityId", "name shortName");
-      
-      const unis = [...new Set(
-        permissions
-          .filter(p => p.type === "university" && p.universityId)
-          .map(p => p.universityId.shortName || p.universityId.name)
-      )];
+    const data = await Promise.all(
+      admissionPoints.map(async (point) => {
+        const permissions = await PartnerPermission.find({
+          partnerId: point._id,
+          status: "active",
+        }).populate("universityId", "name shortName");
 
-      const progCount = permissions.filter(p => p.type === "program").length;
-      const branchCount = permissions.filter(p => p.type === "branch").length;
+        const unis = [
+          ...new Set(
+            permissions
+              .filter((p) => p.type === "university" && p.universityId)
+              .map((p) => p.universityId.shortName || p.universityId.name),
+          ),
+        ];
 
-      return {
-        ...point,
-        assignedUnis: unis,
-        programCount: progCount,
-        branchCount: branchCount
-      };
-    }));
+        const progCount = permissions.filter(
+          (p) => p.type === "program",
+        ).length;
+        const branchCount = permissions.filter(
+          (p) => p.type === "branch",
+        ).length;
+
+        return {
+          ...point,
+          assignedUnis: unis,
+          programCount: progCount,
+          branchCount: branchCount,
+        };
+      }),
+    );
 
     res.status(200).json({
       success: true,
@@ -365,43 +385,50 @@ export const addPartnerPermission = async (req, res, next) => {
       throw createError(400, "This permission already exists for the partner");
     }
 
-    // Redundancy Check: Don't add program if university is already permitted, etc.
+    // Hierarchy Check: Ensure parent permission exists before adding child
     if (type === "program") {
       const program = await Program.findById(programId);
-      if (program) {
-        const uniPermitted = await PartnerPermission.findOne({
-          partnerId,
-          type: "university",
-          universityId: program.university
-        });
-        if (uniPermitted) {
-          throw createError(400, "This program is already included in the university-level permission");
-        }
+      if (!program) throw createError(404, "Program not found");
+
+      const uniPermitted = await PartnerPermission.findOne({
+        partnerId,
+        type: "university",
+        universityId: program.university,
+        status: "active",
+      });
+
+      if (!uniPermitted) {
+        throw createError(
+          400,
+          "University-level permission must be granted before adding specific programs",
+        );
       }
     }
 
     if (type === "branch") {
       const branch = await Branch.findById(branchId).populate("program");
-      if (branch) {
-        // Check University permission
-        const uniPermitted = await PartnerPermission.findOne({
+      if (!branch) throw createError(404, "Branch not found");
+
+      const [uniPermitted, progPermitted] = await Promise.all([
+        PartnerPermission.findOne({
           partnerId,
           type: "university",
-          universityId: branch.program.university
-        });
-        if (uniPermitted) {
-          throw createError(400, "This branch is already included in the university-level permission");
-        }
-
-        // Check Program permission
-        const progPermitted = await PartnerPermission.findOne({
+          universityId: branch.program.university,
+          status: "active",
+        }),
+        PartnerPermission.findOne({
           partnerId,
           type: "program",
-          programId: branch.program._id
-        });
-        if (progPermitted) {
-          throw createError(400, "This branch is already included in the program-level permission");
-        }
+          programId: branch.program._id,
+          status: "active",
+        }),
+      ]);
+
+      if (!uniPermitted || !progPermitted) {
+        throw createError(
+          400,
+          "Both University and Program level permissions must be granted before adding specific branches",
+        );
       }
     }
 
@@ -476,17 +503,19 @@ export const getMyPartnerProfile = async (req, res, next) => {
       .populate("branchId", "name duration type");
 
     // Fetch current fees for branches
-    const permissions = await Promise.all(rawPermissions.map(async (p) => {
-      const obj = p.toObject();
-      if (p.type === 'branch' && p.branchId) {
-        const currentFee = await ProgramFee.findOne({ 
-          branch: p.branchId._id, 
-          isCurrent: true 
-        });
-        obj.currentFee = currentFee;
-      }
-      return obj;
-    }));
+    const permissions = await Promise.all(
+      rawPermissions.map(async (p) => {
+        const obj = p.toObject();
+        if (p.type === "branch" && p.branchId) {
+          const currentFee = await ProgramFee.findOne({
+            branch: p.branchId._id,
+            isCurrent: true,
+          });
+          obj.currentFee = currentFee;
+        }
+        return obj;
+      }),
+    );
 
     res.status(200).json({
       success: true,
@@ -512,7 +541,7 @@ export const generateAdminAccessToken = async (req, res, next) => {
         adminAccessToken: token,
         adminAccessTokenExpires: expires,
       },
-      { new: true }
+      { new: true },
     );
 
     if (!partner) {
@@ -524,7 +553,7 @@ export const generateAdminAccessToken = async (req, res, next) => {
       `Generated temporary access token for partner ${partner.centerName}`,
       req.user.userId,
       "AdmissionPoint",
-      partner._id
+      partner._id,
     );
 
     res.status(200).json({

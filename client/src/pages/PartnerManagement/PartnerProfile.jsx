@@ -58,6 +58,18 @@ export default function PartnerProfile() {
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [permissionType, setPermissionType] = useState("university");
   const [selectedId, setSelectedId] = useState("");
+
+  // Auto-switch permission type when opening modal if university is already assigned
+  useEffect(() => {
+    if (isPermissionModalOpen) {
+      const hasUniversity = permissions.some(p => p.type === "university");
+      if (hasUniversity) {
+        setPermissionType("program");
+      } else {
+        setPermissionType("university");
+      }
+    }
+  }, [isPermissionModalOpen, permissions]);
   
   // Review Status Modal
   const [isReviewConfirmOpen, setIsReviewConfirmOpen] = useState(false);
@@ -755,7 +767,7 @@ export default function PartnerProfile() {
 
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase text-muted-foreground tracking-widest ml-1">
-                      Select {permissionType === "university" ? "University" : "Program"}
+                      Select {permissionType === "university" ? "University" : permissionType === "program" ? "Program" : "Branch"}
                     </label>
                     <select 
                       value={selectedId}
@@ -765,17 +777,23 @@ export default function PartnerProfile() {
                     >
                       <option value="">Choose one...</option>
                       {permissionType === "university" ? (
-                        universities.map(u => <option key={u._id} value={u._id}>{u.name}</option>)
+                        universities
+                          .filter(u => !permissions.some(perm => perm.type === "university" && perm.universityId?._id === u._id))
+                          .map(u => <option key={u._id} value={u._id}>{u.name}</option>)
                       ) : permissionType === "program" ? (
                         programs
-                          .filter(p => !permissions.some(perm => perm.type === "university" && perm.universityId?._id === p.university?._id))
+                          .filter(p => 
+                            permissions.some(perm => perm.type === "university" && perm.universityId?._id === p.university?._id) &&
+                            !permissions.some(perm => perm.type === "program" && perm.programId?._id === p._id)
+                          )
                           .map(p => <option key={p._id} value={p._id}>{p.name} ({p.university?.name})</option>)
                       ) : (
                         branches
-                          .filter(b => !permissions.some(perm => 
-                            (perm.type === "university" && perm.universityId?._id === b.program?.university?._id) ||
-                            (perm.type === "program" && perm.programId?._id === b.program?._id)
-                          ))
+                          .filter(b => 
+                            permissions.some(perm => perm.type === "university" && perm.universityId?._id === b.program?.university?._id) &&
+                            permissions.some(perm => perm.type === "program" && perm.programId?._id === b.program?._id) &&
+                            !permissions.some(perm => perm.type === "branch" && perm.branchId?._id === b._id)
+                          )
                           .map(b => <option key={b._id} value={b._id}>{b.name} ({b.program?.name})</option>)
                       )}
                     </select>
