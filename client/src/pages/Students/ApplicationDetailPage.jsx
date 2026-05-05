@@ -274,7 +274,8 @@ export default function ApplicationDetailPage() {
       getProgramFees(formData.program).then((res) => {
         if (res.success) {
           const current = res.data.find((f) => f.isCurrent);
-          if (!current) {
+          setFees(res.data);
+          if (!current && editing) {
             dispatch(
               showAlert({
                 type: "error",
@@ -282,15 +283,13 @@ export default function ApplicationDetailPage() {
               }),
             );
             setFormData((p) => ({ ...p, program: "" }));
-          } else {
-            setFees(res.data);
           }
         }
       });
     } else {
       setFees([]);
     }
-  }, [formData.program, dispatch]);
+  }, [formData.program, editing, dispatch]);
 
   useEffect(() => {
     const total = parseFloat(formData.tenthTotalMarks);
@@ -944,7 +943,7 @@ export default function ApplicationDetailPage() {
                     </div>
 
                     {/* Display current fee info if program selected */}
-                    {formData.program && fees.find((f) => f.isCurrent) && (
+                    {(editing ? fees.find((f) => f.isCurrent) : app.programFee) && (
                       <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
@@ -952,7 +951,10 @@ export default function ApplicationDetailPage() {
                             Program Fee
                           </span>
                           <span className="text-sm font-black text-blue-600">
-                            ₹{fees.find((f) => f.isCurrent).totalFee}
+                            ₹
+                            {editing
+                              ? fees.find((f) => f.isCurrent).totalFee
+                              : app.programFee.totalFee}
                           </span>
                         </div>
                       </div>
