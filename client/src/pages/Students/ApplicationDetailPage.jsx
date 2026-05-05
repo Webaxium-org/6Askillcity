@@ -1032,33 +1032,42 @@ export default function ApplicationDetailPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { label: "Identity Proof", path: app.idProof },
-                  { label: "10th Certificate", path: app.tenthCertificate },
+                  { label: "Identity Proof", doc: app.idProof },
+                  { label: "10th Certificate", doc: app.tenth?.certificate },
                   {
                     label: "Plus Two Certificate",
-                    path: app.plusTwoCertificate,
+                    doc: app.plusTwo?.certificate,
                   },
-                  { label: "Affidavit", path: app.affidavit },
+                  { label: "Affidavit", doc: app.affidavit },
                   {
                     label: "Migration Certificate",
-                    path: app.migrationCertificate,
+                    doc: app.migrationCertificate,
                   },
-                  { label: "Project Submission", path: app.projectSubmission },
+                  { label: "Project Submission", doc: app.projectSubmission },
                 ].map(
-                  (doc, i) =>
-                    doc.path && (
+                  (item, i) =>
+                    item.doc?.path && (
                       <div
                         key={i}
                         className="p-4 rounded-xl border border-border bg-muted/30 flex items-center justify-between group hover:border-primary/30 transition-all"
                       >
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-blue-500" />
-                          <span className="text-xs font-bold text-foreground">
-                            {doc.label}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-blue-500" />
+                            <span className="text-xs font-bold text-foreground">
+                              {item.label}
+                            </span>
+                          </div>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
+                            item.doc.status === "Verified" ? "bg-emerald-500/10 text-emerald-600" :
+                            item.doc.status === "Rejected" ? "bg-rose-500/10 text-rose-600" :
+                            "bg-amber-500/10 text-amber-600"
+                          }`}>
+                            {item.doc.status || "Pending"}
                           </span>
                         </div>
                         <a
-                          href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${doc.path.replace(/\\/g, "/")}`}
+                          href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${item.doc.path.replace(/\\/g, "/")}`}
                           target="_blank"
                           rel="noreferrer"
                           className="px-3 py-1.5 rounded-lg bg-background border border-border hover:bg-primary hover:text-white hover:border-primary text-[10px] font-black transition-all"
@@ -1082,17 +1091,25 @@ export default function ApplicationDetailPage() {
                         Bachelors Certificates
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {app.bachelorsCertificates.map((path, idx) => (
-                          <a
-                            key={idx}
-                            href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${path.replace(/\\/g, "/")}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
-                          >
-                            <FileText className="w-3 h-3 text-indigo-500" />
-                            Cert {idx + 1}
-                          </a>
+                        {app.bachelorsCertificates.map((doc, idx) => (
+                          <div key={idx} className="flex flex-col gap-1">
+                            <a
+                              href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${doc.path.replace(/\\/g, "/")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
+                            >
+                              <FileText className="w-3 h-3 text-indigo-500" />
+                              Cert {idx + 1}
+                            </a>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
+                              doc.status === "Verified" ? "bg-emerald-500/10 text-emerald-600" :
+                              doc.status === "Rejected" ? "bg-rose-500/10 text-rose-600" :
+                              "bg-amber-500/10 text-amber-600"
+                            }`}>
+                              {doc.status || "Pending"}
+                            </span>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1104,17 +1121,26 @@ export default function ApplicationDetailPage() {
                         Masters Certificates
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {app.mastersCertificates.map((path, idx) => (
-                          <a
-                            key={idx}
-                            href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${path.replace(/\\/g, "/")}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
-                          >
-                            <FileText className="w-3 h-3 text-rose-500" />
-                            Cert {idx + 1}
-                          </a>
+                        {app.mastersCertificates.map((doc, idx) => (
+                          <div key={idx} className="flex flex-col gap-1">
+                            <a
+                              key={idx}
+                              href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${doc.path.replace(/\\/g, "/")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
+                            >
+                              <FileText className="w-3 h-3 text-rose-500" />
+                              Cert {idx + 1}
+                            </a>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
+                              doc.status === "Verified" ? "bg-emerald-500/10 text-emerald-600" :
+                              doc.status === "Rejected" ? "bg-rose-500/10 text-rose-600" :
+                              "bg-amber-500/10 text-amber-600"
+                            }`}>
+                              {doc.status || "Pending"}
+                            </span>
+                          </div>
                         ))}
                       </div>
                     </div>

@@ -4,7 +4,10 @@ import path from "path";
 import Student from "../models/student.js";
 import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
-import { sendToAdmins, sendToRecipient } from "../services/notification.service.js";
+import {
+  sendToAdmins,
+  sendToRecipient,
+} from "../services/notification.service.js";
 
 // Multer Local Storage Configuration mapping to Uploads Dir
 const storage = multer.diskStorage({
@@ -75,10 +78,10 @@ export const enrollStudent = async (req, res, next) => {
     const data = req.body;
 
     if (data.email) {
-      const duplicateEmail = await Student.findOne({ 
-        email: data.email, 
+      const duplicateEmail = await Student.findOne({
+        email: data.email,
         registeredBy: req.user.userId,
-        deleted: { $ne: true }
+        deleted: { $ne: true },
       });
       if (duplicateEmail) {
         throw createError(
@@ -89,10 +92,10 @@ export const enrollStudent = async (req, res, next) => {
     }
 
     if (data.phone) {
-      const duplicatePhone = await Student.findOne({ 
-        phone: data.phone, 
+      const duplicatePhone = await Student.findOne({
+        phone: data.phone,
         registeredBy: req.user.userId,
-        deleted: { $ne: true }
+        deleted: { $ne: true },
       });
       if (duplicatePhone) {
         throw createError(
@@ -103,10 +106,32 @@ export const enrollStudent = async (req, res, next) => {
     }
 
     const files = req.files || {};
-    const extractPath = (field) =>
-      files[field] && files[field].length > 0 ? files[field][0].path : null;
-    const extractPaths = (field) =>
-      files[field] ? files[field].map((f) => f.path) : [];
+
+    const createDocObject = (filePath) => {
+      if (!filePath) return undefined;
+      return {
+        path: filePath,
+        status: "Pending",
+        uploadedAt: new Date(),
+        uploadedBy: req.user?.userId,
+        onModel: req.user?.userType === "partner" ? "AdmissionPoint" : "User",
+      };
+    };
+
+    const createDocObjects = (filesArray) => {
+      if (!filesArray) return [];
+      return filesArray.map((f) => createDocObject(f.path));
+    };
+
+    const extractPath = (field) => {
+      const filePath =
+        files[field] && files[field].length > 0 ? files[field][0].path : null;
+      return createDocObject(filePath);
+    };
+
+    const extractPaths = (field) => {
+      return createDocObjects(files[field]);
+    };
 
     const student = new Student({
       name: data.name,
@@ -171,6 +196,7 @@ export const enrollStudent = async (req, res, next) => {
       applicationStatus: data.applicationStatus || "Draft",
       enrollmentStatus: data.enrollmentStatus || "Identity",
       highestQualification: data.highestQualification,
+      batch: data.batch,
       registeredBy: req.user?.userId,
     });
 
@@ -276,6 +302,7 @@ export const updateStudentDetails = async (req, res, next) => {
       "highestQualification",
       "applicationStatus",
       "enrollmentStatus",
+      "batch",
     ];
 
     const idFields = ["university", "program", "branch", "programFee"];
@@ -341,10 +368,7 @@ export const updateStudentDetails = async (req, res, next) => {
         isCurrent: true,
       });
       if (!currentFee) {
-        throw createError(
-          400,
-          "Branch fee is empty, please contact the admin",
-        );
+        throw createError(400, "Branch fee is empty, please contact the admin");
       }
       student.programFee = currentFee._id;
       student.programFeeRefId = currentFee.refId;
@@ -352,13 +376,25 @@ export const updateStudentDetails = async (req, res, next) => {
 
     // Handle file re-uploads
     const files = req.files || {};
+
+    const createDocObject = (filePath) => {
+      if (!filePath) return undefined;
+      return {
+        path: filePath,
+        status: "Pending",
+        uploadedAt: new Date(),
+        uploadedBy: req.user?.userId,
+        onModel: req.user?.userType === "partner" ? "AdmissionPoint" : "User",
+      };
+    };
+
     const updatePath = (field, target) => {
       if (files[field] && files[field].length > 0)
-        student[target] = files[field][0].path;
+        student[target] = createDocObject(files[field][0].path);
     };
     const updateNestedPath = (field, obj, subField) => {
       if (files[field] && files[field].length > 0)
-        student[obj][subField] = files[field][0].path;
+        student[obj][subField] = createDocObject(files[field][0].path);
     };
 
     updatePath("idProof", "idProof");
@@ -369,13 +405,13 @@ export const updateStudentDetails = async (req, res, next) => {
     updatePath("projectSubmission", "projectSubmission");
 
     if (files.bachelorsCertificates) {
-      student.bachelors.certificates = files.bachelorsCertificates.map(
-        (f) => f.path,
+      student.bachelors.certificates = files.bachelorsCertificates.map((f) =>
+        createDocObject(f.path),
       );
     }
     if (files.mastersCertificates) {
-      student.masters.certificates = files.mastersCertificates.map(
-        (f) => f.path,
+      student.masters.certificates = files.mastersCertificates.map((f) =>
+        createDocObject(f.path),
       );
     }
 
@@ -432,13 +468,13 @@ export const submitForEligibility = async (req, res, next) => {
       "phone",
       "alternativePhone",
       "fatherName",
-      "motherName",
       "fatherPhone",
-      "motherPhone",
       "university",
       "program",
       "branch",
       "idProof",
+      "batch",
+      "completionYear",
     ];
 
     const missing = requiredFields.filter((f) => !student[f]);
@@ -452,7 +488,10 @@ export const submitForEligibility = async (req, res, next) => {
 
     // Academic nested validation
     if (!student.tenth?.certificate || !student.tenth?.completionYear) {
-      throw createError(400, "10th Standard details and certificate are required.");
+      throw createError(
+        400,
+        "10th Standard details and certificate are required.",
+      );
     }
     if (!student.plusTwo?.certificate || !student.plusTwo?.completionYear) {
       throw createError(400, "Plus Two details and certificate are required.");
@@ -462,7 +501,7 @@ export const submitForEligibility = async (req, res, next) => {
     student.applicationSubmittedDate = new Date();
     // Clear previous remarks on re-submission
     if (student.admin_remarks) student.admin_remarks = "";
-    
+
     student.applicationHistory.push({
       status: "Pending Eligibility",
       date: new Date(),
@@ -581,15 +620,26 @@ export const updateApplicationStatus = async (req, res, next) => {
       .populate("programFee");
 
     if (student.registeredBy) {
-      await sendToRecipient(student.registeredBy._id || student.registeredBy, "AdmissionPoint", {
-        title: action === "approve" ? "Application Approved" : "Application Rejected",
-        message: action === "approve" 
-          ? `Application for ${student.name} has been approved. The student fee can be paid now.` 
-          : `Application for ${student.name} has been rejected. Reason: ${admin_remarks}`,
-        type: action === "approve" ? "application_approved" : "application_rejected",
-        relatedId: student._id,
-        link: "/dashboard/applications",
-      });
+      await sendToRecipient(
+        student.registeredBy._id || student.registeredBy,
+        "AdmissionPoint",
+        {
+          title:
+            action === "approve"
+              ? "Application Approved"
+              : "Application Rejected",
+          message:
+            action === "approve"
+              ? `Application for ${student.name} has been approved. The student fee can be paid now.`
+              : `Application for ${student.name} has been rejected. Reason: ${admin_remarks}`,
+          type:
+            action === "approve"
+              ? "application_approved"
+              : "application_rejected",
+          relatedId: student._id,
+          link: "/dashboard/applications",
+        },
+      );
     }
 
     res.status(200).json({

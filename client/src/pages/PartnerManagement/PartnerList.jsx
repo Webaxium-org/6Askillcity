@@ -51,28 +51,28 @@ export default function PartnerList() {
     let start = new Date();
     let end = new Date();
 
-    switch(range) {
-      case 'today':
+    switch (range) {
+      case "today":
         start = today;
         end = today;
         break;
-      case 'week':
+      case "week":
         const diff = today.getDate() - today.getDay();
         start = new Date(today.setDate(diff));
         end = new Date();
         break;
-      case 'month':
+      case "month":
         start = new Date(today.getFullYear(), today.getMonth(), 1);
         end = new Date();
         break;
-      case 'year':
+      case "year":
         start = new Date(today.getFullYear(), 0, 1);
         end = new Date();
         break;
     }
 
-    setStartDate(start.toISOString().split('T')[0]);
-    setEndDate(end.toISOString().split('T')[0]);
+    setStartDate(start.toISOString().split("T")[0]);
+    setEndDate(end.toISOString().split("T")[0]);
   };
 
   const dispatch = useDispatch();
@@ -154,8 +154,8 @@ export default function PartnerList() {
       <div className="space-y-6">
         {/* Header / Search Area */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="relative group flex-1 min-w-[350px]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+            <div className="relative group flex-1 sm:min-w-[350px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input
                 type="text"
@@ -169,14 +169,20 @@ export default function PartnerList() {
             <button
               onClick={() => setShowFilters(true)}
               className={cn(
-                "px-6 py-3.5 rounded-2xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm",
-                statusFilter !== "all" || activeFilter !== "all" || startDate || endDate
+                "px-6 py-3.5 rounded-2xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto",
+                statusFilter !== "all" ||
+                  activeFilter !== "all" ||
+                  startDate ||
+                  endDate
                   ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                   : "bg-card border-border/50 text-muted-foreground hover:border-primary/30 hover:text-primary",
               )}
             >
               <Filter className="w-3.5 h-3.5" />
-              {statusFilter !== "all" || activeFilter !== "all" || startDate || endDate
+              {statusFilter !== "all" ||
+              activeFilter !== "all" ||
+              startDate ||
+              endDate
                 ? "Active"
                 : "Filters"}
             </button>
@@ -185,7 +191,10 @@ export default function PartnerList() {
 
         {/* Active Filter Chips */}
         <AnimatePresence>
-          {(statusFilter !== "all" || activeFilter !== "all" || startDate || endDate) && (
+          {(statusFilter !== "all" ||
+            activeFilter !== "all" ||
+            startDate ||
+            endDate) && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -587,11 +596,15 @@ export default function PartnerList() {
                       <Clock className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black uppercase tracking-widest text-foreground">Registration Period</h4>
-                      <p className="text-[9px] font-bold text-muted-foreground">Select onboard date range</p>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        Registration Period
+                      </h4>
+                      <p className="text-[9px] font-bold text-muted-foreground">
+                        Select onboard date range
+                      </p>
                     </div>
                   </div>
-                  
+
                   {/* Quick Select Buttons */}
                   <div className="grid grid-cols-2 gap-2">
                     {["today", "week", "month", "year"].map((range) => (
@@ -600,14 +613,22 @@ export default function PartnerList() {
                         onClick={() => setQuickRange(range)}
                         className="py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-[8px] font-black uppercase tracking-widest text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
                       >
-                        {range === "week" ? "This Week" : range === "month" ? "This Month" : range === "year" ? "This Year" : "Today"}
+                        {range === "week"
+                          ? "This Week"
+                          : range === "month"
+                            ? "This Month"
+                            : range === "year"
+                              ? "This Year"
+                              : "Today"}
                       </button>
                     ))}
                   </div>
 
                   <div className="space-y-4">
                     <div className="group">
-                      <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">From Date</label>
+                      <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                        From Date
+                      </label>
                       <input
                         type="date"
                         value={startDate}
@@ -616,7 +637,9 @@ export default function PartnerList() {
                       />
                     </div>
                     <div className="group">
-                      <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">To Date</label>
+                      <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                        To Date
+                      </label>
                       <input
                         type="date"
                         value={endDate}

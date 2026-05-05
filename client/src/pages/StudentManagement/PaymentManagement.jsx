@@ -104,9 +104,8 @@ export default function PaymentManagement() {
       const { getUniversities } = await import("../../api/university.api");
 
       if (isAdmin) {
-        const { getAllApprovedAdmissionPoints } = await import(
-          "../../api/admissionPoint.api"
-        );
+        const { getAllApprovedAdmissionPoints } =
+          await import("../../api/admissionPoint.api");
         const [uniRes, partnerRes] = await Promise.all([
           getUniversities(),
           getAllApprovedAdmissionPoints(),
@@ -169,7 +168,11 @@ export default function PaymentManagement() {
         return false;
 
       // Partner Filter
-      if (isAdmin && selectedPartner !== "all" && item.partner?._id !== selectedPartner)
+      if (
+        isAdmin &&
+        selectedPartner !== "all" &&
+        item.partner?._id !== selectedPartner
+      )
         return false;
 
       // Date Range Filter

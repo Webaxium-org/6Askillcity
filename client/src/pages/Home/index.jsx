@@ -31,6 +31,7 @@ import Reach from "../../assets/Reach.webp";
 import IncreasedAdmission from "../../assets/empower.webp";
 import Holistic from "../../assets/Holistic.webp";
 import PartnershipIllustration from "../../assets/partnership_illustration.png";
+import GlobalUniversityLogo from "../../assets/global_university_logo.png";
 
 /**
  * UTILITIES
@@ -691,9 +692,14 @@ export default function App() {
                   {
                     title: "The Global University",
                     loc: "Arunachal Pradesh",
-                    color:
-                      "bg-gradient-to-br from-[#17468C] to-blue-600 shadow-blue-500/30",
-                    icon: <Globe className="text-white" size={28} />,
+                    color: "bg-white border-2 border-blue-500/20 shadow-xl shadow-blue-500/10",
+                    icon: (
+                      <img
+                        src={GlobalUniversityLogo}
+                        alt="Global University"
+                        className="w-16 h-16 object-contain"
+                      />
+                    ),
                     desc: "Widely recognized as a beacon of academic excellence and innovation in Arunachal Pradesh. Since 2024, it has been known among the top education institutions in India, shaping minds and empowering positive impact.",
                     stats: [
                       { label: "Recognition", value: "Prominent Institution" },

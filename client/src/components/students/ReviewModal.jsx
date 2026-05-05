@@ -46,7 +46,11 @@ export const ReviewModal = ({
     return `${baseUrl}/${path.replace(/\\/g, "/")}`;
   };
 
-  const DocumentLink = ({ label, path }) => {
+  const DocumentLink = ({ label, doc }) => {
+    // Handle both old (string) and new (object) structures
+    const path = typeof doc === "string" ? doc : doc?.path;
+    const status = typeof doc === "string" ? "Pending" : doc?.status || "Pending";
+
     if (!path) return null;
     const url = getFileUrl(path);
     return (
@@ -57,9 +61,22 @@ export const ReviewModal = ({
           </div>
           <div>
             <p className="text-sm font-bold">{label}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">
-              Document Asset
-            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-black">
+                Asset
+              </span>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  status === "Verified"
+                    ? "bg-emerald-500/10 text-emerald-600"
+                    : status === "Rejected"
+                      ? "bg-rose-500/10 text-rose-600"
+                      : "bg-amber-500/10 text-amber-600"
+                }`}
+              >
+                {status.toUpperCase()}
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -383,20 +400,24 @@ export const ReviewModal = ({
                     <div className="space-y-3">
                       <DocumentLink
                         label="ID Proof (Aadhar/Passport)"
-                        path={app.idProof}
+                        doc={app.idProof}
                       />
                       <DocumentLink
                         label="10th Certificate"
-                        path={app.tenth?.certificate}
+                        doc={app.tenth?.certificate}
                       />
                       <DocumentLink
                         label="Plus Two Certificate"
-                        path={app.plusTwo?.certificate}
+                        doc={app.plusTwo?.certificate}
                       />
-                      <DocumentLink label="Affidavit" path={app.affidavit} />
+                      <DocumentLink label="Affidavit" doc={app.affidavit} />
                       <DocumentLink
                         label="Migration Certificate"
-                        path={app.migrationCertificate}
+                        doc={app.migrationCertificate}
+                      />
+                      <DocumentLink
+                        label="Project Submission"
+                        doc={app.projectSubmission}
                       />
 
                       {/* Bachelors Multi-Certificates */}
@@ -404,7 +425,7 @@ export const ReviewModal = ({
                         <DocumentLink
                           key={`bach-${idx}`}
                           label={`Bachelor Cert ${idx + 1}`}
-                          path={cert}
+                          doc={cert}
                         />
                       ))}
 
@@ -413,7 +434,7 @@ export const ReviewModal = ({
                         <DocumentLink
                           key={`mast-${idx}`}
                           label={`Master Cert ${idx + 1}`}
-                          path={cert}
+                          doc={cert}
                         />
                       ))}
                     </div>

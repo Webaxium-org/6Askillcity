@@ -78,6 +78,7 @@ const FileUploadBox = ({
   multiple = false,
   onChange,
   error,
+  required,
 }) => (
   <div className="space-y-1.5">
     <label
@@ -86,7 +87,7 @@ const FileUploadBox = ({
         error ? "text-rose-500" : "text-muted-foreground/60",
       )}
     >
-      {label}
+      {label} {required && <span className="text-rose-500">*</span>}
     </label>
     <div
       className={cn(
@@ -151,6 +152,7 @@ const InputField = ({
   options,
   icon: Icon,
   error,
+  required,
 }) => (
   <div className="space-y-1.5 group">
     <label
@@ -161,7 +163,7 @@ const InputField = ({
           : "text-muted-foreground/60 group-focus-within:text-primary",
       )}
     >
-      {label}
+      {label} {required && <span className="text-rose-500">*</span>}
     </label>
     <div className="relative">
       {Icon && (
@@ -238,6 +240,7 @@ const PhoneInputField = ({
   otherPhoneCode,
   icon: Icon,
   error,
+  required,
 }) => (
   <div className="space-y-1.5 group">
     <label
@@ -248,7 +251,7 @@ const PhoneInputField = ({
           : "text-muted-foreground/60 group-focus-within:text-primary",
       )}
     >
-      {label}
+      {label} {required && <span className="text-rose-500">*</span>}
     </label>
     <div className="flex gap-2">
       <div className="relative w-28 shrink-0">
@@ -347,6 +350,7 @@ const ALL_REQUIRED_FIELDS = [
   { key: "university", label: "University" },
   { key: "program", label: "Program" },
   { key: "branch", label: "Branch" },
+  { key: "batch", label: "Batch" },
   { key: "highestQualification", label: "Highest Qualification" },
 ];
 
@@ -446,6 +450,7 @@ export default function AddStudent() {
             videoKycStatus: s.videoKycStatus || "Pending",
             employmentStatus: s.employmentStatus || "Unemployed",
             highestQualification: s.highestQualification || "Plus Two",
+            batch: s.batch || "",
             applicationStatus: s.applicationStatus || "Draft",
             enrollmentStatus: s.enrollmentStatus || "Identity",
           });
@@ -463,14 +468,14 @@ export default function AddStudent() {
 
           // Set existing files as paths (string) so they show as "Attached"
           setFiles({
-            idProof: s.idProof || null,
-            tenthCertificate: s.tenth?.certificate || null,
-            plusTwoCertificate: s.plusTwo?.certificate || null,
-            bachelorsCertificates: s.bachelors?.certificates || [],
-            mastersCertificates: s.masters?.certificates || [],
-            affidavit: s.affidavit || null,
-            migrationCertificate: s.migrationCertificate || null,
-            projectSubmission: s.projectSubmission || null,
+            idProof: s.idProof?.path || s.idProof || null,
+            tenthCertificate: s.tenth?.certificate?.path || s.tenth?.certificate || null,
+            plusTwoCertificate: s.plusTwo?.certificate?.path || s.plusTwo?.certificate || null,
+            bachelorsCertificates: (s.bachelors?.certificates || []).map(c => c.path || c),
+            mastersCertificates: (s.masters?.certificates || []).map(c => c.path || c),
+            affidavit: s.affidavit?.path || s.affidavit || null,
+            migrationCertificate: s.migrationCertificate?.path || s.migrationCertificate || null,
+            projectSubmission: s.projectSubmission?.path || s.projectSubmission || null,
           });
         }
       } catch (error) {
@@ -526,6 +531,7 @@ export default function AddStudent() {
     videoKycStatus: "Pending",
     employmentStatus: "Unemployed",
     highestQualification: "Plus Two",
+    batch: "",
     applicationStatus: "Draft",
     enrollmentStatus: "Identity",
   });
@@ -835,18 +841,155 @@ export default function AddStudent() {
     }
     return null;
   };
-
   const nextStep = async () => {
-    // Basic validation for Step 0 name
-    if (currentStep === 0 && !formData.name) {
-      setErrors({ name: "Student Name is required." });
-      dispatch(
-        showAlert({
-          type: "error",
-          message: "Please enter the student's name.",
-        }),
-      );
-      return;
+    // Validation for Step 0: Profile Identity
+    if (currentStep === 0) {
+      const requiredFields = [
+        { key: "name", label: "Full Name" },
+        { key: "dob", label: "Date of Birth" },
+        { key: "gender", label: "Gender" },
+        { key: "religion", label: "Religion" },
+        { key: "caste", label: "Caste" },
+        { key: "country", label: "Country" },
+        { key: "email", label: "E-mail" },
+        { key: "phone", label: "Primary Phone" },
+        { key: "alternativePhone", label: "Alternative Phone" },
+        { key: "address", label: "Permanent Address" },
+      ];
+
+      const newErrors = {};
+      let firstErrorField = "";
+
+      requiredFields.forEach((field) => {
+        const val = formData[field.key]?.toString().trim();
+        if (!val) {
+          newErrors[field.key] = `${field.label} is required.`;
+          if (!firstErrorField) firstErrorField = field.label;
+        } else {
+          // Email validation
+          if (field.key === "email") {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(val)) {
+              newErrors.email = "Invalid E-mail format.";
+              if (!firstErrorField) firstErrorField = "E-mail Format";
+            }
+          }
+          // Phone validation
+          if (["phone", "alternativePhone"].includes(field.key)) {
+            const phoneRegex = /^\d{7,15}$/;
+            if (!phoneRegex.test(val)) {
+              newErrors[field.key] = `Invalid ${field.label} (7-15 digits).`;
+              if (!firstErrorField) firstErrorField = field.label;
+            }
+          }
+        }
+      });
+
+      // Optional: Other Phone validation if provided
+      if (formData.otherPhone?.trim()) {
+        const phoneRegex = /^\d{7,15}$/;
+        if (!phoneRegex.test(formData.otherPhone.trim())) {
+          newErrors.otherPhone = "Invalid Other Phone (7-15 digits).";
+          if (!firstErrorField) firstErrorField = "Other Phone";
+        }
+      }
+
+      // Identity Proof validation: Required if it's a new student (no studentId) and no file selected
+      if (!studentId && !files.idProof) {
+        newErrors.idProof = "Identity Proof is required.";
+        if (!firstErrorField) firstErrorField = "Identity Proof";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        dispatch(
+          showAlert({
+            type: "error",
+            message: firstErrorField.includes("Format")
+              ? `Please enter a valid ${firstErrorField.split(" ")[0]}`
+              : `Please fill all required fields correctly: ${firstErrorField}`,
+          }),
+        );
+        return;
+      }
+
+      // Clear errors if all valid
+      setErrors({});
+    }
+
+    // Validation for Step 3: Enrollment Selection
+    if (currentStep === 3) {
+      const requiredFields = [
+        { key: "university", label: "University" },
+        { key: "program", label: "Program" },
+        { key: "branch", label: "Branch" },
+        { key: "completionYear", label: "Completion Year" },
+        { key: "batch", label: "Batch" },
+      ];
+
+      const newErrors = {};
+      let firstErrorField = "";
+
+      requiredFields.forEach((field) => {
+        const val = formData[field.key]?.toString().trim();
+        if (!val) {
+          newErrors[field.key] = `${field.label} is required.`;
+          if (!firstErrorField) firstErrorField = field.label;
+        }
+      });
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        dispatch(
+          showAlert({
+            type: "error",
+            message: `Please fill all required enrollment fields: ${firstErrorField}`,
+          }),
+        );
+        return;
+      }
+
+      setErrors({});
+    }
+
+    // Validation for Step 1: Family Details
+    if (currentStep === 1) {
+      const requiredFields = [
+        { key: "fatherName", label: "Father's Name" },
+        { key: "fatherPhone", label: "Father's Phone" },
+      ];
+
+      const newErrors = {};
+      let firstErrorField = "";
+
+      requiredFields.forEach((field) => {
+        const val = formData[field.key]?.toString().trim();
+        if (!val) {
+          newErrors[field.key] = `${field.label} is required.`;
+          if (!firstErrorField) firstErrorField = field.label;
+        } else if (field.key === "fatherPhone") {
+          const phoneRegex = /^\d{7,15}$/;
+          if (!phoneRegex.test(val)) {
+            newErrors.fatherPhone = "Invalid Father's Phone (7-15 digits).";
+            if (!firstErrorField) firstErrorField = "Father's Phone Format";
+          }
+        }
+      });
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        dispatch(
+          showAlert({
+            type: "error",
+            message: firstErrorField.includes("Format")
+              ? `Please enter a valid ${firstErrorField.split(" ")[0]}`
+              : `Please fill all required fields: ${firstErrorField}`,
+          }),
+        );
+        return;
+      }
+
+      setErrors({});
     }
 
     // Determine new enrollment status based on current step
@@ -874,8 +1017,46 @@ export default function AddStudent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validation for Final Step (Enrollment Selection)
+    if (currentStep === 3) {
+      const requiredFields = [
+        { key: "university", label: "University" },
+        { key: "program", label: "Program" },
+        { key: "branch", label: "Branch" },
+        { key: "completionYear", label: "Completion Year" },
+        { key: "batch", label: "Batch" },
+      ];
+
+      const newErrors = {};
+      let firstErrorField = "";
+
+      requiredFields.forEach((field) => {
+        const val = formData[field.key]?.toString().trim();
+        if (!val) {
+          newErrors[field.key] = `${field.label} is required.`;
+          if (!firstErrorField) firstErrorField = field.label;
+        }
+      });
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        dispatch(
+          showAlert({
+            type: "error",
+            message: `Please fill all required enrollment fields: ${firstErrorField}`,
+          }),
+        );
+        return;
+      }
+      setErrors({});
+    }
+
     // Final Save Draft before submission and set enrollmentStatus to Completed
-    const saved = await saveDraft(false, formData.applicationStatus, "Completed");
+    const saved = await saveDraft(
+      false,
+      formData.applicationStatus,
+      "Completed",
+    );
     if (!saved && !studentId) return;
 
     setLoading(true);
@@ -1054,6 +1235,7 @@ export default function AddStudent() {
                       onChange={handleChange}
                       icon={User}
                       error={errors.name}
+                      required
                     />
                     <InputField
                       label="Date of Birth"
@@ -1063,6 +1245,7 @@ export default function AddStudent() {
                       type="date"
                       icon={Calendar}
                       error={errors.dob}
+                      required
                     />
                     <InputField
                       label="Gender"
@@ -1072,6 +1255,7 @@ export default function AddStudent() {
                       options={["Male", "Female", "Other"]}
                       icon={Baby}
                       error={errors.gender}
+                      required
                     />
                     <InputField
                       label="Religion"
@@ -1079,6 +1263,7 @@ export default function AddStudent() {
                       value={formData.religion}
                       onChange={handleChange}
                       error={errors.religion}
+                      required
                     />
                     <InputField
                       label="Caste"
@@ -1086,6 +1271,7 @@ export default function AddStudent() {
                       value={formData.caste}
                       onChange={handleChange}
                       error={errors.caste}
+                      required
                     />
                     <InputField
                       label="Country"
@@ -1095,6 +1281,7 @@ export default function AddStudent() {
                       options={COUNTRIES}
                       icon={MapPin}
                       error={errors.country}
+                      required
                     />
                     <InputField
                       label="E-mail"
@@ -1104,6 +1291,7 @@ export default function AddStudent() {
                       type="email"
                       icon={Mail}
                       error={errors.email}
+                      required
                     />
                     <PhoneInputField
                       label="Primary Phone"
@@ -1114,6 +1302,7 @@ export default function AddStudent() {
                       onChange={handleChange}
                       icon={Phone}
                       error={errors.phone}
+                      required
                     />
                     <PhoneInputField
                       label="Alternative Phone"
@@ -1124,6 +1313,7 @@ export default function AddStudent() {
                       onChange={handleChange}
                       icon={Phone}
                       error={errors.alternativePhone}
+                      required
                     />
                     <PhoneInputField
                       label="Other Phone"
@@ -1142,6 +1332,7 @@ export default function AddStudent() {
                         onChange={handleChange}
                         icon={MapPin}
                         error={errors.address}
+                        required
                       />
                     </div>
                     <FileUploadBox
@@ -1150,6 +1341,7 @@ export default function AddStudent() {
                       value={files.idProof}
                       onChange={handleFileChange}
                       error={errors.idProof}
+                      required
                     />
                   </div>
                 </div>
@@ -1174,6 +1366,7 @@ export default function AddStudent() {
                     onChange={handleChange}
                     icon={User}
                     error={errors.fatherName}
+                    required
                   />
                   <PhoneInputField
                     label="Father's Phone"
@@ -1184,6 +1377,7 @@ export default function AddStudent() {
                     onChange={handleChange}
                     icon={Phone}
                     error={errors.fatherPhone}
+                    required
                   />
                   <InputField
                     label="Mother's Name"
@@ -1444,6 +1638,7 @@ export default function AddStudent() {
                       }))}
                       icon={Building2}
                       error={errors.university}
+                      required
                     />
                     <InputField
                       label="Program"
@@ -1462,6 +1657,7 @@ export default function AddStudent() {
                         }))}
                       icon={GraduationCap}
                       error={errors.program}
+                      required
                     />
                     <InputField
                       label="Branch"
@@ -1480,6 +1676,7 @@ export default function AddStudent() {
                         }))}
                       icon={GitBranch}
                       error={errors.branch}
+                      required
                     />
                     <InputField
                       label="Completion Year"
@@ -1487,6 +1684,27 @@ export default function AddStudent() {
                       value={formData.completionYear}
                       onChange={handleChange}
                       icon={Calendar}
+                      error={errors.completionYear}
+                      required
+                    />
+                    <InputField
+                      label="Batch"
+                      name="batch"
+                      value={formData.batch}
+                      onChange={handleChange}
+                      options={[
+                        ...(() => {
+                          const batches = [];
+                          const currentYear = new Date().getFullYear();
+                          for (let y = currentYear; y <= currentYear + 3; y++) {
+                            batches.push(`Jan-${y}`, `June-${y}`);
+                          }
+                          return batches;
+                        })(),
+                      ]}
+                      icon={Sparkles}
+                      error={errors.batch}
+                      required
                     />
                   </div>
                 </div>
