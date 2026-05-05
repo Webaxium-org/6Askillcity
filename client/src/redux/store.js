@@ -12,7 +12,7 @@ const storage = createWebStorage("local");
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["user", "notifications"],
+  whitelist: ["user"],
 };
 
 const reducer = combineReducers({

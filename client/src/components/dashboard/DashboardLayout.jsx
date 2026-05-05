@@ -4,6 +4,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  Trash2,
   Menu,
   User,
   LayoutDashboard,
@@ -27,7 +28,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "./StatCard";
 import { useDispatch, useSelector } from "react-redux";
 import { logOut } from "../../redux/userSlice";
-import { addNotification, markAllAsRead } from "../../redux/notificationSlice";
+import {
+  addLiveNotification,
+  fetchNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  clearAllNotificationsThunk,
+} from "../../redux/notificationSlice";
 import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
 
@@ -340,10 +348,14 @@ export const DashboardLayout = ({ children, title }) => {
   );
 
   React.useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
+
+  React.useEffect(() => {
     if (!socket) return;
 
     const handleNotification = (data) => {
-      dispatch(addNotification(data));
+      dispatch(addLiveNotification(data));
       dispatch(
         showAlert({
           type: "info",
@@ -358,6 +370,21 @@ export const DashboardLayout = ({ children, title }) => {
       socket.off("notification", handleNotification);
     };
   }, [socket, dispatch]);
+
+  const handleNotificationClick = (notif) => {
+    setShowNotifications(false);
+    if (!notif.isRead) {
+      dispatch(markNotificationAsRead(notif._id));
+    }
+    if (notif.link) {
+      navigate(notif.link);
+    }
+  };
+
+  const handleDeleteNotification = (e, id) => {
+    e.stopPropagation();
+    dispatch(deleteNotification(id));
+  };
 
   const confirmLogout = () => {
     dispatch(logOut());
@@ -422,7 +449,7 @@ export const DashboardLayout = ({ children, title }) => {
                       </h3>
                       {unreadCount > 0 && (
                         <button
-                          onClick={() => dispatch(markAllAsRead())}
+                          onClick={() => dispatch(markAllNotificationsAsRead())}
                           className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1 font-medium"
                         >
                           <Check className="w-3 h-3" /> Mark all read
@@ -438,36 +465,50 @@ export const DashboardLayout = ({ children, title }) => {
                       ) : (
                         notifications.map((notif) => (
                           <div
-                            key={notif.id}
+                            key={notif._id || notif.id}
                             className={cn(
-                              "p-3 rounded-xl transition-colors cursor-pointer",
-                              notif.read
+                              "p-3 rounded-xl transition-colors cursor-pointer relative group",
+                              notif.isRead
                                 ? "bg-transparent hover:bg-muted"
                                 : "bg-primary/5 hover:bg-primary/10 border border-primary/10",
                             )}
-                            onClick={() => {
-                              setShowNotifications(false);
-                              if (notif.ticketId) {
-                                navigate("/dashboard/tickets");
-                              }
-                            }}
+                            onClick={() => handleNotificationClick(notif)}
                           >
-                            <h4
-                              className={cn(
-                                "text-sm mb-0.5",
-                                notif.read
-                                  ? "font-medium text-foreground"
-                                  : "font-bold text-foreground",
-                              )}
-                            >
-                              {notif.title}
-                            </h4>
+                            <div className="flex justify-between items-start pr-6">
+                              <h4
+                                className={cn(
+                                  "text-sm mb-0.5",
+                                  notif.isRead
+                                    ? "font-medium text-foreground"
+                                    : "font-bold text-foreground",
+                                )}
+                              >
+                                {notif.title}
+                              </h4>
+                              <button
+                                onClick={(e) =>
+                                  handleDeleteNotification(e, notif._id)
+                                }
+                                className="absolute right-2 top-2 p-1.5 text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                             <p className="text-xs text-muted-foreground break-words">
                               {notif.message}
                             </p>
-                            {!notif.read && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2"></div>
-                            )}
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-[10px] text-muted-foreground/70">
+                                {new Date(notif.createdAt).toLocaleDateString()}{" "}
+                                {new Date(notif.createdAt).toLocaleTimeString(
+                                  [],
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )}
+                              </span>
+                              {!notif.isRead && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                              )}
+                            </div>
                           </div>
                         ))
                       )}

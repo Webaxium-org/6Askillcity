@@ -131,6 +131,18 @@ const StudentSchema = new mongoose.Schema(
       ],
       default: "Draft",
     },
+    applicationSubmittedDate: {
+      type: Date,
+      index: true,
+    },
+    applicationHistory: [
+      {
+        status: String,
+        date: { type: Date, default: Date.now },
+        actionBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        remarks: String,
+      },
+    ],
     eligibilityApprovalDate: {
       type: Date,
     },

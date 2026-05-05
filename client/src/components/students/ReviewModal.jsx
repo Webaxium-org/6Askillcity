@@ -109,7 +109,9 @@ export const ReviewModal = ({
                     </span>
                     <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Submitted{" "}
-                      {new Date(app.updatedAt).toLocaleDateString()}
+                      {app.applicationSubmittedDate 
+                        ? new Date(app.applicationSubmittedDate).toLocaleDateString() 
+                        : new Date(app.updatedAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -124,6 +126,19 @@ export const ReviewModal = ({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              {/* Resubmission Warning */}
+              {app.applicationHistory?.length > 1 && (
+                <div className="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-4 text-amber-600 animate-pulse">
+                  <ShieldAlert className="w-6 h-6 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-bold">Resubmitted Application</p>
+                    <p className="text-xs font-medium opacity-90">
+                      This application was previously reviewed. Please check the history timeline below for past rejection remarks.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 {/* Left Column: Details */}
                 <div className="lg:col-span-2 space-y-10">
@@ -327,6 +342,36 @@ export const ReviewModal = ({
                       </div>
                     </div>
                   </section>
+
+                  {/* Application Lifecycle History */}
+                  {app.applicationHistory?.length > 0 && (
+                    <section className="space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                        <Clock className="w-3 h-3" /> Application History Timeline
+                      </h4>
+                      <div className="relative space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
+                        {app.applicationHistory.slice().reverse().map((history, idx) => (
+                          <div key={idx} className="relative pl-10">
+                            <div className={`absolute left-0 top-1.5 w-5 h-5 rounded-full border-2 border-background ${
+                              history.status === "Eligible" ? "bg-emerald-500" : 
+                              history.status === "Rejected" ? "bg-red-500" : "bg-primary"
+                            }`} />
+                            <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-1">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-bold">{history.status}</p>
+                                <p className="text-[10px] text-muted-foreground font-medium">
+                                  {new Date(history.date).toLocaleDateString()} {new Date(history.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {history.remarks && (
+                                <p className="text-xs text-muted-foreground italic">"{history.remarks}"</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                 </div>
 
                 {/* Right Column: Documents */}
@@ -416,7 +461,7 @@ export const ReviewModal = ({
                 onClick={() => onReject(app)}
                 className="flex-1 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
               >
-                <XCircle className="w-5 h-5" /> Reject Application
+                <XCircle className="w-5 h-5" /> Reject
               </button>
               <button
                 onClick={() => onApprove(app._id)}
@@ -428,7 +473,7 @@ export const ReviewModal = ({
                 ) : (
                   <>
                     <CheckCircle className="w-5 h-5" />
-                    Approve & Mark as Eligible
+                    Approve
                   </>
                 )}
               </button>

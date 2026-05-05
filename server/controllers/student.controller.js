@@ -4,6 +4,7 @@ import path from "path";
 import Student from "../models/student.js";
 import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
+import { sendToAdmins, sendToRecipient } from "../services/notification.service.js";
 
 // Multer Local Storage Configuration mapping to Uploads Dir
 const storage = multer.diskStorage({
@@ -458,8 +459,16 @@ export const submitForEligibility = async (req, res, next) => {
     }
 
     student.applicationStatus = "Pending Eligibility";
+    student.applicationSubmittedDate = new Date();
     // Clear previous remarks on re-submission
     if (student.admin_remarks) student.admin_remarks = "";
+    
+    student.applicationHistory.push({
+      status: "Pending Eligibility",
+      date: new Date(),
+      remarks: "Submitted for eligibility review",
+    });
+
     await student.save();
 
     const populatedStudent = await Student.findById(student._id)
@@ -467,6 +476,14 @@ export const submitForEligibility = async (req, res, next) => {
       .populate("program", "name")
       .populate("branch", "name duration type")
       .populate("programFee");
+
+    await sendToAdmins({
+      title: "New Application Submitted",
+      message: `Application for ${student.name} is pending review.`,
+      type: "application_submitted",
+      relatedId: student._id,
+      link: "/dashboard/eligibility-queue",
+    });
 
     res.status(200).json({
       success: true,
@@ -491,7 +508,7 @@ export const getPendingEligibility = async (req, res, next) => {
       .populate("university", "name")
       .populate("program", "name")
       .populate("branch", "name")
-      .sort({ updatedAt: 1 }); // Oldest first (FIFO review queue)
+      .sort({ applicationSubmittedDate: -1 }); // Newest submissions first
 
     res.status(200).json({
       success: true,
@@ -529,6 +546,13 @@ export const updateApplicationStatus = async (req, res, next) => {
       student.admin_remarks = "";
       student.eligibilityApprovalDate = new Date();
       student.eligibilityApprovedBy = req.user?.userId;
+
+      student.applicationHistory.push({
+        status: "Eligible",
+        date: new Date(),
+        actionBy: req.user?.userId,
+        remarks: "Application approved by admin",
+      });
     } else {
       if (!admin_remarks || !admin_remarks.trim()) {
         throw createError(
@@ -538,6 +562,13 @@ export const updateApplicationStatus = async (req, res, next) => {
       }
       student.applicationStatus = "Rejected";
       student.admin_remarks = admin_remarks.trim();
+
+      student.applicationHistory.push({
+        status: "Rejected",
+        date: new Date(),
+        actionBy: req.user?.userId,
+        remarks: admin_remarks.trim(),
+      });
     }
 
     await student.save();
@@ -548,6 +579,18 @@ export const updateApplicationStatus = async (req, res, next) => {
       .populate("program", "name")
       .populate("branch", "name duration type")
       .populate("programFee");
+
+    if (student.registeredBy) {
+      await sendToRecipient(student.registeredBy._id || student.registeredBy, "AdmissionPoint", {
+        title: action === "approve" ? "Application Approved" : "Application Rejected",
+        message: action === "approve" 
+          ? `Application for ${student.name} has been approved. The student fee can be paid now.` 
+          : `Application for ${student.name} has been rejected. Reason: ${admin_remarks}`,
+        type: action === "approve" ? "application_approved" : "application_rejected",
+        relatedId: student._id,
+        link: "/dashboard/applications",
+      });
+    }
 
     res.status(200).json({
       success: true,

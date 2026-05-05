@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { X, Send, ChevronLeft, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "../../components/dashboard/StatCard";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { showAlert } from "../../redux/alertSlice";
 import { getTicketById, addMessage, updateTicketStatus, createTicket } from "../../api/ticket.api";
 import { getAllApprovedAdmissionPoints } from "../../api/admissionPoint.api";
 import { getAllUsers } from "../../api/auth.api";
@@ -10,14 +11,15 @@ import { useSocket } from "../../context/SocketContext";
 
 export default function TicketChat({ ticket, onClose }) {
   const { user } = useSelector((s) => s.user);
+  const dispatch = useDispatch();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(!ticket?.isNew);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isCreator  = ticket && (ticket.creatorId?._id === user?.userId || ticket.creatorId === user?.userId);
-  const isAssigned = ticket && (ticket.assignedToPartner?._id === user?.userId || ticket.assignedToPartner === user?.userId);
-  const canUpdateStatus = user?.type === "admin" || (user?.type === "partner" && !isCreator && isAssigned);
+  const userId = user?.userId || user?._id;
+  const isCreator  = ticket && (ticket.creatorId?._id === userId || ticket.creatorId === userId);
+  const isAssigned = ticket && (ticket.assignedToPartner?._id === userId || ticket.assignedToPartner === userId);
 
   const messagesEndRef = useRef(null);
   const { socket } = useSocket();
@@ -36,8 +38,9 @@ export default function TicketChat({ ticket, onClose }) {
   const [postponedUntil, setPostponedUntil] = useState(
     ticket?.postponedUntil ? ticket.postponedUntil.split("T")[0] : ""
   );
+  const isClosed = ticket?.status === "Closed" || status === "Closed";
+  const canUpdateStatus = (user?.type === "admin" || (user?.type === "partner" && !isCreator && isAssigned)) && !isClosed;
 
-  const userId = user?.userId || user?._id;
 
   /* ── data loading ── */
   useEffect(() => {
@@ -95,7 +98,14 @@ export default function TicketChat({ ticket, onClose }) {
       setIsSubmitting(true);
       await updateTicketStatus(ticket._id, newStatus, newStatus === "Postponed" ? postponedUntil : null);
       setStatus(newStatus);
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error(e); 
+      dispatch(showAlert({ 
+        type: "error", 
+        message: e.response?.data?.message || "Failed to update ticket status. The ticket may already be closed."
+      }));
+      setStatus(ticket?.status || "Open"); // Revert
+    }
     finally { setIsSubmitting(false); }
   };
 
@@ -255,13 +265,24 @@ export default function TicketChat({ ticket, onClose }) {
                 messages.map((msg, i) => {
                   const isMe = msg.senderId?._id === userId || msg.senderId === userId;
                   const isSystem = msg.message?.startsWith("Updated ticket status");
-                  if (isSystem) return (
-                    <div key={msg._id || i} className="flex justify-center">
-                      <span className="text-[11px] text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                        {msg.message}
-                      </span>
-                    </div>
-                  );
+                  if (isSystem) {
+                    const senderName = msg.senderModel === "AdmissionPoint" 
+                      ? msg.senderId?.centerName 
+                      : msg.senderId?.fullName;
+                    const timeStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Just now";
+                    
+                    return (
+                      <div key={msg._id || i} className="flex justify-center my-3">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-[11px] text-muted-foreground bg-muted border border-border px-3 py-1 rounded-full shadow-sm">
+                            <span className="font-semibold text-foreground mr-1">{senderName}</span>
+                            {msg.message.replace(/^Updated ticket status to/, "changed status to")}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">{timeStr}</span>
+                        </div>
+                      </div>
+                    );
+                  }
                   return (
                     <motion.div key={msg._id || i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                       className={cn("flex", isMe ? "justify-end" : "justify-start")}>

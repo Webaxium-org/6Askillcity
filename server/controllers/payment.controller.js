@@ -4,6 +4,7 @@ import PaymentSchedule from "../models/paymentSchedule.js";
 import createError from "http-errors";
 import { v4 as uuidv4 } from "uuid";
 import mongoose from "mongoose";
+import { sendToAdmins } from "../services/notification.service.js";
 
 // ─────────────────────────────────────────────
 // Get all eligible students (Management List)
@@ -121,6 +122,14 @@ export const recordPayment = async (req, res, next) => {
       student: studentId,
       status: "Pending",
       dueDate: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    await sendToAdmins({
+      title: "Fee Payment Received",
+      message: `Payment of ₹${amount.toLocaleString()} received for student ${student.name}.`,
+      type: "payment_completed",
+      relatedId: payment._id,
+      link: "/dashboard/payment-management",
     });
 
     res.status(200).json({ success: true, message: "Payment recorded successfully.", data: payment });

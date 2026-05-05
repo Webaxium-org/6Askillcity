@@ -312,7 +312,9 @@ export default function EligibilityQueuePage() {
                         )}
                       </td>
                       <td className="px-5 py-4 text-sm text-muted-foreground whitespace-nowrap">
-                        {new Date(app.updatedAt).toLocaleDateString()}
+                        {app.applicationSubmittedDate 
+                          ? new Date(app.applicationSubmittedDate).toLocaleDateString() 
+                          : "N/A"}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>

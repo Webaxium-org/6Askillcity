@@ -1,6 +1,7 @@
 import Ticket from "../models/ticket.js";
 import TicketMessage from "../models/ticketMessage.js";
 import { getIo } from "./socket.service.js";
+import { sendToAdmins, sendToRecipient } from "./notification.service.js";
 
 // Helper to standardise pagination and sorting
 const getPaginationOptions = (query) => {
@@ -24,40 +25,20 @@ export const createTicket = async (data) => {
   if (io) {
     if (ticket.creatorModel === "AdmissionPoint") {
       // Notify all admins about a new ticket from a partner
-      io.to("admins").emit("notification", {
-        type: "new_ticket",
-        title: "New Support Ticket",
-        message: `New ticket created: "${ticket.title}"`,
-        ticketId: ticket._id,
-      });
+      await sendToAdmins({ title: "New Support Ticket", message: `New ticket created: "${ticket.title}"`, type: "new_ticket", relatedId: ticket._id, link: "/dashboard/tickets" });
       io.to("admins").emit("new_ticket_created", populatedTicket);
     } else {
       if (ticket.assignedToPartner) {
         const partnerRoom = `AdmissionPoint_${ticket.assignedToPartner._id || ticket.assignedToPartner}`;
-        io.to(partnerRoom).emit("notification", {
-          type: "new_ticket",
-          title: "New Ticket Received",
-          message: `Admin sent you a ticket: "${ticket.title}"`,
-          ticketId: ticket._id,
-        });
+        await sendToRecipient(ticket.assignedToPartner._id || ticket.assignedToPartner, "AdmissionPoint", { title: "New Ticket Received", message: `Admin sent you a ticket: "${ticket.title}"`, type: "new_ticket", relatedId: ticket._id, link: "/dashboard/tickets" });
         io.to(partnerRoom).emit("new_ticket_created", populatedTicket);
       } else if (ticket.assignedTo) {
         const targetUserRoom = `User_${ticket.assignedTo._id || ticket.assignedTo}`;
-        io.to(targetUserRoom).emit("notification", {
-          type: "new_ticket",
-          title: "New Ticket Assigned",
-          message: `You were assigned to ticket: "${ticket.title}"`,
-          ticketId: ticket._id,
-        });
+        await sendToRecipient(ticket.assignedTo._id || ticket.assignedTo, "User", { title: "New Ticket Assigned", message: `You were assigned to ticket: "${ticket.title}"`, type: "new_ticket", relatedId: ticket._id, link: "/dashboard/tickets" });
         io.to(targetUserRoom).emit("new_ticket_created", populatedTicket);
       }
       // If User (Admin) creates it, maybe notify specific admins or just rely on list fetch
-      io.to("admins").emit("notification", {
-        type: "new_ticket",
-        title: "New Internal Ticket",
-        message: `New ticket created: "${ticket.title}"`,
-        ticketId: ticket._id,
-      });
+      await sendToAdmins({ title: "New Internal Ticket", message: `New ticket created: "${ticket.title}"`, type: "new_ticket", relatedId: ticket._id, link: "/dashboard/tickets" });
       io.to("admins").emit("new_ticket_created", populatedTicket);
     }
   }
@@ -147,6 +128,10 @@ export const updateTicketStatus = async (
   const ticket = await Ticket.findById(ticketId);
   if (!ticket) throw new Error("Ticket not found");
 
+  if (ticket.status === "Closed") {
+    throw new Error("Cannot update status of a closed ticket");
+  }
+
   if (userType !== "admin") {
     const userIdStr = userId.toString();
     const isCreator = ticket.creatorId.toString() === userIdStr;
@@ -203,27 +188,23 @@ export const updateTicketStatus = async (
       targetRoom = `User_${ticket.creatorId}`;
     }
 
-    // Broadcast the new status message
-    if (targetRoom && targetRoom !== `User_${userId}` && targetRoom !== `AdmissionPoint_${userId}`) {
-      io.to(targetRoom).emit("new_ticket_message", populatedMsg);
-      io.to(targetRoom).emit("notification", {
-        type: "status_update",
-        title: "Ticket Status Updated",
-        message: `Status changed to ${status}`,
-        ticketId: ticket._id,
-      });
+    const isSenderAdmin = userType === "admin";
+    if (isSenderAdmin) {
+      if (targetRoom && targetRoom !== `User_${userId}`) {
+        io.to(targetRoom).emit("new_ticket_message", populatedMsg);
+        const targetId = targetRoom.split("_")[1]; 
+        const targetModel = targetRoom.split("_")[0]; 
+        await sendToRecipient(targetId, targetModel, { title: "Ticket Status Updated", message: `Status changed to ${status}`, type: "ticket_status_updated", relatedId: ticket._id, link: "/dashboard/tickets" });
+      }
+      io.to("admins").emit("new_ticket_message", populatedMsg);
+    } else {
+      io.to("admins").emit("new_ticket_message", populatedMsg);
+      await sendToAdmins({ title: "Ticket Status Updated", message: `Partner changed status to ${status}`, type: "ticket_status_updated", relatedId: ticket._id, link: "/dashboard/tickets" });
+      // Echo back to partner's room
+      io.to(`AdmissionPoint_${userId}`).emit("new_ticket_message", populatedMsg);
     }
-    
-    // Broadcast to admins
-    io.to("admins").emit("new_ticket_message", populatedMsg);
 
-    io.to(targetRoom).emit("notification", {
-      type: "ticket_status_updated",
-      title: "Ticket Update",
-      message: `Ticket "${ticket.title}" status changed to ${status}`,
-      ticketId: ticket._id,
-      status,
-    });
+    /* Removed redundant notification emit */
 
     // Broadcast ticket status update so UI can update lists
     io.to(targetRoom).emit("ticket_status_updated", {
@@ -282,12 +263,7 @@ export const addMessageToTicket = async (
     if (isSenderAdmin) {
       if (targetRoom && targetRoom !== `User_${senderId}`) {
         io.to(targetRoom).emit("new_ticket_message", populatedMsg);
-        io.to(targetRoom).emit("notification", {
-          type: "new_message",
-          title: "New Message on Ticket",
-          message: `New reply on ticket "${ticket.title}"`,
-          ticketId: ticket._id,
-        });
+        const targetId = targetRoom.split("_")[1]; const targetModel = targetRoom.split("_")[0]; await sendToRecipient(targetId, targetModel, { title: "New Message on Ticket", message: `New reply on ticket "${ticket.title}"`, type: "new_message", relatedId: ticket._id, link: "/dashboard/tickets" });
       }
 
       // Also broadcast to other admins observing the ticket
@@ -295,12 +271,7 @@ export const addMessageToTicket = async (
     } else {
       // Partner sends message, notify Admins
       io.to("admins").emit("new_ticket_message", populatedMsg);
-      io.to("admins").emit("notification", {
-        type: "new_message",
-        title: "New Message on Ticket",
-        message: `New reply from Partner on ticket "${ticket.title}"`,
-        ticketId: ticket._id,
-      });
+      await sendToAdmins({ title: "New Message on Ticket", message: `New reply from Partner on ticket "${ticket.title}"`, type: "new_message", relatedId: ticket._id, link: "/dashboard/tickets" });
       // And echo back to the partner's room (helpful for multiple sessions)
       if (targetRoom) {
         io.to(targetRoom).emit("new_ticket_message", populatedMsg);
