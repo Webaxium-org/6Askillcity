@@ -331,28 +331,30 @@ export const ReviewModal = ({
                       <Users className="w-3 h-3" /> Family Background
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-5 rounded-3xl bg-muted/30 border border-border flex justify-between items-center">
+                      <div className="p-5 rounded-3xl bg-muted/30 border border-border flex justify-between items-center group hover:border-primary/20 transition-colors">
                         <div>
                           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                             Father
                           </p>
                           <p className="text-sm font-bold">{app.fatherName}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs font-bold text-muted-foreground">
+                        <div className="text-right flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-xl border border-border group-hover:border-primary/10 transition-all">
+                          <Phone className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                          <p className="text-xs font-bold text-muted-foreground group-hover:text-foreground">
                             {app.fatherPhone}
                           </p>
                         </div>
                       </div>
-                      <div className="p-5 rounded-3xl bg-muted/30 border border-border flex justify-between items-center">
+                      <div className="p-5 rounded-3xl bg-muted/30 border border-border flex justify-between items-center group hover:border-primary/20 transition-colors">
                         <div>
                           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                             Mother
                           </p>
                           <p className="text-sm font-bold">{app.motherName}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs font-bold text-muted-foreground">
+                        <div className="text-right flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-xl border border-border group-hover:border-primary/10 transition-all">
+                          <Phone className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                          <p className="text-xs font-bold text-muted-foreground group-hover:text-foreground">
                             {app.motherPhone}
                           </p>
                         </div>

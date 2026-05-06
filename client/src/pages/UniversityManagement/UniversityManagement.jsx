@@ -18,6 +18,9 @@ import {
   ExternalLink,
   Info,
   GitBranch,
+  LayoutGrid,
+  List,
+  Filter,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -38,6 +41,7 @@ import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { handleFormError } from "../../utils/handleFormError";
 import { useNavigate } from "react-router-dom";
+import { cn } from "../../lib/utils";
 
 const tabs = [
   { id: "universities", label: "Universities", icon: Building2 },
@@ -54,6 +58,7 @@ export default function UniversityManagement() {
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState("grid");
 
   // Modals state
   const [isUniversityModalOpen, setIsUniversityModalOpen] = useState(false);
@@ -275,43 +280,54 @@ export default function UniversityManagement() {
   return (
     <DashboardLayout title="University Management">
       <div className="space-y-6">
-        {/* Header & Tabs */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border">
-          <div className="flex p-1 bg-muted rounded-xl w-full lg:w-fit overflow-x-auto scrollbar-hide whitespace-nowrap">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? "bg-background text-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
+        {/* Search & Controls Row - Image Style */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-border/50">
+          <div className="relative w-full lg:max-w-md group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder={`Search ${activeTab}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 bg-muted/30 border border-transparent focus:bg-background focus:border-primary/20 rounded-2xl text-sm outline-none transition-all font-medium placeholder:text-muted-foreground/40"
+            />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <input
-                type="text"
-                placeholder={`Search ${activeTab}...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-muted border-transparent focus:bg-background focus:border-primary/30 rounded-xl text-sm outline-none transition-all w-full lg:w-64 border"
-              />
+          <div className="flex items-center gap-3 self-end lg:self-auto">
+            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/50">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "p-2 rounded-lg transition-all",
+                  viewMode === "grid" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:bg-card/50"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "p-2 rounded-lg transition-all",
+                  viewMode === "list" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:bg-card/50"
+                )}
+              >
+                <List className="w-4 h-4" />
+              </button>
             </div>
+
+            <button className="flex items-center gap-2.5 px-5 py-3.5 bg-card border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-muted transition-all shadow-sm">
+              <Filter className="w-4 h-4" />
+              Advanced
+            </button>
+
+            {/* Action Buttons */}
             {activeTab === "universities" && (
               <button
                 onClick={() => {
                   setEditingUniversity(null);
                   setIsUniversityModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10"
               >
                 <Plus className="w-4 h-4" /> Add University
               </button>
@@ -322,7 +338,7 @@ export default function UniversityManagement() {
                   setEditingProgram(null);
                   setIsProgramModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10"
               >
                 <Plus className="w-4 h-4" /> Add Program
               </button>
@@ -333,11 +349,37 @@ export default function UniversityManagement() {
                   setEditingBranch(null);
                   setIsBranchModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10"
               >
                 <Plus className="w-4 h-4" /> Add Branch
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Tab Navigation Row - Image Style */}
+        <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+          <div className="flex items-center gap-3 min-w-max">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all relative overflow-hidden group border",
+                  activeTab === tab.id
+                    ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20"
+                    : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary",
+                )}
+              >
+                <tab.icon
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    activeTab === tab.id ? "text-white" : "text-muted-foreground group-hover:text-primary"
+                  )}
+                />
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -361,57 +403,126 @@ export default function UniversityManagement() {
               transition={{ duration: 0.3 }}
             >
               {activeTab === "universities" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <>
                   {filteredUniversities.length === 0 ? (
-                    <div className="col-span-full py-20 text-center text-muted-foreground">
-                      No universities found.
+                    <div className="py-20 text-center text-muted-foreground bg-card border border-dashed rounded-[2.5rem]">
+                      No universities found matching your search.
+                    </div>
+                  ) : viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredUniversities.map((uni) => (
+                        <div
+                          key={uni._id}
+                          className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-all group"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                              <Building2 className="w-6 h-6 text-primary" />
+                            </div>
+                            <button
+                              onClick={() => {
+                                setEditingUniversity(uni);
+                                setIsUniversityModalOpen(true);
+                              }}
+                              className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <h3 className="font-bold text-lg mb-1">{uni.name}</h3>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                            <MapPin className="w-3.5 h-3.5" />
+                            {uni.location}
+                          </div>
+                          <div className="pt-4 border-t border-border flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+                              <span
+                                className={`w-2 h-2 rounded-full ${uni.isActive ? "bg-emerald-500" : "bg-red-500"}`}
+                              />
+                              {uni.isActive ? "Active" : "Inactive"}
+                            </div>
+                            <button
+                              onClick={() => {
+                                setActiveTab("programs");
+                                setSearchTerm(uni.name);
+                              }}
+                              className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                            >
+                              View Programs <ChevronRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    filteredUniversities.map((uni) => (
-                      <div
-                        key={uni._id}
-                        className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-all group"
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                            <Building2 className="w-6 h-6 text-primary" />
-                          </div>
-                          <button
-                            onClick={() => {
-                              setEditingUniversity(uni);
-                              setIsUniversityModalOpen(true);
-                            }}
-                            className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <h3 className="font-bold text-lg mb-1">{uni.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                          <MapPin className="w-3.5 h-3.5" />
-                          {uni.location}
-                        </div>
-                        <div className="pt-4 border-t border-border flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-                            <span
-                              className={`w-2 h-2 rounded-full ${uni.isActive ? "bg-emerald-500" : "bg-red-500"}`}
-                            />
-                            {uni.isActive ? "Active" : "Inactive"}
-                          </div>
-                          <button
-                            onClick={() => {
-                              setActiveTab("programs");
-                              setSearchTerm(uni.name);
-                            }}
-                            className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
-                          >
-                            View Programs <ChevronRight className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    ))
+                    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-x-auto">
+                      <table className="w-full text-left border-collapse min-w-[700px]">
+                        <thead>
+                          <tr className="bg-muted/50 border-b border-border">
+                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              University Name
+                            </th>
+                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              Location
+                            </th>
+                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {filteredUniversities.map((uni) => (
+                            <tr
+                              key={uni._id}
+                              className="hover:bg-muted/30 transition-colors group"
+                            >
+                              <td className="px-6 py-4 font-bold">{uni.name}</td>
+                              <td className="px-6 py-4 text-sm text-muted-foreground">
+                                {uni.location}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span
+                                  className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                                    uni.isActive
+                                      ? "bg-emerald-500/10 text-emerald-600"
+                                      : "bg-red-500/10 text-red-600"
+                                  }`}
+                                >
+                                  {uni.isActive ? "Active" : "Inactive"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setActiveTab("programs");
+                                      setSearchTerm(uni.name);
+                                    }}
+                                    className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
+                                  >
+                                    <ChevronRight className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingUniversity(uni);
+                                      setIsUniversityModalOpen(true);
+                                    }}
+                                    className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
-                </div>
+                </>
               )}
 
               {activeTab === "programs" && (

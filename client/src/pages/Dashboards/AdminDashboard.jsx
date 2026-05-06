@@ -903,37 +903,35 @@ export default function AdminDashboard() {
 
               <div className="p-6 overflow-y-auto flex-1 space-y-8">
                 {/* General Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
                       <UserIcon className="w-4 h-4 text-purple-500" />
                       Licensee Details
                     </h4>
-                    <div className="space-y-3 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                       <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider mb-0.5">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
                           Full Name
                         </span>
-                        <span className="font-medium">
+                        <span className="font-bold text-foreground">
                           {viewDetailsPoint.licenseeName}
                         </span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider mb-0.5">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
                           Email Address
                         </span>
-                        <span className="font-medium flex items-center gap-2 text-foreground/80">
-                          <Mail className="w-3 h-3" />
+                        <span className="font-bold text-foreground break-all">
                           {viewDetailsPoint.licenseeEmail}
                         </span>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider mb-0.5">
-                          Contact Number
+                      <div className="flex flex-col sm:col-span-2">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Center Name
                         </span>
-                        <span className="font-medium flex items-center gap-2 text-foreground/80">
-                          <Phone className="w-3 h-3" />
-                          {viewDetailsPoint.licenseeContactNumber}
+                        <span className="font-black text-primary uppercase italic">
+                          {viewDetailsPoint.centerName}
                         </span>
                       </div>
                     </div>
@@ -941,36 +939,81 @@ export default function AdminDashboard() {
 
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
-                      <MapPin className="w-4 h-4 text-purple-500" />
-                      Geographic Location
+                      <MapPin className="w-4 h-4 text-blue-500" />
+                      Operational Location
                     </h4>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider mb-0.5">
-                          Address Line
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                      <div className="flex flex-col sm:col-span-2">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Address
                         </span>
-                        <span className="font-medium">
+                        <span className="font-bold text-foreground">
                           {viewDetailsPoint.location?.address || "N/A"}
                         </span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider mb-0.5">
-                          City & State
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          City / State
                         </span>
-                        <span className="font-medium">
+                        <span className="font-bold text-foreground">
                           {viewDetailsPoint.location?.city || "N/A"},{" "}
                           {viewDetailsPoint.location?.state || "N/A"}
                         </span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider mb-0.5">
-                          Country & Pincode
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Country / PIN
                         </span>
-                        <span className="font-medium">
+                        <span className="font-bold text-foreground">
                           {viewDetailsPoint.location?.country || "N/A"} -{" "}
                           {viewDetailsPoint.location?.pincode || "N/A"}
                         </span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
+                      <Phone className="w-4 h-4 text-emerald-500" />
+                      Contact Person
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Name
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.contactPerson?.name || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Phone
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.contactPerson?.phone || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
+                      <ShieldAlert className="w-4 h-4 text-rose-500" />
+                      Identity References
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                      {viewDetailsPoint.references?.map((ref, i) => (
+                        <div key={i} className="flex flex-col">
+                          <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                            Ref {i + 1}: {ref.name || "N/A"}
+                          </span>
+                          <span className="font-bold text-foreground flex items-center gap-2">
+                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            {ref.mobileNumber1 || "N/A"}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -978,12 +1021,20 @@ export default function AdminDashboard() {
                 {/* Docs Link Grid */}
                 {viewDetailsPoint.documents &&
                   Object.keys(viewDetailsPoint.documents).length > 0 && (
-                    <div className="pt-2">
-                      <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border pb-2">
-                        <FileText className="w-4 h-4 text-purple-500" />
-                        Uploaded Documentation
-                      </h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="pt-8 border-t border-border/50">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-purple-500" />
+                          </div>
+                          Verification Documents
+                        </h4>
+                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-wider">
+                          {Object.values(viewDetailsPoint.documents).flat().filter(Boolean).length} Files Attached
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Object.entries(viewDetailsPoint.documents).map(
                           ([key, value]) => {
                             if (
@@ -991,43 +1042,40 @@ export default function AdminDashboard() {
                               (Array.isArray(value) && value.length === 0)
                             )
                               return null;
+                            
                             const docLabel = key
                               .replace(/([A-Z])/g, " $1")
                               .replace(/^./, (str) => str.toUpperCase());
+                            
                             const formatUrl = (path) =>
                               `${import.meta.env.VITE_BASE_URL}/${path.replace(/\\/g, "/")}`;
 
-                            if (Array.isArray(value)) {
-                              return value.map((photoUrl, i) => (
-                                <a
-                                  key={`${key}-${i}`}
-                                  href={formatUrl(photoUrl)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-background hover:bg-muted/50 hover:border-primary/50 transition-all text-center gap-2 group shadow-sm"
-                                >
-                                  <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                  <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                                    Office Photo {i + 1}
-                                  </span>
-                                </a>
-                              ));
-                            }
+                            const items = Array.isArray(value) ? value : [value];
 
-                            return (
+                            return items.map((docUrl, i) => (
                               <a
-                                key={key}
-                                href={formatUrl(value)}
+                                key={`${key}-${i}`}
+                                href={formatUrl(docUrl)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex flex-col items-center justify-center p-4 rounded-xl border border-border bg-background hover:bg-muted/50 hover:border-primary/50 transition-all text-center gap-2 group shadow-sm"
+                                className="group relative flex items-center gap-4 p-4 rounded-2xl border border-border bg-muted/5 hover:bg-white dark:hover:bg-slate-900 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
                               >
-                                <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                                  {docLabel}
-                                </span>
+                                <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center border border-border group-hover:border-primary/10 transition-colors shadow-sm">
+                                  <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors truncate">
+                                    {docLabel}
+                                  </p>
+                                  <p className="text-xs font-bold text-foreground truncate">
+                                    {items.length > 1 ? `Attachment ${i + 1}` : "View Document"}
+                                  </p>
+                                </div>
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                </div>
                               </a>
-                            );
+                            ));
                           },
                         )}
                       </div>

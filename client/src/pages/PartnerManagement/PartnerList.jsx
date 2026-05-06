@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPartners, togglePartnerActive } from "../../api/partner.api";
+import { getUniversities } from "../../api/university.api.js";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { handleFormError } from "../../utils/handleFormError";
@@ -32,6 +33,8 @@ export default function PartnerList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [universityFilter, setUniversityFilter] = useState("all");
+  const [universities, setUniversities] = useState([]);
 
   // Advanced Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -44,7 +47,14 @@ export default function PartnerList() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, activeFilter, startDate, endDate]);
+  }, [
+    searchTerm,
+    statusFilter,
+    activeFilter,
+    universityFilter,
+    startDate,
+    endDate,
+  ]);
 
   const setQuickRange = (range) => {
     const today = new Date();
@@ -80,7 +90,19 @@ export default function PartnerList() {
 
   useEffect(() => {
     fetchPartners();
+    fetchUniversities();
   }, []);
+
+  const fetchUniversities = async () => {
+    try {
+      const res = await getUniversities();
+      if (res.success) {
+        setUniversities(res.data);
+      }
+    } catch (error) {
+      console.error("Error fetching universities:", error);
+    }
+  };
 
   const fetchPartners = async () => {
     setLoading(true);
@@ -128,6 +150,10 @@ export default function PartnerList() {
       activeFilter === "all" ||
       (activeFilter === "active" ? p.isActive : !p.isActive);
 
+    const matchesUniversity =
+      universityFilter === "all" ||
+      p.assignedUnis?.some((u) => u === universityFilter);
+
     // Date Range Filter
     if (startDate) {
       const start = new Date(startDate);
@@ -140,7 +166,9 @@ export default function PartnerList() {
       if (partnerDate > end) return false;
     }
 
-    return matchesSearch && matchesStatus && matchesActive;
+    return (
+      matchesSearch && matchesStatus && matchesActive && matchesUniversity
+    );
   });
 
   const totalPages = Math.ceil(filteredPartners.length / itemsPerPage);
@@ -172,6 +200,7 @@ export default function PartnerList() {
                 "px-6 py-3.5 rounded-2xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto",
                 statusFilter !== "all" ||
                   activeFilter !== "all" ||
+                  universityFilter !== "all" ||
                   startDate ||
                   endDate
                   ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
@@ -244,10 +273,23 @@ export default function PartnerList() {
                 </div>
               )}
 
+              {universityFilter !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[10px] font-bold text-purple-600 capitalize">
+                  University: {universityFilter}
+                  <button
+                    onClick={() => setUniversityFilter("all")}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   setStatusFilter("all");
                   setActiveFilter("all");
+                  setUniversityFilter("all");
                   setStartDate("");
                   setEndDate("");
                 }}
@@ -589,6 +631,40 @@ export default function PartnerList() {
                   </div>
                 </div>
 
+                {/* Assigned Universities */}
+                <div className="space-y-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/5 flex items-center justify-center text-purple-600">
+                      <GraduationCap className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        Assigned Universities
+                      </h4>
+                      <p className="text-[9px] font-bold text-muted-foreground">
+                        Filter by university network
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative group">
+                    <select
+                      value={universityFilter}
+                      onChange={(e) => setUniversityFilter(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-purple-500/30 focus:bg-white focus:ring-4 focus:ring-purple-500/5 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="all">All Universities</option>
+                      {universities.map((uni) => (
+                        <option key={uni._id} value={uni.name}>
+                          {uni.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-purple-500 transition-colors">
+                      <Filter className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Registration Period */}
                 <div className="space-y-5">
                   <div className="flex items-center gap-4">
@@ -656,6 +732,7 @@ export default function PartnerList() {
                   onClick={() => {
                     setStatusFilter("all");
                     setActiveFilter("all");
+                    setUniversityFilter("all");
                     setSearchTerm("");
                     setStartDate("");
                     setEndDate("");

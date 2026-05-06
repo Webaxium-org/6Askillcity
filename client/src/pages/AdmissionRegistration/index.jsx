@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect } from "react";
+import { Country, State, City } from "country-state-city";
+import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,6 +16,8 @@ import {
 } from "lucide-react";
 import { admissionRegistrationSchema } from "./schema";
 import { FormInput } from "@/components/ui/form-input";
+import { FormSelect } from "@/components/ui/form-select";
+import { FormSearchableSelect } from "@/components/ui/form-searchable-select";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -50,6 +53,113 @@ export default function AdmissionRegistration() {
       officePhotos: [],
     },
   });
+
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState({
+    countries: false,
+    states: false,
+    cities: false,
+  });
+
+  const selectedCountry = watch("country");
+  const selectedState = watch("state");
+
+  // Fetch Countries on Mount
+  useEffect(() => {
+    setLoadingStates((prev) => ({ ...prev, countries: true }));
+    try {
+      const allCountries = Country.getAllCountries().map((c) => ({
+        label: c.name,
+        value: c.name,
+        isoCode: c.isoCode,
+      }));
+      setCountries(allCountries);
+    } catch (error) {
+      console.error("Error fetching countries:", error);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, countries: false }));
+    }
+  }, []);
+
+  // Fetch States when Country changes
+  useEffect(() => {
+    if (!selectedCountry) {
+      setStates([]);
+      setCities([]);
+      setValue("state", "");
+      setValue("city", "");
+      return;
+    }
+
+    setLoadingStates((prev) => ({ ...prev, states: true }));
+    try {
+      const countryObj = Country.getAllCountries().find(
+        (c) => c.name === selectedCountry,
+      );
+      if (countryObj) {
+        const countryStates = State.getStatesOfCountry(countryObj.isoCode).map(
+          (s) => ({
+            label: s.name,
+            value: s.name,
+            isoCode: s.isoCode,
+          }),
+        );
+        setStates(countryStates);
+      } else {
+        setStates([]);
+      }
+    } catch (error) {
+      console.error("Error fetching states:", error);
+      setStates([]);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, states: false }));
+    }
+
+    setCities([]);
+    setValue("state", "");
+    setValue("city", "");
+  }, [selectedCountry, setValue]);
+
+  // Fetch Cities when State changes
+  useEffect(() => {
+    if (!selectedState || !selectedCountry) {
+      setCities([]);
+      setValue("city", "");
+      return;
+    }
+
+    setLoadingStates((prev) => ({ ...prev, cities: true }));
+    try {
+      const countryObj = Country.getAllCountries().find(
+        (c) => c.name === selectedCountry,
+      );
+      const stateObj = State.getStatesOfCountry(countryObj?.isoCode).find(
+        (s) => s.name === selectedState,
+      );
+
+      if (countryObj && stateObj) {
+        const stateCities = City.getCitiesOfState(
+          countryObj.isoCode,
+          stateObj.isoCode,
+        ).map((c) => ({
+          label: c.name,
+          value: c.name,
+        }));
+        setCities(stateCities);
+      } else {
+        setCities([]);
+      }
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+      setCities([]);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, cities: false }));
+    }
+
+    setValue("city", "");
+  }, [selectedState, selectedCountry, setValue]);
 
   const watchedValues = watch();
 
@@ -130,7 +240,8 @@ export default function AdmissionRegistration() {
       dispatch(
         showAlert({
           type: "success",
-          message: responseData.message || "Registration Successful!",
+          message:
+            "Your application has been received. We will notify you as soon as review is done. Thanks",
         }),
       );
       setTimeout(() => {
@@ -365,29 +476,52 @@ export default function AdmissionRegistration() {
                       className="text-slate-700 dark:text-slate-200"
                     />
                   </div>
-                  <FormInput
-                    label="Country"
-                    id="country"
-                    placeholder="Country"
-                    {...register("country")}
-                    error={errors.country}
-                    className="text-slate-700 dark:text-slate-200"
+                  <Controller
+                    name="country"
+                    control={control}
+                    render={({ field }) => (
+                      <FormSearchableSelect
+                        {...field}
+                        label="Country"
+                        placeholder="Select Country"
+                        options={countries}
+                        loading={loadingStates.countries}
+                        error={errors.country}
+                        className="text-slate-700 dark:text-slate-200"
+                      />
+                    )}
                   />
-                  <FormInput
-                    label="State"
-                    id="state"
-                    placeholder="State"
-                    {...register("state")}
-                    error={errors.state}
-                    className="text-slate-700 dark:text-slate-200"
+                  <Controller
+                    name="state"
+                    control={control}
+                    render={({ field }) => (
+                      <FormSearchableSelect
+                        {...field}
+                        label="State"
+                        placeholder="Select State"
+                        options={states}
+                        loading={loadingStates.states}
+                        disabled={!selectedCountry || loadingStates.states}
+                        error={errors.state}
+                        className="text-slate-700 dark:text-slate-200"
+                      />
+                    )}
                   />
-                  <FormInput
-                    label="City"
-                    id="city"
-                    placeholder="City"
-                    {...register("city")}
-                    error={errors.city}
-                    className="text-slate-700 dark:text-slate-200"
+                  <Controller
+                    name="city"
+                    control={control}
+                    render={({ field }) => (
+                      <FormSearchableSelect
+                        {...field}
+                        label="City"
+                        placeholder="Select City"
+                        options={cities}
+                        loading={loadingStates.cities}
+                        disabled={!selectedState || loadingStates.cities}
+                        error={errors.city}
+                        className="text-slate-700 dark:text-slate-200"
+                      />
+                    )}
                   />
                   <FormInput
                     label="Pincode"
