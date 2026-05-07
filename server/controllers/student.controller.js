@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
+import mongoose from "mongoose";
 import multer from "multer";
+import multerS3 from "multer-s3";
 import path from "path";
+import { s3, bucketName } from "../utils/s3Config.js";
 import Student from "../models/student.js";
 import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
@@ -9,14 +12,17 @@ import {
   sendToRecipient,
 } from "../services/notification.service.js";
 
-// Multer Local Storage Configuration mapping to Uploads Dir
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
+// S3 Storage Configuration
+const storage = multerS3({
+  s3: s3,
+  bucket: bucketName,
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename: (req, file, cb) => {
+  key: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `student-${file.fieldname}-${uuidv4()}${ext}`);
+    const studentId = req.studentId || "unknown";
+    cb(null, `students/${studentId}/${file.fieldname}-${uuidv4()}${ext}`);
   },
 });
 
@@ -35,6 +41,16 @@ const uploadParams = multer({
 ]);
 
 export const uploadStudentDocs = uploadParams;
+
+// Middleware to prepare student ID before upload
+export const prepareStudentId = (req, res, next) => {
+  if (req.params.id) {
+    req.studentId = req.params.id;
+  } else {
+    req.studentId = new mongoose.Types.ObjectId();
+  }
+  next();
+};
 
 // ─────────────────────────────────────────────
 // SHARED: Get a single student/application by ID
@@ -107,10 +123,10 @@ export const enrollStudent = async (req, res, next) => {
 
     const files = req.files || {};
 
-    const createDocObject = (filePath) => {
-      if (!filePath) return undefined;
+    const createDocObject = (file) => {
+      if (!file) return undefined;
       return {
-        path: filePath,
+        path: file.location, // S3 Public URL
         status: "Pending",
         uploadedAt: new Date(),
         uploadedBy: req.user?.userId,
@@ -120,13 +136,13 @@ export const enrollStudent = async (req, res, next) => {
 
     const createDocObjects = (filesArray) => {
       if (!filesArray) return [];
-      return filesArray.map((f) => createDocObject(f.path));
+      return filesArray.map((f) => createDocObject(f));
     };
 
     const extractPath = (field) => {
-      const filePath =
-        files[field] && files[field].length > 0 ? files[field][0].path : null;
-      return createDocObject(filePath);
+      const file =
+        files[field] && files[field].length > 0 ? files[field][0] : null;
+      return createDocObject(file);
     };
 
     const extractPaths = (field) => {
@@ -134,6 +150,7 @@ export const enrollStudent = async (req, res, next) => {
     };
 
     const student = new Student({
+      _id: req.studentId, // Use the pre-generated ID
       name: data.name,
       dob: data.dob || undefined,
       gender: data.gender,
@@ -377,10 +394,10 @@ export const updateStudentDetails = async (req, res, next) => {
     // Handle file re-uploads
     const files = req.files || {};
 
-    const createDocObject = (filePath) => {
-      if (!filePath) return undefined;
+    const createDocObject = (file) => {
+      if (!file) return undefined;
       return {
-        path: filePath,
+        path: file.location, // S3 Public URL
         status: "Pending",
         uploadedAt: new Date(),
         uploadedBy: req.user?.userId,
@@ -390,11 +407,11 @@ export const updateStudentDetails = async (req, res, next) => {
 
     const updatePath = (field, target) => {
       if (files[field] && files[field].length > 0)
-        student[target] = createDocObject(files[field][0].path);
+        student[target] = createDocObject(files[field][0]);
     };
     const updateNestedPath = (field, obj, subField) => {
       if (files[field] && files[field].length > 0)
-        student[obj][subField] = createDocObject(files[field][0].path);
+        student[obj][subField] = createDocObject(files[field][0]);
     };
 
     updatePath("idProof", "idProof");
@@ -406,12 +423,12 @@ export const updateStudentDetails = async (req, res, next) => {
 
     if (files.bachelorsCertificates) {
       student.bachelors.certificates = files.bachelorsCertificates.map((f) =>
-        createDocObject(f.path),
+        createDocObject(f),
       );
     }
     if (files.mastersCertificates) {
       student.masters.certificates = files.mastersCertificates.map((f) =>
-        createDocObject(f.path),
+        createDocObject(f),
       );
     }
 

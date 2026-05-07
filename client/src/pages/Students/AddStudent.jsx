@@ -469,13 +469,21 @@ export default function AddStudent() {
           // Set existing files as paths (string) so they show as "Attached"
           setFiles({
             idProof: s.idProof?.path || s.idProof || null,
-            tenthCertificate: s.tenth?.certificate?.path || s.tenth?.certificate || null,
-            plusTwoCertificate: s.plusTwo?.certificate?.path || s.plusTwo?.certificate || null,
-            bachelorsCertificates: (s.bachelors?.certificates || []).map(c => c.path || c),
-            mastersCertificates: (s.masters?.certificates || []).map(c => c.path || c),
+            tenthCertificate:
+              s.tenth?.certificate?.path || s.tenth?.certificate || null,
+            plusTwoCertificate:
+              s.plusTwo?.certificate?.path || s.plusTwo?.certificate || null,
+            bachelorsCertificates: (s.bachelors?.certificates || []).map(
+              (c) => c.path || c,
+            ),
+            mastersCertificates: (s.masters?.certificates || []).map(
+              (c) => c.path || c,
+            ),
             affidavit: s.affidavit?.path || s.affidavit || null,
-            migrationCertificate: s.migrationCertificate?.path || s.migrationCertificate || null,
-            projectSubmission: s.projectSubmission?.path || s.projectSubmission || null,
+            migrationCertificate:
+              s.migrationCertificate?.path || s.migrationCertificate || null,
+            projectSubmission:
+              s.projectSubmission?.path || s.projectSubmission || null,
           });
         }
       } catch (error) {

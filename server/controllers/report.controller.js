@@ -125,23 +125,63 @@ export const getAdmissionReport = async (req, res) => {
 
 export const getDocumentReport = async (req, res) => {
   try {
-    const { docType } = req.query; // 'affidavit', 'migration', 'general'
+    const { docType, startDate, endDate } = req.query; // 'affidavit', 'migration', 'project-submission'
 
-    let query = {};
-    if (docType === "affidavit") {
-      query = { affidavit: { $exists: true, $ne: "" } };
-    } else if (docType === "migration") {
-      query = { migrationCertificate: { $exists: true, $ne: "" } };
+    let field = docType;
+    if (docType === "migration") field = "migrationCertificate";
+    if (docType === "project-submission") field = "projectSubmission";
+
+    // Summary Stats (Total, Uploaded, Pending)
+    const stats = await Student.aggregate([
+      {
+        $facet: {
+          total: [{ $count: "count" }],
+          uploaded: [
+            {
+              $match: {
+                [`${field}.path`]: { $exists: true, $ne: null, $ne: "" },
+              },
+            },
+            { $count: "count" },
+          ],
+        },
+      },
+    ]);
+
+    const totalCount = stats[0].total[0]?.count || 0;
+    const uploadedGlobalCount = stats[0].uploaded[0]?.count || 0;
+    const pendingCount = totalCount - uploadedGlobalCount;
+
+    // Filtered Query for List
+    let listQuery = {};
+    if (startDate || endDate) {
+      listQuery[`${field}.uploadedAt`] = {};
+      if (startDate) listQuery[`${field}.uploadedAt`].$gte = new Date(startDate);
+      if (endDate) listQuery[`${field}.uploadedAt`].$lte = new Date(endDate);
+      // If filtering by date, only show those who uploaded
+      listQuery[`${field}.path`] = { $exists: true, $ne: null, $ne: "" };
     }
 
-    const data = await Student.find(query)
+    const students = await Student.find(listQuery)
       .select(
-        "name email phone university program applicationStatus affidavit migrationCertificate",
+        `name email phone university program applicationStatus ${field}`,
       )
       .populate("university", "name")
-      .populate("program", "name");
+      .populate("program", "name")
+      .sort({ [`${field}.uploadedAt`]: -1 });
 
-    res.json({ success: true, data });
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          total: totalCount,
+          uploaded: uploadedGlobalCount,
+          pending: pendingCount,
+          filteredCount: students.length,
+        },
+        students,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

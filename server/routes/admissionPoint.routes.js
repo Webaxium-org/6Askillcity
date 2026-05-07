@@ -13,13 +13,14 @@ import {
   removePartnerPermission,
   getMyPartnerProfile,
   generateAdminAccessToken,
+  preparePartnerId,
 } from "../controllers/admissionPoint.controller.js";
 import { getPartnerDashboardStats, getPermittedCourses } from "../controllers/partner.controller.js";
 import { isAuthorized, requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/register", uploadAdmissionFiles, createAdmissionPoint);
+router.post("/register", preparePartnerId, uploadAdmissionFiles, createAdmissionPoint);
 
 router.get("/profile/me", requireAuth, isAuthorized({ types: ["partner"] }), getMyPartnerProfile);
 router.get("/stats", requireAuth, isAuthorized({ types: ["partner"] }), getPartnerDashboardStats);

@@ -1,19 +1,24 @@
 import { v4 as uuidv4 } from "uuid";
+import mongoose from "mongoose";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import multer from "multer";
+import multerS3 from "multer-s3";
 import path from "path";
+import { s3, bucketName } from "../utils/s3Config.js";
 import { generateStrongPassword } from "../helper/index.js";
 
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Save files locally to uploads directory
-    cb(null, "uploads/");
+// S3 Storage Configuration
+const storage = multerS3({
+  s3: s3,
+  bucket: bucketName,
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename: (req, file, cb) => {
+  key: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uuidv4()}${ext}`);
+    const partnerId = req.partnerId || "unknown";
+    cb(null, `partners/${partnerId}/${file.fieldname}-${uuidv4()}${ext}`);
   },
 });
 
@@ -53,6 +58,20 @@ const logActivity = async (
 
 export const uploadAdmissionFiles = uploadParams;
 
+// Middleware to prepare partner ID before upload
+export const preparePartnerId = (req, res, next) => {
+  // If editing an existing partner, use their ID from params
+  if (req.params.id) {
+    req.partnerId = req.params.id;
+  } else if (req.params.partnerId) {
+    req.partnerId = req.params.partnerId;
+  } else {
+    // For new registrations, generate a new ID
+    req.partnerId = new mongoose.Types.ObjectId();
+  }
+  next();
+};
+
 export const createAdmissionPoint = async (req, res, next) => {
   try {
     const data = req.body;
@@ -80,13 +99,14 @@ export const createAdmissionPoint = async (req, res, next) => {
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
         if (documents.hasOwnProperty(file.fieldname)) {
-          documents[file.fieldname].push(file.path);
+          documents[file.fieldname].push(file.location); // S3 URL
         }
       });
     }
 
     // Format structure dynamically according to model
     const admissionPoint = new AdmissionPoint({
+      _id: req.partnerId, // Use the pre-generated ID
       centerName: data.centerName,
       licenseeName: data.licenseeName,
       licenseeEmail: data.licenseeEmail,

@@ -5,6 +5,7 @@ import { isAuthorized, requireAuth } from "../middleware/auth.js";
 import {
   enrollStudent,
   uploadStudentDocs,
+  prepareStudentId,
   getMyStudents,
   getStudentById,
   updateStudentDetails,
@@ -23,6 +24,7 @@ router.use(requireAuth);
 router.post(
   "/register",
   isAuthorized({ types: ["partner"] }),
+  prepareStudentId,
   uploadStudentDocs,
   enrollStudent
 );
@@ -55,6 +57,7 @@ router.get(
 router.put(
   "/:id",
   isAuthorized({ types: ["partner"] }),
+  prepareStudentId,
   uploadStudentDocs,
   updateStudentDetails
 );

@@ -1,14 +1,18 @@
 import multer from "multer";
+import multerS3 from "multer-s3";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
+import { s3, bucketName } from "../utils/s3Config.js";
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
+const storage = multerS3({
+  s3: s3,
+  bucket: bucketName,
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename: (req, file, cb) => {
+  key: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `ocr-${uuidv4()}${ext}`);
+    cb(null, `ocr/ocr-${uuidv4()}${ext}`);
   },
 });
 

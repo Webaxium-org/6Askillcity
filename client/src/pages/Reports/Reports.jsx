@@ -40,7 +40,8 @@ const reports = [
   {
     id: "financial-report",
     title: "Financial Distribution Report",
-    description: "Revenue breakdown: To 6A, to Team, and to University (Percentage wise).",
+    description:
+      "Revenue breakdown: To 6A, to Team, and to University (Percentage wise).",
     category: "financial",
     icon: PieChart,
     color: "bg-emerald-500",
@@ -71,14 +72,6 @@ const reports = [
     icon: GraduationCap,
     color: "bg-purple-500",
   },
-  {
-    id: "sem-wise",
-    title: "Semester Wise Report",
-    description: "Tracking student progress and status across semesters.",
-    category: "academic",
-    icon: BookOpen,
-    color: "bg-sky-500",
-  },
 
   // Documentation
   {
@@ -98,35 +91,36 @@ const reports = [
     color: "bg-orange-500",
   },
   {
-    id: "docs-report",
-    title: "Documents Report",
-    description: "General verification status for primary student documents.",
-    category: "documents",
-    icon: Files,
-    color: "bg-yellow-500",
-  },
-  {
-    id: "mandatory-docs",
-    title: "Mandatory Additional Doc",
-    description: "Compliance tracking for required institutional documents.",
+    id: "project-submission",
+    title: "Project Submission Report",
+    description: "Compliance tracking for student academic project submissions.",
     category: "documents",
     icon: FileCheck,
-    color: "bg-rose-500",
+    color: "bg-emerald-500",
   },
-  {
-    id: "optional-docs",
-    title: "Optional Additional Doc",
-    description: "Review of non-mandatory supplementary documents.",
-    category: "documents",
-    icon: FileText,
-    color: "bg-pink-500",
-  },
+  // {
+  //   id: "mandatory-docs",
+  //   title: "Mandatory Additional Doc",
+  //   description: "Compliance tracking for required institutional documents.",
+  //   category: "documents",
+  //   icon: FileCheck,
+  //   color: "bg-rose-500",
+  // },
+  // {
+  //   id: "optional-docs",
+  //   title: "Optional Additional Doc",
+  //   description: "Review of non-mandatory supplementary documents.",
+  //   category: "documents",
+  //   icon: FileText,
+  //   color: "bg-pink-500",
+  // },
 
   // Admissions
   {
     id: "admission-report",
     title: "Admission Intelligence Report",
-    description: "Consolidated admission analytics with dynamic date range filtering (Daily, Weekly, Monthly, Yearly).",
+    description:
+      "Consolidated admission analytics with dynamic date range filtering (Daily, Weekly, Monthly, Yearly).",
     category: "admissions",
     icon: TrendingUp,
     color: "bg-emerald-600",
@@ -158,7 +152,11 @@ export default function Reports() {
   const handleReportClick = (report) => {
     if (report.id === "fee-wise") {
       navigate("/dashboard/payment-management");
-    } else if (report.id === "admission-report") {
+    } else if (
+      report.id === "admission-report" ||
+      report.id === "batch-wise" ||
+      report.id === "course-wise"
+    ) {
       navigate("/dashboard/student-management");
     } else if (report.id === "center-admission") {
       navigate("/dashboard/partner-management");
@@ -168,16 +166,17 @@ export default function Reports() {
   };
 
   const filteredReports = reports.filter((report) => {
-    const matchesCategory = activeCategory === "all" || report.category === activeCategory;
-    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         report.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      activeCategory === "all" || report.category === activeCategory;
+    const matchesSearch =
+      report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   return (
     <DashboardLayout title="Reports Center">
       <div className="max-w-7xl mx-auto space-y-8 pb-20">
-        
         {/* Header Section */}
         <div className="relative overflow-hidden p-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-[3rem] border border-border/50">
           <div className="relative z-10 max-w-2xl">
@@ -189,17 +188,20 @@ export default function Reports() {
               <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">Intelligence Hub</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+                Intelligence Hub
+              </span>
             </motion.div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-6 leading-[1.1]">
-              Operational <span className="text-primary">Intelligence</span> & Reporting
+              Operational <span className="text-primary">Intelligence</span> &
+              Reporting
             </h1>
             <p className="text-lg text-muted-foreground font-medium leading-relaxed">
-              Access comprehensive data breakdowns across academic cycles, financial distributions, 
-              and administrative compliance metrics.
+              Access comprehensive data breakdowns across academic cycles,
+              financial distributions, and administrative compliance metrics.
             </p>
           </div>
-          
+
           {/* Decorative Blobs */}
           <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
           <div className="absolute right-40 bottom-0 w-60 h-60 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none" />
@@ -224,7 +226,9 @@ export default function Reports() {
                 onClick={() => setViewMode("grid")}
                 className={cn(
                   "p-2 rounded-lg transition-all",
-                  viewMode === "grid" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:bg-card/50"
+                  viewMode === "grid"
+                    ? "bg-card text-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-card/50",
                 )}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -233,7 +237,9 @@ export default function Reports() {
                 onClick={() => setViewMode("list")}
                 className={cn(
                   "p-2 rounded-lg transition-all",
-                  viewMode === "list" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:bg-card/50"
+                  viewMode === "list"
+                    ? "bg-card text-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-card/50",
                 )}
               >
                 <List className="w-4 h-4" />
@@ -257,7 +263,7 @@ export default function Reports() {
                   "flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all relative overflow-hidden group",
                   activeCategory === category.id
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "bg-card border border-border text-muted-foreground hover:border-primary/50 hover:text-primary"
+                    : "bg-card border border-border text-muted-foreground hover:border-primary/50 hover:text-primary",
                 )}
               >
                 <category.icon className="w-4 h-4" />
@@ -284,7 +290,11 @@ export default function Reports() {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {filteredReports.map((report) => (
-                <ReportCard key={report.id} report={report} onClick={() => handleReportClick(report)} />
+                <ReportCard
+                  key={report.id}
+                  report={report}
+                  onClick={() => handleReportClick(report)}
+                />
               ))}
             </motion.div>
           ) : (
@@ -296,7 +306,11 @@ export default function Reports() {
               className="space-y-3"
             >
               {filteredReports.map((report) => (
-                <ReportListItem key={report.id} report={report} onClick={() => handleReportClick(report)} />
+                <ReportListItem
+                  key={report.id}
+                  report={report}
+                  onClick={() => handleReportClick(report)}
+                />
               ))}
             </motion.div>
           )}
@@ -305,7 +319,9 @@ export default function Reports() {
         {filteredReports.length === 0 && (
           <div className="py-32 text-center bg-card/30 rounded-[3rem] border border-dashed border-border">
             <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-            <p className="text-muted-foreground font-bold italic">No reports match your current filter.</p>
+            <p className="text-muted-foreground font-bold italic">
+              No reports match your current filter.
+            </p>
           </div>
         )}
       </div>
@@ -320,11 +336,18 @@ function ReportCard({ report, onClick }) {
       onClick={onClick}
       className="group bg-card border border-border rounded-[2.5rem] p-8 text-left hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10 transition-all relative overflow-hidden"
     >
-      <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-black/5 group-hover:scale-110 transition-transform duration-500", report.color)}>
+      <div
+        className={cn(
+          "w-16 h-16 rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-black/5 group-hover:scale-110 transition-transform duration-500",
+          report.color,
+        )}
+      >
         <report.icon className="w-8 h-8 text-white" />
       </div>
-      
-      <h3 className="text-xl font-black mb-3 leading-tight group-hover:text-primary transition-colors">{report.title}</h3>
+
+      <h3 className="text-xl font-black mb-3 leading-tight group-hover:text-primary transition-colors">
+        {report.title}
+      </h3>
       <p className="text-sm text-muted-foreground font-medium leading-relaxed mb-8">
         {report.description}
       </p>
@@ -351,13 +374,22 @@ function ReportListItem({ report, onClick }) {
       onClick={onClick}
       className="w-full flex items-center gap-4 sm:gap-6 p-4 bg-card/80 border border-border rounded-2xl hover:border-primary/30 hover:bg-card transition-all group overflow-hidden"
     >
-      <div className={cn("w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0", report.color)}>
+      <div
+        className={cn(
+          "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0",
+          report.color,
+        )}
+      >
         <report.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
       </div>
-      
+
       <div className="flex-1 text-left min-w-0">
-        <h4 className="font-black text-sm sm:text-base group-hover:text-primary transition-colors truncate">{report.title}</h4>
-        <p className="text-xs text-muted-foreground font-medium truncate">{report.description}</p>
+        <h4 className="font-black text-sm sm:text-base group-hover:text-primary transition-colors truncate">
+          {report.title}
+        </h4>
+        <p className="text-xs text-muted-foreground font-medium truncate">
+          {report.description}
+        </p>
       </div>
 
       <div className="flex items-center gap-4">

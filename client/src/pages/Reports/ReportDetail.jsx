@@ -77,10 +77,13 @@ export default function ReportDetail() {
           res = await getAdmissionReport("center", { startDate, endDate });
           break;
         case "affidavit":
-          res = await getDocumentReport("affidavit");
+          res = await getDocumentReport("affidavit", { startDate, endDate });
           break;
         case "migration":
-          res = await getDocumentReport("migration");
+          res = await getDocumentReport("migration", { startDate, endDate });
+          break;
+        case "project-submission":
+          res = await getDocumentReport("project-submission", { startDate, endDate });
           break;
         case "financial-report":
           res = await getFinancialReport();
@@ -215,6 +218,67 @@ export default function ReportDetail() {
       );
     }
 
+    if (["affidavit", "migration", "project-submission"].includes(reportId)) {
+      const field = reportId === "migration" ? "migrationCertificate" : reportId === "project-submission" ? "projectSubmission" : "affidavit";
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest">
+                  Student Info
+                </th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest">
+                  University & Program
+                </th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-center">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-right">
+                  Uploaded At
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {data.students.map((student, idx) => {
+                const doc = student[field];
+                return (
+                  <tr key={idx} className="hover:bg-muted/10 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold">{student.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{student.email}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-xs font-bold">{student.university?.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{student.program?.name}</div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {doc?.path ? (
+                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                          doc.status === 'Verified' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 
+                          doc.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' : 
+                          'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                        }`}>
+                          {doc.status}
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-slate-100 text-slate-400">
+                          Not Uploaded
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-xs">
+                      {doc?.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "N/A"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
     // Default aggregation table
     return (
       <div className="overflow-x-auto">
@@ -303,9 +367,11 @@ export default function ReportDetail() {
               </div>
 
               {(reportId === "admission-report" ||
-                reportId === "center-admission") && (
+                reportId === "center-admission" ||
+                ["affidavit", "migration", "project-submission"].includes(reportId)) && (
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col gap-1">
+                    <label className="text-[8px] font-black uppercase text-muted-foreground ml-1">From</label>
                     <input
                       type="date"
                       value={startDate}
@@ -313,8 +379,9 @@ export default function ReportDetail() {
                       className="px-3 py-2 bg-card border border-border rounded-xl text-[10px] font-bold outline-none focus:border-primary/50 transition-all"
                     />
                   </div>
-                  <span className="text-muted-foreground font-bold">to</span>
+                  <span className="text-muted-foreground font-bold mt-4">to</span>
                   <div className="flex flex-col gap-1">
+                    <label className="text-[8px] font-black uppercase text-muted-foreground ml-1">To</label>
                     <input
                       type="date"
                       value={endDate}
@@ -454,17 +521,40 @@ export default function ReportDetail() {
               <p className="text-3xl font-black">
                 {reportId === "financial-report"
                   ? "₹" + data.total.toLocaleString()
+                  : ["affidavit", "migration", "project-submission"].includes(reportId)
+                  ? data.summary.total
                   : data.reduce((acc, curr) => acc + curr.count, 0)}
               </p>
             </div>
-            <div className="p-6 bg-card border border-border rounded-[2rem] shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-                Report Category
-              </p>
-              <p className="text-xl font-black text-primary capitalize">
-                {reportId.split("-")[0]}
-              </p>
-            </div>
+            {["affidavit", "migration", "project-submission"].includes(reportId) ? (
+              <>
+                <div className="p-6 bg-card border border-border rounded-[2rem] shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-1">
+                    Uploaded
+                  </p>
+                  <p className="text-3xl font-black text-emerald-600">
+                    {data.summary.uploaded}
+                  </p>
+                </div>
+                <div className="p-6 bg-card border border-border rounded-[2rem] shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-1">
+                    Pending
+                  </p>
+                  <p className="text-3xl font-black text-rose-600">
+                    {data.summary.pending}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="p-6 bg-card border border-border rounded-[2rem] shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+                  Report Category
+                </p>
+                <p className="text-xl font-black text-primary capitalize">
+                  {reportId.split("-")[0]}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   CheckCircle2,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getManagementStudents } from "../../api/payment.api";
@@ -43,8 +44,18 @@ export default function StudentList() {
   const [selectedUni, setSelectedUni] = useState("all");
   const [selectedProg, setSelectedProg] = useState("all");
   const [selectedPartner, setSelectedPartner] = useState("all");
+  const [selectedBatch, setSelectedBatch] = useState("all");
   const [partners, setPartners] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("created"); // created, approved
+  
+  const batches = (() => {
+    const b = [];
+    const currentYear = new Date().getFullYear();
+    for (let y = 2024; y <= currentYear + 3; y++) {
+      b.push(`Jan-${y}`, `June-${y}`);
+    }
+    return b;
+  })();
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +63,7 @@ export default function StudentList() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, startDate, endDate, selectedUni, selectedProg, filterType, selectedPartner, dateFilterType]);
+  }, [search, startDate, endDate, selectedUni, selectedProg, filterType, selectedPartner, selectedBatch, dateFilterType]);
 
   const setQuickRange = (range) => {
     const today = new Date();
@@ -93,30 +104,40 @@ export default function StudentList() {
 
   const fetchFilterData = async () => {
     try {
-      const { getUniversities } = await import("../../api/university.api");
+      const { getUniversities, getPrograms } = await import("../../api/university.api");
       
       if (isAdmin || isManager) {
         const { getAllApprovedAdmissionPoints } = await import("../../api/admissionPoint.api");
-        const [uniRes, partnerRes] = await Promise.all([
+        const [uniRes, partnerRes, progRes] = await Promise.all([
           getUniversities(),
-          getAllApprovedAdmissionPoints()
+          getAllApprovedAdmissionPoints(),
+          getPrograms()
         ]);
         if (uniRes.success) setUniversities(uniRes.data);
         if (partnerRes.success) setPartners(partnerRes.data);
+        if (progRes.success) setPrograms(progRes.data);
       } else {
         const { getPermittedCourses } = await import("../../api/partner.api");
         const res = await getPermittedCourses();
         if (res.success) {
           const permittedUnis = [];
+          const permittedProgs = [];
           const uniIds = new Set();
+          const progIds = new Set();
           res.data.forEach(item => {
             const uni = item.university;
+            const prog = item.program;
             if (uni && !uniIds.has(uni._id)) {
               uniIds.add(uni._id);
               permittedUnis.push(uni);
             }
+            if (prog && !progIds.has(prog._id)) {
+              progIds.add(prog._id);
+              permittedProgs.push(prog);
+            }
           });
           setUniversities(permittedUnis);
+          setPrograms(permittedProgs);
         }
       }
     } catch (error) {
@@ -181,6 +202,9 @@ export default function StudentList() {
 
     // Partner Filter
     if ((isAdmin || isManager) && selectedPartner !== "all" && s.registeredBy !== selectedPartner) return false;
+
+    // Batch Filter
+    if (selectedBatch !== "all" && s.batch !== selectedBatch) return false;
 
     return true;
   });
@@ -345,7 +369,7 @@ export default function StudentList() {
 
         {/* Active Filter Chips */}
         <AnimatePresence>
-          {(startDate || endDate || selectedUni !== "all" || selectedPartner !== "all") && (
+          {(startDate || endDate || selectedUni !== "all" || selectedProg !== "all" || selectedPartner !== "all" || selectedBatch !== "all") && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -361,7 +385,23 @@ export default function StudentList() {
                   University:{" "}
                   {universities.find((u) => u._id === selectedUni)?.name}
                   <button
-                    onClick={() => setSelectedUni("all")}
+                    onClick={() => {
+                      setSelectedUni("all");
+                      setSelectedProg("all");
+                    }}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {selectedProg !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[10px] font-bold text-indigo-600">
+                  Course:{" "}
+                  {programs.find((p) => p._id === selectedProg)?.name}
+                  <button
+                    onClick={() => setSelectedProg("all")}
                     className="hover:text-rose-500"
                   >
                     <X className="w-3 h-3" />
@@ -389,12 +429,26 @@ export default function StudentList() {
                 </div>
               ) : null}
 
+              {selectedBatch !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[10px] font-bold text-amber-600">
+                  Batch: {selectedBatch}
+                  <button
+                    onClick={() => setSelectedBatch("all")}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   setStartDate("");
                   setEndDate("");
                   setSelectedUni("all");
+                  setSelectedProg("all");
                   setSelectedPartner("all");
+                  setSelectedBatch("all");
                 }}
                 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 hover:underline ml-2"
               >
@@ -735,7 +789,10 @@ export default function StudentList() {
                     </div>
                     <select
                       value={selectedUni}
-                      onChange={(e) => setSelectedUni(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedUni(e.target.value);
+                        setSelectedProg("all");
+                      }}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all appearance-none"
                     >
                       <option value="all">Global (All)</option>
@@ -746,6 +803,39 @@ export default function StudentList() {
                       ))}
                     </select>
                   </div>
+
+                  {/* Program/Course */}
+                  {selectedUni !== "all" && (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-500/5 flex items-center justify-center text-indigo-600">
+                          <GraduationCap className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                            Course
+                          </h4>
+                          <p className="text-[9px] font-bold text-muted-foreground">
+                            Select academic program
+                          </p>
+                        </div>
+                      </div>
+                      <select
+                        value={selectedProg}
+                        onChange={(e) => setSelectedProg(e.target.value)}
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-indigo-500/30 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none"
+                      >
+                        <option value="all">All Courses</option>
+                        {programs
+                          .filter((prog) => (prog.university?._id || prog.university) === selectedUni)
+                          .map((prog) => (
+                            <option key={prog._id} value={prog._id}>
+                              {prog.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
 
                   {(isAdmin || isManager) && (
                     <div className="space-y-5">
@@ -776,6 +866,35 @@ export default function StudentList() {
                       </select>
                     </div>
                   )}
+
+                  {/* Batch */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/5 flex items-center justify-center text-amber-600">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Enrollment Batch
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Filter by student intake
+                        </p>
+                      </div>
+                    </div>
+                    <select
+                      value={selectedBatch}
+                      onChange={(e) => setSelectedBatch(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-amber-500/30 focus:bg-white focus:ring-4 focus:ring-amber-500/5 transition-all appearance-none"
+                    >
+                      <option value="all">Global (All Batches)</option>
+                      {batches.map((batch) => (
+                        <option key={batch} value={batch}>
+                          {batch}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
                   {/* Registration Range */}
                   <div className="space-y-5">
@@ -864,7 +983,9 @@ export default function StudentList() {
                       setStartDate("");
                       setEndDate("");
                       setSelectedUni("all");
+                      setSelectedProg("all");
                       setSelectedPartner("all");
+                      setSelectedBatch("all");
                       setFilterType("all");
                       setDateFilterType("created");
                     }}

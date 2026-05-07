@@ -2,6 +2,8 @@ import vision from "@google-cloud/vision";
 import createError from "http-errors";
 import fs from "fs";
 import path from "path";
+import { s3, bucketName } from "../utils/s3Config.js";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 // Initialize the client
 let client = null;
@@ -24,18 +26,35 @@ try {
 
 export const scanCertificate = async (req, res, next) => {
   try {
-    if (!req.file) {
+    const imageFile = req.file;
+    if (!imageFile) {
       throw createError(400, "Please upload a certificate image.");
     }
 
-    const imagePath = req.file.path;
+    let imageContent;
+    
+    // Handle S3 storage
+    if (imageFile.key) {
+      const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: imageFile.key,
+      });
+      const response = await s3.send(command);
+      const byteArray = await response.Body.transformToByteArray();
+      imageContent = Buffer.from(byteArray);
+    } else {
+      // Fallback for local storage (if any still exists)
+      imageContent = imageFile.path;
+    }
+
     let fullText = "";
     let extractionSuccessful = false;
 
     if (client) {
       try {
         console.log("🚀 Starting Google Cloud Vision scan...");
-        const [result] = await client.textDetection(imagePath);
+        // Pass imageContent (buffer or path)
+        const [result] = await client.textDetection(imageContent);
         const detections = result.textAnnotations;
         
         if (detections && detections.length > 0) {
