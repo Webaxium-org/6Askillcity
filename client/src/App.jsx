@@ -27,6 +27,7 @@ import TicketsPage from "./pages/Tickets/TicketsPage";
 import AlertManager from "./components/global/AlertManager";
 import Reports from "./pages/Reports/Reports";
 import ReportDetail from "./pages/Reports/ReportDetail";
+import NotificationsPage from "./pages/Notifications/NotificationsPage";
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
               </Route>
               <Route path="/dashboard/profile" element={<MyProfile />} />
               <Route path="/dashboard/courses" element={<PartnerCourses />} />
+              <Route path="/dashboard/notifications" element={<NotificationsPage />} />
               <Route
                 element={<ProtectedRoute allowedRoles={["partner", "admin", "manager"]} />}
               >
