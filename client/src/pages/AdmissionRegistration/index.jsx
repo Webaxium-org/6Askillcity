@@ -54,6 +54,10 @@ export default function AdmissionRegistration() {
     },
   });
 
+  useEffect(() => {
+    docFields.forEach((field) => register(field.id));
+  }, [register]);
+
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
@@ -556,6 +560,9 @@ export default function AdmissionRegistration() {
                             {field.label}
                           </h3>
                         </div>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mb-6 -mt-4 opacity-60">
+                          Max size: 5MB (JPG, PNG, PDF)
+                        </p>
 
                         <div className="space-y-3 mb-8">
                           <AnimatePresence mode="popLayout">

@@ -28,7 +28,10 @@ export const getPartnerDashboardStats = async (req, res, next) => {
         }),
         Student.countDocuments({ registeredBy: partnerId }),
         Ticket.countDocuments({
-          partnerId,
+          $or: [
+            { creatorId: partnerObjectId, creatorModel: "AdmissionPoint" },
+            { assignedToPartner: partnerObjectId }
+          ],
           status: { $in: ["Open", "In Progress", "Postponed"] },
         }),
         Payment.aggregate([

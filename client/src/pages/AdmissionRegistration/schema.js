@@ -35,34 +35,59 @@ export const admissionRegistrationSchema = yup.object().shape({
   pincode: yup.string().required('Pincode is required'),
 
   // Step 3: Documents
-  licenseePhoto: yup.mixed().test('required', 'Licensee Photo is required', (value) => {
-    if (!value) return false;
-    if (Array.isArray(value)) return value.length > 0;
-    if (value instanceof FileList) return value.length > 0;
-    return !!value;
-  }),
-  licenseeAadharCard: yup.mixed().test('required', 'Aadhar Card is required', (value) => {
-    if (!value) return false;
-    if (Array.isArray(value)) return value.length > 0;
-    if (value instanceof FileList) return value.length > 0;
-    return !!value;
-  }),
-  businessLicense: yup.mixed().test('required', 'Business License is required', (value) => {
-    if (!value) return false;
-    if (Array.isArray(value)) return value.length > 0;
-    if (value instanceof FileList) return value.length > 0;
-    return !!value;
-  }),
-  ownershipRentalAgreement: yup.mixed().test('required', 'Ownership/Rental Agreement is required', (value) => {
-    if (!value) return false;
-    if (Array.isArray(value)) return value.length > 0;
-    if (value instanceof FileList) return value.length > 0;
-    return !!value;
-  }),
-  officePhotos: yup.mixed().test('required', 'Office Photos are required', (value) => {
-    if (!value) return false;
-    if (Array.isArray(value)) return value.length > 0;
-    if (value instanceof FileList) return value.length > 0;
-    return !!value;
-  }),
+  licenseePhoto: yup.mixed()
+    .test('required', 'Licensee Photo is required', (value) => {
+      if (!value) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (value instanceof FileList) return value.length > 0;
+      return !!value;
+    })
+    .test('fileSize', 'File size must be less than 5MB', (value) => {
+      if (!value || !Array.isArray(value)) return true;
+      return value.every(file => file.size <= 5 * 1024 * 1024);
+    }),
+  licenseeAadharCard: yup.mixed()
+    .test('required', 'Aadhar Card is required', (value) => {
+      if (!value) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (value instanceof FileList) return value.length > 0;
+      return !!value;
+    })
+    .test('fileSize', 'File size must be less than 5MB', (value) => {
+      if (!value || !Array.isArray(value)) return true;
+      return value.every(file => file.size <= 5 * 1024 * 1024);
+    }),
+  businessLicense: yup.mixed()
+    .test('required', 'Business License is required', (value) => {
+      if (!value) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (value instanceof FileList) return value.length > 0;
+      return !!value;
+    })
+    .test('fileSize', 'File size must be less than 5MB', (value) => {
+      if (!value || !Array.isArray(value)) return true;
+      return value.every(file => file.size <= 5 * 1024 * 1024);
+    }),
+  ownershipRentalAgreement: yup.mixed()
+    .test('required', 'Ownership/Rental Agreement is required', (value) => {
+      if (!value) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (value instanceof FileList) return value.length > 0;
+      return !!value;
+    })
+    .test('fileSize', 'File size must be less than 5MB', (value) => {
+      if (!value || !Array.isArray(value)) return true;
+      return value.every(file => file.size <= 5 * 1024 * 1024);
+    }),
+  officePhotos: yup.mixed()
+    .test('required', 'Office Photos are required', (value) => {
+      if (!value) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      if (value instanceof FileList) return value.length > 0;
+      return !!value;
+    })
+    .test('fileSize', 'File size must be less than 5MB', (value) => {
+      if (!value || !Array.isArray(value)) return true;
+      return value.every(file => file.size <= 5 * 1024 * 1024);
+    }),
 });

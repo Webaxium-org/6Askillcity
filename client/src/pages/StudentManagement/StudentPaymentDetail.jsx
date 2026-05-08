@@ -68,7 +68,9 @@ export default function StudentPaymentDetail() {
   const isManager = user?.role === "manager";
   const isAdmin = user?.role === "admin" || user?.type === "admin";
 
-  const [activeTab, setActiveTab] = useState(user?.role === "manager" ? "profile" : "payment");
+  const [activeTab, setActiveTab] = useState(
+    user?.role === "manager" ? "profile" : "payment",
+  );
 
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -211,7 +213,9 @@ export default function StudentPaymentDetail() {
     { id: "profile", label: "Student Profile", icon: User },
     { id: "documents", label: "Documents", icon: FileDigit },
     { id: "history", label: "Transaction History", icon: History },
-  ].filter((tab) => !isManager || (tab.id !== "payment" && tab.id !== "history"));
+  ].filter(
+    (tab) => !isManager || (tab.id !== "payment" && tab.id !== "history"),
+  );
 
   return (
     <DashboardLayout title="Student Profile">
