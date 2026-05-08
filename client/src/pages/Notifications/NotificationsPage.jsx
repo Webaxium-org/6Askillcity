@@ -347,18 +347,43 @@ export default function NotificationsPage() {
 
   const handleBulkRead = () => {
     if (selectedIds.length === 0) return;
+    let count = 0;
     selectedIds.forEach((id) => {
       const notif = pageItems.find((n) => n._id === id);
-      if (notif && !notif.isRead) dispatch(markNotificationAsRead(id));
+      if (notif && !notif.isRead) {
+        dispatch(markNotificationAsRead(id));
+        count++;
+      }
     });
     setSelectedIds([]);
-    dispatch(
-      showAlert({
-        type: "success",
-        message: `Marked ${selectedIds.length} items as read.`,
-      }),
-    );
+    if (count > 0) {
+      dispatch(showAlert({ type: "success", message: `Marked ${count} items as read.` }));
+    }
   };
+
+  const handleBulkUnread = () => {
+    if (selectedIds.length === 0) return;
+    let count = 0;
+    selectedIds.forEach((id) => {
+      const notif = pageItems.find((n) => n._id === id);
+      if (notif && notif.isRead) {
+        dispatch(markNotificationAsRead(id));
+        count++;
+      }
+    });
+    setSelectedIds([]);
+    if (count > 0) {
+      dispatch(showAlert({ type: "success", message: `Marked ${count} items as unread.` }));
+    }
+  };
+
+  const selectedStats = useMemo(() => {
+    const selected = pageItems.filter(n => selectedIds.includes(n._id));
+    return {
+      hasRead: selected.some(n => n.isRead),
+      hasUnread: selected.some(n => !n.isRead),
+    };
+  }, [selectedIds, pageItems]);
 
   const filteredItems = useMemo(() => {
     return searchQuery.trim()
@@ -460,13 +485,24 @@ export default function NotificationsPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="flex items-center gap-1"
                 >
-                  <button
-                    onClick={handleBulkRead}
-                    className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-all"
-                    title="Mark as read"
-                  >
-                    <CheckCheck className="w-5 h-5" />
-                  </button>
+                  {selectedStats.hasUnread && (
+                    <button
+                      onClick={handleBulkRead}
+                      className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-all"
+                      title="Mark as read"
+                    >
+                      <CheckCheck className="w-5 h-5" />
+                    </button>
+                  )}
+                  {selectedStats.hasRead && (
+                    <button
+                      onClick={handleBulkUnread}
+                      className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-all"
+                      title="Mark as unread"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                    </button>
+                  )}
                   <button
                     onClick={handleBulkDelete}
                     className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-all"

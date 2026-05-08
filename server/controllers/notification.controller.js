@@ -60,21 +60,22 @@ export const getUnreadCount = async (req, res, next) => {
   }
 };
 
-// Mark a single notification as read
+// Update notification read status (toggle or specific)
 export const markAsRead = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.userId;
+    const { isRead } = req.body;
 
-    const notification = await Notification.findOneAndUpdate(
-      { _id: id, recipientId: userId },
-      { isRead: true },
-      { new: true }
-    );
+    const notification = await Notification.findOne({ _id: id, recipientId: userId });
 
     if (!notification) {
       throw createError(404, "Notification not found or unauthorized");
     }
+
+    // Toggle if isRead not provided in body, otherwise set to isRead
+    notification.isRead = typeof isRead === "boolean" ? isRead : !notification.isRead;
+    await notification.save();
 
     res.status(200).json({ success: true, data: notification });
   } catch (error) {

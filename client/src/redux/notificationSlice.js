@@ -41,13 +41,20 @@ export const fetchNotificationsPage = createAsyncThunk(
 
 export const markNotificationAsRead = createAsyncThunk(
   "notifications/markAsRead",
-  async (id, { rejectWithValue }) => {
+  async (id, { rejectWithValue, getState }) => {
     try {
-      const response = await axiosInstance.put(`/notifications/${id}/read`);
+      const state = getState();
+      const notif = state.notifications.pageItems.find(n => n._id === id) || 
+                    state.notifications.items.find(n => n._id === id);
+      
+      // If we know the current state, we can be explicit about the new state
+      const newStatus = notif ? !notif.isRead : true;
+      
+      const response = await axiosInstance.put(`/notifications/${id}/read`, { isRead: newStatus });
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to mark as read"
+        error.response?.data?.message || "Failed to update notification status"
       );
     }
   }
@@ -172,7 +179,7 @@ const notificationSlice = createSlice({
       .addCase(markNotificationAsRead.fulfilled, (state, action) => {
         const updateIn = (arr) => {
           const idx = arr.findIndex((n) => n._id === action.payload._id);
-          if (idx !== -1) arr[idx].isRead = true;
+          if (idx !== -1) arr[idx].isRead = action.payload.isRead;
         };
         updateIn(state.items);
         updateIn(state.pageItems);
