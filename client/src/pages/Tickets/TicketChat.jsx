@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, Send, ChevronLeft, Calendar as CalendarIcon } from "lucide-react";
+import { X, Send, ChevronLeft, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
 import { cn } from "../../components/dashboard/StatCard";
 import { useSelector, useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -16,6 +16,7 @@ export default function TicketChat({ ticket, onClose }) {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(!ticket?.isNew);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ticketState, setTicketState] = useState(ticket);
 
   const userId = user?.userId || user?._id;
   const isCreator  = ticket && (ticket.creatorId?._id === userId || ticket.creatorId === userId);
@@ -50,6 +51,7 @@ export default function TicketChat({ ticket, onClose }) {
           setLoading(true);
           const res = await getTicketById(ticket._id);
           if (res.success) {
+            setTicketState(res.data.ticket);
             setMessages(res.data.messages);
             setStatus(res.data.ticket.status);
             if (res.data.ticket.postponedUntil)
@@ -96,15 +98,18 @@ export default function TicketChat({ ticket, onClose }) {
       if (newStatus === "Postponed" && !fromPicker) { setStatus("Postponed"); return; }
       if (newStatus === "Postponed" && !postponedUntil) { alert("Please select a date first"); return; }
       setIsSubmitting(true);
-      await updateTicketStatus(ticket._id, newStatus, newStatus === "Postponed" ? postponedUntil : null);
+      const res = await updateTicketStatus(ticket._id, newStatus, newStatus === "Postponed" ? postponedUntil : null);
       setStatus(newStatus);
+      if (res.success) {
+        setTicketState(res.data);
+      }
     } catch (e) { 
       console.error(e); 
       dispatch(showAlert({ 
         type: "error", 
         message: e.response?.data?.message || "Failed to update ticket status. The ticket may already be closed."
       }));
-      setStatus(ticket?.status || "Open"); // Revert
+      setStatus(ticketState?.status || "Open"); // Revert
     }
     finally { setIsSubmitting(false); }
   };
@@ -222,7 +227,7 @@ export default function TicketChat({ ticket, onClose }) {
                 {canUpdateStatus ? (
                   <select value={status} onChange={(e) => handleStatusChange(e.target.value)} disabled={isSubmitting}
                     className="text-xs font-medium border border-border rounded-lg bg-background px-2 py-1 outline-none focus:border-primary">
-                    {["Open", "In Progress", "Resolved", "Closed", "Postponed"].map(s => <option key={s}>{s}</option>)}
+                    {["Open", "In Progress", "Closed", "Postponed"].map(s => <option key={s}>{s}</option>)}
                   </select>
                 ) : (
                   <span className="text-xs font-medium px-2 py-1 rounded-lg bg-muted">{status}</span>
@@ -247,6 +252,14 @@ export default function TicketChat({ ticket, onClose }) {
                       Until {postponedUntil ? new Date(postponedUntil).toLocaleDateString() : "—"}
                     </span>
                   )}
+                </div>
+              )}
+              {isClosed && ticketState?.closedAt && (
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground border-l border-border pl-3 ml-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>
+                    Closed by <span className="font-semibold text-foreground">{ticketState.closedByModel === "AdmissionPoint" ? ticketState.closedBy?.centerName : ticketState.closedBy?.fullName}</span> on {new Date(ticketState.closedAt).toLocaleDateString()}
+                  </span>
                 </div>
               )}
             </div>

@@ -1,9 +1,11 @@
 import * as ticketService from "../services/ticket.service.js";
 import createError from "http-errors";
+import moment from "moment";
 
 export const createTicket = async (req, res, next) => {
   try {
-    const { title, description, priority, assignedToPartner, assignedTo } = req.body;
+    const { title, description, priority, assignedToPartner, assignedTo } =
+      req.body;
     const creatorId = req.user.userId;
     // Map userType from auth middleware to the Model name
     const creatorModel =
@@ -37,7 +39,7 @@ export const getTickets = async (req, res, next) => {
     if (req.user.userType === "partner") {
       filter.$or = [
         { creatorId: req.user.userId, creatorModel: "AdmissionPoint" },
-        { assignedToPartner: req.user.userId }
+        { assignedToPartner: req.user.userId },
       ];
     }
 
@@ -47,9 +49,16 @@ export const getTickets = async (req, res, next) => {
     }
 
     if (req.query.startDate && req.query.endDate) {
-      filter.createdAt = {
-        $gte: new Date(req.query.startDate),
-        $lte: new Date(req.query.endDate),
+      let dateField = "createdAt";
+      if (req.query.status === "Postponed") {
+        dateField = "postponedUntil";
+      } else if (req.query.status === "Closed") {
+        dateField = "closedAt";
+      }
+
+      filter[dateField] = {
+        $gte: moment(req.query.startDate).startOf("day").toDate(),
+        $lte: moment(req.query.endDate).endOf("day").toDate(),
       };
     }
 
@@ -102,7 +111,7 @@ export const getTicketMetrics = async (req, res, next) => {
     if (req.user.userType === "partner") {
       filter.$or = [
         { creatorId: req.user.userId, creatorModel: "AdmissionPoint" },
-        { assignedToPartner: req.user.userId }
+        { assignedToPartner: req.user.userId },
       ];
     }
 

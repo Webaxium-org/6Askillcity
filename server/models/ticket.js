@@ -14,7 +14,7 @@ const TicketSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Open", "In Progress", "Postponed", "Resolved", "Closed"],
+      enum: ["Open", "In Progress", "Postponed", "Closed"],
       default: "Open",
     },
     priority: {
@@ -42,6 +42,20 @@ const TicketSchema = new mongoose.Schema(
     },
     postponedUntil: {
       type: Date,
+      default: null,
+    },
+    closedAt: {
+      type: Date,
+      default: null,
+    },
+    closedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: "closedByModel",
+      default: null,
+    },
+    closedByModel: {
+      type: String,
+      enum: ["User", "AdmissionPoint"],
       default: null,
     },
   },

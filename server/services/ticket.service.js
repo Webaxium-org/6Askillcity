@@ -75,11 +75,10 @@ export const getTicketMetrics = async (baseFilter) => {
   const total = await Ticket.countDocuments(baseFilter);
   const open = await Ticket.countDocuments({ ...baseFilter, status: "Open" });
   const inProgress = await Ticket.countDocuments({ ...baseFilter, status: "In Progress" });
-  const resolved = await Ticket.countDocuments({ ...baseFilter, status: "Resolved" });
   const postponed = await Ticket.countDocuments({ ...baseFilter, status: "Postponed" });
   const closed = await Ticket.countDocuments({ ...baseFilter, status: "Closed" });
 
-  return { total, open, inProgress, resolved, postponed, closed };
+  return { total, open, inProgress, postponed, closed };
 };
 
 export const getTicketById = async (ticketId, userId, userType) => {
@@ -89,7 +88,8 @@ export const getTicketById = async (ticketId, userId, userType) => {
       "fullName email centerName licenseeName licenseeEmail",
     )
     .populate("assignedToPartner", "centerName licenseeName")
-    .populate("assignedTo", "fullName email");
+    .populate("assignedTo", "fullName email")
+    .populate("closedBy", "fullName email centerName licenseeName");
 
   if (!ticket) {
     throw new Error("Ticket not found");
@@ -157,6 +157,12 @@ export const updateTicketStatus = async (
     ticket.postponedUntil = new Date(postponedUntil);
   } else if (status !== "Postponed") {
     ticket.postponedUntil = null;
+  }
+
+  if (status === "Closed") {
+    ticket.closedAt = new Date();
+    ticket.closedBy = userId;
+    ticket.closedByModel = userType === "admin" ? "User" : "AdmissionPoint";
   }
 
   await ticket.save();

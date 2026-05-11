@@ -13,6 +13,7 @@ export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "pu
     blue: "from-blue-500/20 to-blue-500/5 text-blue-500 border-blue-500/20",
     emerald: "from-emerald-500/20 to-emerald-500/5 text-emerald-500 border-emerald-500/20",
     rose: "from-rose-500/20 to-rose-500/5 text-rose-500 border-rose-500/20",
+    slate: "from-slate-500/20 to-slate-500/5 text-slate-500 border-slate-500/20",
   };
 
   return (

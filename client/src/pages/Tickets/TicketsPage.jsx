@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
-import { MessageSquare, Plus, Search, Clock, AlertCircle, CheckCircle2, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import { MessageSquare, Plus, Search, Clock, AlertCircle, CheckCircle2, ChevronRight, SlidersHorizontal, X, Filter, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, StatCard } from "../../components/dashboard/StatCard";
 import { getTickets, getTicketMetrics } from "../../api/ticket.api";
@@ -16,7 +16,7 @@ const getPriorityColor = (p) => {
   return "bg-muted text-muted-foreground border-transparent";
 };
 const getStatusColor = (s) => {
-  const map = { "Open": "bg-blue-500/10 text-blue-500 border-blue-500/20", "In Progress": "bg-amber-500/10 text-amber-500 border-amber-500/20", "Resolved": "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", "Closed": "bg-slate-500/10 text-slate-500 border-slate-500/20", "Postponed": "bg-purple-500/10 text-purple-500 border-purple-500/20" };
+  const map = { "Open": "bg-blue-500/10 text-blue-500 border-blue-500/20", "In Progress": "bg-amber-500/10 text-amber-500 border-amber-500/20", "Closed": "bg-slate-500/10 text-slate-500 border-slate-500/20", "Postponed": "bg-purple-500/10 text-purple-500 border-purple-500/20" };
   return map[s] || "bg-primary/10 text-primary border-primary/20";
 };
 
@@ -30,7 +30,7 @@ export default function TicketsPage() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [metrics, setMetrics] = useState({ total: 0, open: 0, inProgress: 0, resolved: 0, postponed: 0 });
+  const [metrics, setMetrics] = useState({ total: 0, open: 0, inProgress: 0, postponed: 0, closed: 0 });
   const [showFilters, setShowFilters] = useState(false);
   const limit = 10;
   const { user } = useSelector((s) => s.user);
@@ -68,6 +68,21 @@ export default function TicketsPage() {
     return () => socket.off("ticket_status_updated", fn);
   }, [socket]);
 
+  const setQuickRange = (range) => {
+    const today = new Date();
+    let start = new Date();
+    let end = new Date();
+    switch (range) {
+      case "today": start = today; end = today; break;
+      case "week": const diff = today.getDate() - today.getDay(); start = new Date(today.setDate(diff)); end = new Date(); break;
+      case "month": start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(); break;
+      default: break;
+    }
+    setStartDate(start.toISOString().split("T")[0]);
+    setEndDate(end.toISOString().split("T")[0]);
+    setPage(1);
+  };
+
   return (
     <DashboardLayout title="Support Tickets">
       <div className="space-y-4 sm:space-y-6">
@@ -78,55 +93,64 @@ export default function TicketsPage() {
           <StatCard title="Open"        value={metrics.open}       icon={AlertCircle}   color="rose"    />
           <StatCard title="In Progress" value={metrics.inProgress} icon={Clock}         color="purple"  />
           <StatCard title="Postponed"   value={metrics.postponed}  icon={Clock}         color="purple"  />
-          <StatCard title="Resolved"    value={metrics.resolved}   icon={CheckCircle2}  color="emerald" />
+          <StatCard title="Closed"      value={metrics.closed}     icon={CheckCircle2}  color="slate"   />
         </div>
 
         {/* Toolbar */}
-        <div className="bg-card border border-border rounded-xl shadow-sm p-3 sm:p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 flex-1">
+            <div className="relative flex-1 max-w-md">
               <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input type="text" placeholder="Search tickets..." value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2 rounded-xl bg-muted/50 border border-transparent focus:bg-background focus:border-border outline-none text-sm w-full transition-all" />
+                className="pl-9 pr-4 py-2.5 rounded-xl bg-card border border-border focus:border-primary outline-none text-sm w-full transition-all shadow-sm" />
             </div>
-            <button onClick={() => setShowFilters(v => !v)}
-              className={cn("p-2.5 rounded-xl border transition-all shrink-0", showFilters ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 border-transparent hover:border-border")}>
-              <SlidersHorizontal className="w-4 h-4" />
-            </button>
-            <button onClick={() => setSelectedTicket({ isNew: true })}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm shrink-0">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Ticket</span>
+            <button onClick={() => setShowFilters(true)}
+              className={cn(
+                "px-4 py-2.5 rounded-xl border font-bold text-[11px] uppercase tracking-wider transition-all flex items-center gap-2",
+                filterStatus !== "All" || startDate || endDate
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                  : "bg-card border-border text-muted-foreground hover:border-primary hover:text-primary shadow-sm"
+              )}>
+              <Filter className="w-3.5 h-3.5" />
+              {filterStatus !== "All" || startDate || endDate ? "Active" : "Filters"}
             </button>
           </div>
 
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                <div className="pt-3 border-t border-border flex flex-col sm:flex-row gap-2 flex-wrap">
-                  <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-                    className="flex-1 min-w-[130px] px-3 py-2 rounded-xl bg-muted/50 border border-transparent focus:bg-background focus:border-border outline-none text-sm">
-                    {["All", "Open", "In Progress", "Resolved", "Postponed", "Closed"].map(s => <option key={s} value={s}>{s === "All" ? "All Statuses" : s}</option>)}
-                  </select>
-                  <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                    <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-                      className="flex-1 px-3 py-2 rounded-xl bg-muted/50 border border-transparent focus:bg-background focus:border-border outline-none text-sm" />
-                    <span className="text-muted-foreground">–</span>
-                    <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-                      className="flex-1 px-3 py-2 rounded-xl bg-muted/50 border border-transparent focus:bg-background focus:border-border outline-none text-sm" />
-                  </div>
-                  {(filterStatus !== "All" || startDate || endDate) && (
-                    <button onClick={() => { setFilterStatus("All"); setStartDate(""); setEndDate(""); }}
-                      className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                      <X className="w-3.5 h-3.5" /> Clear
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <button onClick={() => setSelectedTicket({ isNew: true })}
+            className="flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm font-bold text-[11px] uppercase tracking-wider shrink-0">
+            <Plus className="w-4 h-4" />
+            New Ticket
+          </button>
         </div>
+
+        {/* Active Filter Chips */}
+        <AnimatePresence>
+          {(filterStatus !== "All" || startDate || endDate) && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-1">Active:</span>
+              
+              {filterStatus !== "All" && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg text-[10px] font-bold text-primary">
+                  Status: {filterStatus}
+                  <button onClick={() => setFilterStatus("All")} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                </div>
+              )}
+
+              {(startDate || endDate) && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[10px] font-bold text-emerald-600">
+                  Period: {startDate || "Start"} - {endDate || "End"}
+                  <button onClick={() => { setStartDate(""); setEndDate(""); }} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                </div>
+              )}
+
+              <button onClick={() => { setFilterStatus("All"); setStartDate(""); setEndDate(""); }}
+                className="text-[9px] font-black uppercase tracking-widest text-rose-500 hover:underline ml-1">
+                Clear All
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Ticket List */}
         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -230,6 +254,94 @@ export default function TicketsPage() {
       <AnimatePresence>
         {selectedTicket && (
           <TicketChat ticket={selectedTicket} onClose={() => { setSelectedTicket(null); fetchTickets(); }} />
+        )}
+      </AnimatePresence>
+
+      {/* Filter Drawer */}
+      <AnimatePresence>
+        {showFilters && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowFilters(false)}
+              className="fixed inset-0 h-screen w-screen bg-slate-900/40 backdrop-blur-md z-[9999]" />
+            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed right-0 top-0 h-screen w-full max-w-md bg-card border-l border-border z-[10000] shadow-2xl flex flex-col">
+              <div className="p-8 border-b border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xl font-black uppercase tracking-tighter">Advanced Filters</h3>
+                  <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-muted rounded-xl transition-colors"><X className="w-5 h-5" /></button>
+                </div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest opacity-60">Refine your ticket search</p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                {/* Status Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <SlidersHorizontal className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Ticket Status</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["All", "Open", "In Progress", "Postponed", "Closed"].map((s) => (
+                      <button key={s} onClick={() => setFilterStatus(s)}
+                        className={cn(
+                          "px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                          filterStatus === s ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" : "bg-muted/30 border-transparent text-muted-foreground hover:border-border"
+                        )}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Date Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Date Range</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["today", "week", "month"].map((r) => (
+                      <button key={r} onClick={() => setQuickRange(r)}
+                        className="py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-border hover:bg-primary hover:text-white transition-all">
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">Start Date</label>
+                      <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-transparent focus:border-primary outline-none text-sm font-medium transition-all" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">End Date</label>
+                      <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-transparent focus:border-primary outline-none text-sm font-medium transition-all" />
+                    </div>
+                  </div>
+                  {filterStatus !== "All" && (
+                    <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-3">
+                      <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                      <p className="text-[10px] font-medium text-blue-600 leading-relaxed uppercase tracking-wider">
+                        Filtering by <span className="font-black underline">{filterStatus === "Postponed" ? "Postponed Until" : filterStatus === "Closed" ? "Closed At" : "Created At"}</span> date.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-8 border-t border-border/50 bg-muted/20">
+                <button onClick={() => { setFilterStatus("All"); setStartDate(""); setEndDate(""); setShowFilters(false); }}
+                  className="w-full py-4 rounded-2xl border border-rose-500/30 text-rose-500 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all">
+                  Reset All Filters
+                </button>
+                <button onClick={() => setShowFilters(false)}
+                  className="w-full mt-3 py-4 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">
+                  Apply Filters
+                </button>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </DashboardLayout>

@@ -28,6 +28,7 @@ import AlertManager from "./components/global/AlertManager";
 import Reports from "./pages/Reports/Reports";
 import ReportDetail from "./pages/Reports/ReportDetail";
 import NotificationsPage from "./pages/Notifications/NotificationsPage";
+import AdminOverview from "./pages/Dashboards/AdminOverview";
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
               />
               <Route path="/dashboard/tickets" element={<TicketsPage />} />
               <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+                <Route path="/dashboard/overview" element={<AdminOverview />} />
                 <Route path="/dashboard/reports" element={<Reports />} />
                 <Route
                   path="/dashboard/reports/:reportId"

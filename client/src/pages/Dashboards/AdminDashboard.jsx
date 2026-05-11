@@ -1030,10 +1030,15 @@ export default function AdminDashboard() {
                           Verification Documents
                         </h4>
                         <span className="text-[10px] font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-wider">
-                          {Object.values(viewDetailsPoint.documents).flat().filter(Boolean).length} Files Attached
+                          {
+                            Object.values(viewDetailsPoint.documents)
+                              .flat()
+                              .filter(Boolean).length
+                          }{" "}
+                          Files Attached
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Object.entries(viewDetailsPoint.documents).map(
                           ([key, value]) => {
@@ -1042,15 +1047,17 @@ export default function AdminDashboard() {
                               (Array.isArray(value) && value.length === 0)
                             )
                               return null;
-                            
+
                             const docLabel = key
                               .replace(/([A-Z])/g, " $1")
                               .replace(/^./, (str) => str.toUpperCase());
-                            
+
                             const formatUrl = (path) =>
                               `${import.meta.env.VITE_BASE_URL}/${path.replace(/\\/g, "/")}`;
 
-                            const items = Array.isArray(value) ? value : [value];
+                            const items = Array.isArray(value)
+                              ? value
+                              : [value];
 
                             return items.map((docUrl, i) => (
                               <a
@@ -1068,7 +1075,9 @@ export default function AdminDashboard() {
                                     {docLabel}
                                   </p>
                                   <p className="text-xs font-bold text-foreground truncate">
-                                    {items.length > 1 ? `Attachment ${i + 1}` : "View Document"}
+                                    {items.length > 1
+                                      ? `Attachment ${i + 1}`
+                                      : "View Document"}
                                   </p>
                                 </div>
                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
