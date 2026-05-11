@@ -51,6 +51,15 @@ export const reviewApplication = async (id, action, admin_remarks = "") => {
   return response.data;
 };
 
+// Update student lifecycle status (On Progress, Enrolled, Cancelled)
+export const updateStudentStatus = async (id, status, enrollmentNumber = "") => {
+  const response = await axiosInstance.patch(`/students/${id}/status`, {
+    status,
+    enrollmentNumber,
+  });
+  return response.data;
+};
+
 // ── Followup API ───────────────────────────────────────────────
 
 export const getFollowups = async (studentId, page = 1) => {
@@ -60,11 +69,12 @@ export const getFollowups = async (studentId, page = 1) => {
   return response.data;
 };
 
-export const addFollowup = async (studentId, note, category = "general", nextFollowupDate = null) => {
+export const addFollowup = async (studentId, note, category = "general", nextFollowupDate = null, status = "") => {
   const response = await axiosInstance.post(`/followups/${studentId}`, {
     note,
     category,
     nextFollowupDate,
+    status,
   });
   return response.data;
 };

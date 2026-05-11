@@ -12,6 +12,7 @@ import {
   submitForEligibility,
   getPendingEligibility,
   updateApplicationStatus,
+  updateStudentStatus,
 } from "../controllers/student.controller.js";
 
 const router = express.Router();
@@ -74,6 +75,13 @@ router.patch(
   "/:id/review",
   isAuthorized({ roles: ["admin", "manager"] }),
   updateApplicationStatus
+);
+
+// SHARED: Update student lifecycle status
+router.patch(
+  "/:id/status",
+  isAuthorized({ types: ["partner", "admin"] }),
+  updateStudentStatus
 );
 
 export default router;

@@ -320,6 +320,7 @@ export const updateStudentDetails = async (req, res, next) => {
       "applicationStatus",
       "enrollmentStatus",
       "batch",
+      "status",
     ];
 
     const idFields = ["university", "program", "branch", "programFee"];
@@ -689,6 +690,48 @@ export const updateApplicationStatus = async (req, res, next) => {
           ? "Application approved. Student is now Eligible."
           : "Application rejected with remarks.",
       data: populatedStudent,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// SHARED: Update Student Lifecycle Status (On Progress, Enrolled, Cancelled)
+// ─────────────────────────────────────────────
+export const updateStudentStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, enrollmentNumber } = req.body;
+
+    if (!["On Progress", "Enrolled", "Cancelled"].includes(status)) {
+      throw createError(400, "Invalid status value.");
+    }
+
+    const student = await Student.findOne({ _id: id, deleted: { $ne: true } });
+    if (!student) throw createError(404, "Student not found.");
+
+    // Access control
+    if (req.user.userType === "partner") {
+      if (String(student.registeredBy) !== String(req.user.userId)) {
+        throw createError(403, "Access denied.");
+      }
+    }
+
+    if (status === "Enrolled") {
+      student.enrolledDate = new Date();
+      if (enrollmentNumber) student.enrollmentNumber = enrollmentNumber;
+    } else if (status === "Cancelled") {
+      student.cancelledDate = new Date();
+    }
+
+    student.status = status;
+    await student.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Student status updated to ${status}`,
+      data: student,
     });
   } catch (error) {
     next(error);

@@ -34,6 +34,7 @@ export const addFollowup = async (req, res, next) => {
       authorName: req.user.name,
       note: note.trim(),
       category: category || "general",
+      status: req.body.status || student.status, // Capture status
       nextFollowupDate: nextFollowupDate || null,
     });
 

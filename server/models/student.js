@@ -235,6 +235,17 @@ const StudentSchema = new mongoose.Schema(
       enum: ["Draft", "Pending Eligibility", "Eligible", "Rejected"],
       default: "Draft",
     },
+    status: {
+      type: String,
+      enum: ["On Progress", "Enrolled", "Cancelled"],
+      default: "On Progress",
+    },
+    enrolledDate: Date,
+    cancelledDate: Date,
+    enrollmentNumber: {
+      type: String,
+      trim: true,
+    },
     applicationSubmittedDate: {
       type: Date,
       index: true,

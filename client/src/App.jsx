@@ -29,6 +29,7 @@ import Reports from "./pages/Reports/Reports";
 import ReportDetail from "./pages/Reports/ReportDetail";
 import NotificationsPage from "./pages/Notifications/NotificationsPage";
 import AdminOverview from "./pages/Dashboards/AdminOverview";
+import DocumentsServices from "./pages/Dashboards/DocumentsServices";
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
               <Route path="/dashboard/tickets" element={<TicketsPage />} />
               <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
                 <Route path="/dashboard/overview" element={<AdminOverview />} />
+                <Route path="/dashboard/documents-services" element={<DocumentsServices />} />
                 <Route path="/dashboard/reports" element={<Reports />} />
                 <Route
                   path="/dashboard/reports/:reportId"

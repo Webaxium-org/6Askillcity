@@ -23,6 +23,7 @@ import {
   GraduationCap,
   X,
   Activity,
+  Layers,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { useTheme } from "../global/ThemeProvider";
@@ -228,6 +229,12 @@ const Sidebar = ({
                 label: "Reports",
                 icon: FileText,
                 path: "/dashboard/reports",
+              },
+              {
+                id: "documents-services",
+                label: "Documents & Services",
+                icon: Layers,
+                path: "/dashboard/documents-services",
               },
             ]
           : []),

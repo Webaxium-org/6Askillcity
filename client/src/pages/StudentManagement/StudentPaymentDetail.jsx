@@ -42,6 +42,12 @@ import {
   getStudentSchedules,
   deletePaymentSchedule,
 } from "../../api/payment.api";
+import {
+  getFollowups,
+  addFollowup,
+  deleteFollowup,
+  updateStudentStatus,
+} from "../../api/student.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import InvoiceModal from "../../components/payment/InvoiceModal";
@@ -63,6 +69,18 @@ export default function StudentPaymentDetail() {
   const [scheduleItems, setScheduleItems] = useState([
     { dueDate: "", amount: "", description: "" },
   ]);
+
+  // Follow-up state
+  const [followups, setFollowups] = useState([]);
+  const [isFollowupLoading, setIsFollowupLoading] = useState(false);
+  const [newFollowup, setNewFollowup] = useState({
+    note: "",
+    status: "",
+    enrollmentNumber: "",
+    nextFollowupDate: "",
+  });
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
   const { user } = useSelector((state) => state.user);
   const isPartner = user?.role === "partner" || user?.type === "partner";
   const isManager = user?.role === "manager";
@@ -82,21 +100,36 @@ export default function StudentPaymentDetail() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [studentRes, paymentsRes, schedulesRes] = await Promise.all([
-        getStudentById(id),
-        getStudentPayments(id),
-        getStudentSchedules(id),
-      ]);
+      const [studentRes, paymentsRes, schedulesRes, followupsRes] =
+        await Promise.all([
+          getStudentById(id),
+          getStudentPayments(id),
+          getStudentSchedules(id),
+          getFollowups(id),
+        ]);
 
       if (studentRes.success) setStudent(studentRes.data);
       if (paymentsRes.success) setPayments(paymentsRes.data);
       if (schedulesRes.success) setSchedules(schedulesRes.data);
+      if (followupsRes.success) setFollowups(followupsRes.data);
     } catch (error) {
       dispatch(
-        showAlert({ type: "error", message: "Failed to load payment details" }),
+        showAlert({ type: "error", message: "Failed to load details" }),
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFollowups = async () => {
+    setIsFollowupLoading(true);
+    try {
+      const res = await getFollowups(id);
+      if (res.success) setFollowups(res.data);
+    } catch (error) {
+      console.error("Failed to fetch followups", error);
+    } finally {
+      setIsFollowupLoading(false);
     }
   };
 
@@ -196,9 +229,79 @@ export default function StudentPaymentDetail() {
     }
   };
 
+  const handleStatusUpdate = async (newStatus, enrollmentNumber = "") => {
+    setIsUpdatingStatus(true);
+    try {
+      const res = await updateStudentStatus(id, newStatus, enrollmentNumber);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: res.message }));
+        setStudent({
+          ...student,
+          status: newStatus,
+          enrollmentNumber: enrollmentNumber || student.enrollmentNumber,
+        });
+      }
+    } catch (error) {
+      dispatch(
+        showAlert({ type: "error", message: "Failed to update status" }),
+      );
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleAddFollowup = async (e) => {
+    e.preventDefault();
+    if (!newFollowup.note.trim()) return;
+
+    setIsFollowupLoading(true);
+    try {
+      // 1. Update status if changed in the form
+      if (newFollowup.status && newFollowup.status !== student.status) {
+        await updateStudentStatus(id, newFollowup.status, newFollowup.enrollmentNumber);
+      }
+
+      // 2. Save followup with category 'eligibility'
+      const res = await addFollowup(
+        id,
+        newFollowup.note,
+        "eligibility", // Forced category as per request
+        newFollowup.nextFollowupDate,
+        newFollowup.status || student.status, // Pass current or new status
+      );
+
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: "Interaction logged and status updated" }));
+        setNewFollowup({ note: "", status: "", enrollmentNumber: "", nextFollowupDate: "" });
+        await Promise.all([fetchData(), fetchFollowups()]);
+      }
+    } catch (error) {
+      dispatch(
+        showAlert({ type: "error", message: error.response?.data?.message || "Failed to log interaction" }),
+      );
+    } finally {
+      setIsFollowupLoading(false);
+    }
+  };
+
+  const handleDeleteFollowup = async (followupId) => {
+    if (!window.confirm("Delete this follow-up?")) return;
+    try {
+      const res = await deleteFollowup(followupId);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: res.message }));
+        await fetchFollowups();
+      }
+    } catch (error) {
+      dispatch(
+        showAlert({ type: "error", message: "Failed to delete follow-up" }),
+      );
+    }
+  };
+
   if (loading || !student)
     return (
-      <DashboardLayout title="Student Payment">
+      <DashboardLayout title="Student Profile">
         <div className="flex items-center justify-center h-64 text-muted-foreground">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
@@ -212,7 +315,8 @@ export default function StudentPaymentDetail() {
     { id: "payment", label: "Payment Overview", icon: CreditCard },
     { id: "profile", label: "Student Profile", icon: User },
     { id: "documents", label: "Documents", icon: FileDigit },
-    { id: "history", label: "Transaction History", icon: History },
+    { id: "followup", label: "Followups", icon: History },
+    { id: "history", label: "Transaction History", icon: CreditCard },
   ].filter(
     (tab) => !isManager || (tab.id !== "payment" && tab.id !== "history"),
   );
@@ -251,7 +355,22 @@ export default function StudentPaymentDetail() {
                   >
                     {student.paymentStatus}
                   </span>
-                  {!isPartner && (
+
+                  {/* Lifecycle Status - Read Only here, update via Followup */}
+                  <div
+                    className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm flex items-center gap-2 ${
+                      student.status === "Enrolled"
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : student.status === "Cancelled"
+                          ? "bg-red-500/10 text-red-600 border-red-500/20"
+                          : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                    }`}
+                  >
+                    <Activity className="w-3 h-3" />
+                    {student.status || "On Progress"}
+                  </div>
+
+                  {!isPartner && !isAdmin && !isManager && (
                     <span className="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground border border-border">
                       Read-Only Mode
                     </span>
@@ -900,6 +1019,234 @@ export default function StudentPaymentDetail() {
                       )}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "followup" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left: Log New Followup */}
+                <div className="lg:col-span-1">
+                  <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm sticky top-24">
+                    <h3 className="text-xl font-black mb-8 flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                        <Plus className="w-5 h-5" />
+                      </div>
+                      Log Interaction
+                    </h3>
+                    {student.status === "Enrolled" ? (
+                      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 text-center space-y-4">
+                        <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                          <CheckCircle2 className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-black text-emerald-600">Enrolled</h4>
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                            Process Completed
+                          </p>
+                        </div>
+                        {student.enrollmentNumber && (
+                          <div className="pt-4 border-t border-emerald-500/10">
+                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                              Enrollment ID
+                            </p>
+                            <p className="text-sm font-black text-foreground">
+                              {student.enrollmentNumber}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <form onSubmit={handleAddFollowup} className="space-y-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Student Status
+                          </label>
+                          <select
+                            value={newFollowup.status}
+                            onChange={(e) =>
+                              setNewFollowup({
+                                ...newFollowup,
+                                status: e.target.value,
+                              })
+                            }
+                            className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-xs font-bold uppercase tracking-wider"
+                          >
+                            <option value="">No Change (Current: {student.status})</option>
+                            <option value="On Progress">On Progress</option>
+                            <option value="Enrolled">Enrolled</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                        </div>
+
+                        {newFollowup.status === "Enrolled" && (
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                              Enrollment Number
+                            </label>
+                            <div className="relative">
+                              <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <input
+                                type="text"
+                                required
+                                value={newFollowup.enrollmentNumber}
+                                onChange={(e) =>
+                                  setNewFollowup({
+                                    ...newFollowup,
+                                    enrollmentNumber: e.target.value,
+                                  })
+                                }
+                                placeholder="Enter official enrollment ID"
+                                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm font-bold"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Note / Remark
+                          </label>
+                          <textarea
+                            required
+                            value={newFollowup.note}
+                            onChange={(e) =>
+                              setNewFollowup({
+                                ...newFollowup,
+                                note: e.target.value,
+                              })
+                            }
+                            className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm h-32 leading-relaxed"
+                            placeholder="What was discussed during this interaction?"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Next Follow-up Date (Optional)
+                          </label>
+                          <div className="relative">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                              type="date"
+                              value={newFollowup.nextFollowupDate}
+                              onChange={(e) =>
+                                setNewFollowup({
+                                  ...newFollowup,
+                                  nextFollowupDate: e.target.value,
+                                })
+                              }
+                              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm font-bold"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isFollowupLoading}
+                          className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                        >
+                          {isFollowupLoading ? (
+                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4" />
+                              Log Follow-up
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: History Timeline */}
+                <div className="lg:col-span-2">
+                  <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm min-h-[600px]">
+                    <h3 className="text-xl font-black mb-8 flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
+                        <History className="w-5 h-5" />
+                      </div>
+                      Interaction History
+                    </h3>
+
+                    <div className="relative space-y-8 before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border/50">
+                      {followups.length === 0 ? (
+                        <div className="py-20 text-center space-y-4">
+                          <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto">
+                            <Clock className="w-10 h-10 text-muted-foreground opacity-20" />
+                          </div>
+                          <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                            No follow-up history found.
+                          </p>
+                        </div>
+                      ) : (
+                        followups.map((item, idx) => (
+                          <div key={item._id} className="relative pl-12 group">
+                            <div className="absolute left-0 top-1 w-9 h-9 rounded-full bg-card border-2 border-border flex items-center justify-center z-10 group-hover:border-primary transition-colors">
+                              <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground group-hover:bg-primary transition-colors" />
+                            </div>
+
+                            <div className="p-6 bg-muted/20 rounded-[2rem] border border-border/50 group-hover:border-primary/20 transition-all">
+                              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                <div className="flex items-center gap-3">
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-primary/10 ${
+                                      item.status === "Enrolled"
+                                        ? "bg-emerald-500/10 text-emerald-600"
+                                        : item.status === "Cancelled"
+                                          ? "bg-red-500/10 text-red-600"
+                                          : "bg-blue-500/10 text-blue-600"
+                                    }`}
+                                  >
+                                    {item.status || "On Progress"}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(item.createdAt).toLocaleString("en-IN", {
+                                      dateStyle: "medium",
+                                      timeStyle: "short",
+                                    })}
+                                  </span>
+                                </div>
+                                {(isAdmin || String(item.authorId) === String(user._id)) && (
+                                  <button
+                                    onClick={() => handleDeleteFollowup(item._id)}
+                                    className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+
+                              <p className="text-sm font-medium leading-relaxed text-foreground/80 mb-4 whitespace-pre-wrap">
+                                {item.note}
+                              </p>
+
+                              <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary uppercase">
+                                    {item.authorName?.charAt(0) || "U"}
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                    {item.authorName} • {item.authorType}
+                                  </span>
+                                </div>
+                                {item.nextFollowupDate && (
+                                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full border border-amber-500/10">
+                                    <Clock className="w-3 h-3" />
+                                    <span className="text-[8px] font-black uppercase tracking-widest">
+                                      Next: {new Date(item.nextFollowupDate).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

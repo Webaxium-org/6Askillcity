@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getManagementStudents } from "../../api/payment.api";
@@ -36,6 +37,7 @@ export default function StudentList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all"); // all, paid, pending
+  const [statusTab, setStatusTab] = useState("On Progress"); // On Progress, Enrolled, Cancelled
 
   // Advanced Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -47,7 +49,7 @@ export default function StudentList() {
   const [selectedBatch, setSelectedBatch] = useState("all");
   const [partners, setPartners] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("created"); // created, approved
-  
+
   const batches = (() => {
     const b = [];
     const currentYear = new Date().getFullYear();
@@ -56,42 +58,53 @@ export default function StudentList() {
     }
     return b;
   })();
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, startDate, endDate, selectedUni, selectedProg, filterType, selectedPartner, selectedBatch, dateFilterType]);
+  }, [
+    search,
+    startDate,
+    endDate,
+    selectedUni,
+    selectedProg,
+    filterType,
+    selectedPartner,
+    selectedBatch,
+    dateFilterType,
+    statusTab,
+  ]);
 
   const setQuickRange = (range) => {
     const today = new Date();
     let start = new Date();
     let end = new Date();
 
-    switch(range) {
-      case 'today':
+    switch (range) {
+      case "today":
         start = today;
         end = today;
         break;
-      case 'week':
+      case "week":
         const diff = today.getDate() - today.getDay();
         start = new Date(today.setDate(diff));
         end = new Date();
         break;
-      case 'month':
+      case "month":
         start = new Date(today.getFullYear(), today.getMonth(), 1);
         end = new Date();
         break;
-      case 'year':
+      case "year":
         start = new Date(today.getFullYear(), 0, 1);
         end = new Date();
         break;
     }
 
-    setStartDate(start.toISOString().split('T')[0]);
-    setEndDate(end.toISOString().split('T')[0]);
+    setStartDate(start.toISOString().split("T")[0]);
+    setEndDate(end.toISOString().split("T")[0]);
   };
 
   const [universities, setUniversities] = useState([]);
@@ -104,14 +117,16 @@ export default function StudentList() {
 
   const fetchFilterData = async () => {
     try {
-      const { getUniversities, getPrograms } = await import("../../api/university.api");
-      
+      const { getUniversities, getPrograms } =
+        await import("../../api/university.api");
+
       if (isAdmin || isManager) {
-        const { getAllApprovedAdmissionPoints } = await import("../../api/admissionPoint.api");
+        const { getAllApprovedAdmissionPoints } =
+          await import("../../api/admissionPoint.api");
         const [uniRes, partnerRes, progRes] = await Promise.all([
           getUniversities(),
           getAllApprovedAdmissionPoints(),
-          getPrograms()
+          getPrograms(),
         ]);
         if (uniRes.success) setUniversities(uniRes.data);
         if (partnerRes.success) setPartners(partnerRes.data);
@@ -124,7 +139,7 @@ export default function StudentList() {
           const permittedProgs = [];
           const uniIds = new Set();
           const progIds = new Set();
-          res.data.forEach(item => {
+          res.data.forEach((item) => {
             const uni = item.university;
             const prog = item.program;
             if (uni && !uniIds.has(uni._id)) {
@@ -184,12 +199,13 @@ export default function StudentList() {
 
     // Date Range Filter
     if (startDate || endDate) {
-      const dateToCompare = dateFilterType === "created" ? s.createdAt : s.eligibilityApprovalDate;
-      
+      const dateToCompare =
+        dateFilterType === "created" ? s.createdAt : s.eligibilityApprovalDate;
+
       if (!dateToCompare) return false;
 
       const studentDate = new Date(dateToCompare);
-      
+
       if (startDate) {
         const start = new Date(startDate);
         if (studentDate < start) return false;
@@ -201,10 +217,21 @@ export default function StudentList() {
     }
 
     // Partner Filter
-    if ((isAdmin || isManager) && selectedPartner !== "all" && s.registeredBy !== selectedPartner) return false;
+    if (
+      (isAdmin || isManager) &&
+      selectedPartner !== "all" &&
+      s.registeredBy !== selectedPartner
+    )
+      return false;
 
     // Batch Filter
     if (selectedBatch !== "all" && s.batch !== selectedBatch) return false;
+
+    // Status Tab Filter
+    if (statusTab !== "all") {
+      const studentStatus = s.status || "On Progress";
+      if (studentStatus !== statusTab) return false;
+    }
 
     return true;
   });
@@ -212,7 +239,7 @@ export default function StudentList() {
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
   const paginatedStudents = filteredStudents.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const getStatusStyle = (status) => {
@@ -223,6 +250,17 @@ export default function StudentList() {
         return "bg-amber-500/10 text-amber-600 border-amber-500/20";
       default:
         return "bg-slate-500/10 text-slate-600 border-slate-500/20";
+    }
+  };
+
+  const getLifecycleStatusStyle = (status) => {
+    switch (status) {
+      case "Enrolled":
+        return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+      case "Cancelled":
+        return "bg-red-500/10 text-red-600 border-red-500/20";
+      default:
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
     }
   };
 
@@ -250,6 +288,12 @@ export default function StudentList() {
       pendingCount: 0,
     },
   );
+
+  const studentTabs = [
+    { id: "On Progress", label: "On Progress", icon: Clock },
+    { id: "Enrolled", label: "Enrolled", icon: CheckCircle2 },
+    { id: "Cancelled", label: "Cancelled", icon: AlertCircle },
+  ];
 
   return (
     <DashboardLayout title="Student Management">
@@ -351,7 +395,10 @@ export default function StudentList() {
                   />
                   {showFilters
                     ? "Collapse"
-                    : startDate || endDate || selectedUni !== "all" || selectedPartner !== "all"
+                    : startDate ||
+                        endDate ||
+                        selectedUni !== "all" ||
+                        selectedPartner !== "all"
                       ? "Active"
                       : "Filters"}
                 </div>
@@ -369,7 +416,12 @@ export default function StudentList() {
 
         {/* Active Filter Chips */}
         <AnimatePresence>
-          {(startDate || endDate || selectedUni !== "all" || selectedProg !== "all" || selectedPartner !== "all" || selectedBatch !== "all") && (
+          {(startDate ||
+            endDate ||
+            selectedUni !== "all" ||
+            selectedProg !== "all" ||
+            selectedPartner !== "all" ||
+            selectedBatch !== "all") && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -398,8 +450,7 @@ export default function StudentList() {
 
               {selectedProg !== "all" && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[10px] font-bold text-indigo-600">
-                  Course:{" "}
-                  {programs.find((p) => p._id === selectedProg)?.name}
+                  Course: {programs.find((p) => p._id === selectedProg)?.name}
                   <button
                     onClick={() => setSelectedProg("all")}
                     className="hover:text-rose-500"
@@ -424,8 +475,17 @@ export default function StudentList() {
 
               {startDate || endDate ? (
                 <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-emerald-600">
-                  {dateFilterType === "created" ? "Registration" : "Approval"}: {startDate || "Start"} to {endDate || "End"}
-                  <button onClick={() => { setStartDate(""); setEndDate(""); }} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                  {dateFilterType === "created" ? "Registration" : "Approval"}:{" "}
+                  {startDate || "Start"} to {endDate || "End"}
+                  <button
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                 </div>
               ) : null}
 
@@ -458,6 +518,34 @@ export default function StudentList() {
           )}
         </AnimatePresence>
 
+        {/* Status Tab Navigation - Mirroring University Style */}
+        <div className="overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex items-center gap-3 min-w-max">
+            {studentTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setStatusTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all relative overflow-hidden group border",
+                  statusTab === tab.id
+                    ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20"
+                    : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary",
+                )}
+              >
+                <tab.icon
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    statusTab === tab.id
+                      ? "text-white"
+                      : "text-muted-foreground group-hover:text-primary",
+                  )}
+                />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Table/Card Container */}
         <div className="bg-card border border-border rounded-[2.5rem] shadow-sm overflow-hidden">
           {/* Desktop Table View */}
@@ -483,6 +571,9 @@ export default function StudentList() {
                       </th>
                     </>
                   )}
+                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                    Lifecycle
+                  </th>
                   <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
                     Action
                   </th>
@@ -503,7 +594,7 @@ export default function StudentList() {
                 ) : filteredStudents.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="5"
+                      colSpan="6"
                       className="px-8 py-20 text-center space-y-3"
                     >
                       <Users className="w-12 h-12 mx-auto opacity-10" />
@@ -591,6 +682,13 @@ export default function StudentList() {
                             </td>
                           </>
                         )}
+                        <td className="px-8 py-6">
+                          <span
+                            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getLifecycleStatusStyle(student.status)}`}
+                          >
+                            {student.status || "On Progress"}
+                          </span>
+                        </td>
                         <td className="px-8 py-6 text-right">
                           <button className="p-3 rounded-2xl bg-muted/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                             <ChevronRight className="w-4 h-4" />
@@ -662,12 +760,22 @@ export default function StudentList() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">
-                          Status
+                          Payment
                         </p>
                         <span
                           className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusStyle(student.paymentStatus)}`}
                         >
                           {student.paymentStatus}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">
+                          Lifecycle
+                        </p>
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getLifecycleStatusStyle(student.status)}`}
+                        >
+                          {student.status || "On Progress"}
                         </span>
                       </div>
                     </div>
@@ -694,12 +802,13 @@ export default function StudentList() {
           {/* Table Footer / Pagination */}
           <div className="p-8 bg-muted/10 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-6">
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-              Displaying {Math.min(paginatedStudents.length, itemsPerPage)} of {filteredStudents.length} results
+              Displaying {Math.min(paginatedStudents.length, itemsPerPage)} of{" "}
+              {filteredStudents.length} results
             </p>
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => prev - 1)}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
                 className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
               >
                 Previous
@@ -711,18 +820,18 @@ export default function StudentList() {
                     onClick={() => setCurrentPage(i + 1)}
                     className={cn(
                       "w-10 h-10 rounded-xl text-[10px] font-black transition-all",
-                      currentPage === i + 1 
-                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20" 
-                        : "bg-white border border-border/50 text-slate-500 hover:bg-muted"
+                      currentPage === i + 1
+                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
+                        : "bg-white border border-border/50 text-slate-500 hover:bg-muted",
                     )}
                   >
                     {i + 1}
                   </button>
                 ))}
               </div>
-              <button 
+              <button
                 disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setCurrentPage(prev => prev + 1)}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
                 className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
               >
                 Next
@@ -827,7 +936,11 @@ export default function StudentList() {
                       >
                         <option value="all">All Courses</option>
                         {programs
-                          .filter((prog) => (prog.university?._id || prog.university) === selectedUni)
+                          .filter(
+                            (prog) =>
+                              (prog.university?._id || prog.university) ===
+                              selectedUni,
+                          )
                           .map((prog) => (
                             <option key={prog._id} value={prog._id}>
                               {prog.name}
@@ -914,18 +1027,20 @@ export default function StudentList() {
 
                     {/* Date Type Toggle */}
                     <div className="flex p-1 bg-slate-100 rounded-2xl">
-                      {['created', 'approved'].map((type) => (
+                      {["created", "approved"].map((type) => (
                         <button
                           key={type}
                           onClick={() => setDateFilterType(type)}
                           className={cn(
                             "flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                            dateFilterType === type 
-                              ? "bg-white text-emerald-600 shadow-sm" 
-                              : "text-slate-400 hover:text-slate-600"
+                            dateFilterType === type
+                              ? "bg-white text-emerald-600 shadow-sm"
+                              : "text-slate-400 hover:text-slate-600",
                           )}
                         >
-                          {type === 'created' ? 'Registration Date' : 'Approval Date'}
+                          {type === "created"
+                            ? "Registration Date"
+                            : "Approval Date"}
                         </button>
                       ))}
                     </div>

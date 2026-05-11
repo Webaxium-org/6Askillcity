@@ -47,6 +47,7 @@ import adminRoutes from './routes/admin.routes.js';
 import ocrRoutes from './routes/ocr.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import serviceRoutes from './routes/service.routes.js';
 
 app.use('/api/admission-points', admissionPointRoutes);
 app.use('/api/auth', authRoutes);
@@ -59,6 +60,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/services', serviceRoutes);
 
 // 7. Error Handling
 app.use(errorHandler);

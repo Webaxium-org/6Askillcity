@@ -48,7 +48,12 @@ const FollowupSchema = new mongoose.Schema(
       enum: ["general", "document", "eligibility", "callback", "other"],
       default: "general",
     },
-    
+    // Enrollment follow up status
+    status: {
+      type: String,
+      enum: ["On Progress", "Enrolled", "Cancelled"],
+    },
+
     // Scheduling: When is the next interaction planned?
     nextFollowupDate: {
       type: Date,
@@ -62,7 +67,7 @@ const FollowupSchema = new mongoose.Schema(
       select: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Followup", FollowupSchema);
