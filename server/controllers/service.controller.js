@@ -12,13 +12,14 @@ import { v4 as uuidv4 } from "uuid";
 
 export const createServiceDefinition = async (req, res, next) => {
   try {
-    const { title, description, subCategories, currentFee } = req.body;
+    const { title, description, subCategories, currentFee, icon } = req.body;
 
     const service = new ServiceDefinition({
       title,
       description,
       subCategories,
       currentFee,
+      icon,
       createdBy: req.user.id
     });
 
@@ -86,11 +87,11 @@ export const updateServiceFee = async (req, res, next) => {
 export const updateServiceDefinition = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, subCategories } = req.body;
+    const { title, description, subCategories, icon } = req.body;
 
     const service = await ServiceDefinition.findByIdAndUpdate(
       id,
-      { title, description, subCategories },
+      { title, description, subCategories, icon },
       { new: true, runValidators: true }
     );
 

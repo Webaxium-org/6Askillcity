@@ -25,6 +25,10 @@ const ServiceDefinitionSchema = new mongoose.Schema({
     enum: ["Active", "Inactive"], 
     default: "Active" 
   },
+  icon: {
+    type: String,
+    default: "Layers"
+  },
   createdBy: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "User" 

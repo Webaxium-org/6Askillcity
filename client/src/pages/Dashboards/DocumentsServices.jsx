@@ -27,7 +27,30 @@ import {
   History,
   Trash2,
   Activity,
+  Truck,
+  Globe,
+  Briefcase,
 } from "lucide-react";
+
+const ICON_MAP = {
+  Layers,
+  ClipboardCheck,
+  GraduationCap,
+  Package,
+  Stamp,
+  ShieldCheck,
+  FileText,
+  CreditCard,
+  Users,
+  Activity,
+  Truck,
+  Globe,
+  Briefcase,
+  History,
+  Settings
+};
+
+const ICON_OPTIONS = Object.keys(ICON_MAP);
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -426,7 +449,10 @@ export default function DocumentsServices() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="p-3 rounded-2xl bg-primary/5 text-primary group-hover:scale-110 transition-transform">
-                    <Layers size={24} />
+                    {(() => {
+                      const Icon = ICON_MAP[service.icon] || Layers;
+                      return <Icon size={24} />;
+                    })()}
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Base Fee</p>
@@ -578,7 +604,8 @@ const CreateServiceForm = ({ onSuccess }) => {
     title: "",
     description: "",
     currentFee: "",
-    subCategories: [""]
+    subCategories: [""],
+    icon: "Layers"
   });
   const [loading, setLoading] = useState(false);
 
@@ -636,6 +663,31 @@ const CreateServiceForm = ({ onSuccess }) => {
             placeholder="Describe the service purpose..."
             className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-medium"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Icon</label>
+          <div className="grid grid-cols-5 gap-2 p-4 bg-muted/30 border border-border rounded-2xl">
+            {ICON_OPTIONS.map(iconName => {
+              const Icon = ICON_MAP[iconName];
+              return (
+                <button
+                  key={iconName}
+                  type="button"
+                  onClick={() => setFormData({...formData, icon: iconName})}
+                  className={cn(
+                    "p-3 rounded-xl flex items-center justify-center transition-all",
+                    formData.icon === iconName 
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" 
+                      : "bg-background/50 text-muted-foreground hover:bg-muted"
+                  )}
+                  title={iconName}
+                >
+                  <Icon size={20} />
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -910,7 +962,8 @@ const EditServiceForm = ({ service, onSuccess }) => {
     title: service?.title || "",
     description: service?.description || "",
     currentFee: service?.currentFee || "",
-    subCategories: service?.subCategories?.length > 0 ? [...service.subCategories] : [""]
+    subCategories: service?.subCategories?.length > 0 ? [...service.subCategories] : [""],
+    icon: service?.icon || "Layers"
   });
   const [loading, setLoading] = useState(false);
 
@@ -974,6 +1027,31 @@ const EditServiceForm = ({ service, onSuccess }) => {
             placeholder="Describe the service purpose..."
             className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-medium"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Icon</label>
+          <div className="grid grid-cols-5 gap-2 p-4 bg-muted/30 border border-border rounded-2xl">
+            {ICON_OPTIONS.map(iconName => {
+              const Icon = ICON_MAP[iconName];
+              return (
+                <button
+                  key={iconName}
+                  type="button"
+                  onClick={() => setFormData({...formData, icon: iconName})}
+                  className={cn(
+                    "p-3 rounded-xl flex items-center justify-center transition-all",
+                    formData.icon === iconName 
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" 
+                      : "bg-background/50 text-muted-foreground hover:bg-muted"
+                  )}
+                  title={iconName}
+                >
+                  <Icon size={20} />
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="space-y-3">
