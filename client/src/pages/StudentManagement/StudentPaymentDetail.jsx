@@ -266,13 +266,13 @@ export default function StudentPaymentDetail() {
         id,
         newFollowup.note,
         "eligibility", // Forced category as per request
-        newFollowup.nextFollowupDate,
+        null, // Removed nextFollowupDate
         newFollowup.status || student.status, // Pass current or new status
       );
 
       if (res.success) {
         dispatch(showAlert({ type: "success", message: "Interaction logged and status updated" }));
-        setNewFollowup({ note: "", status: "", enrollmentNumber: "", nextFollowupDate: "" });
+        setNewFollowup({ note: "", status: "", enrollmentNumber: "" });
         await Promise.all([fetchData(), fetchFollowups()]);
       }
     } catch (error) {
@@ -315,11 +315,17 @@ export default function StudentPaymentDetail() {
     { id: "payment", label: "Payment Overview", icon: CreditCard },
     { id: "profile", label: "Student Profile", icon: User },
     { id: "documents", label: "Documents", icon: FileDigit },
-    { id: "followup", label: "Followups", icon: History },
+    { id: "followup", label: "Status", icon: History },
     { id: "history", label: "Transaction History", icon: CreditCard },
-  ].filter(
-    (tab) => !isManager || (tab.id !== "payment" && tab.id !== "history"),
-  );
+  ].filter((tab) => {
+    if (isManager) {
+      return tab.id !== "payment" && tab.id !== "history";
+    }
+    if (isPartner) {
+      return tab.id !== "followup";
+    }
+    return true;
+  });
 
   return (
     <DashboardLayout title="Student Profile">
@@ -1026,142 +1032,124 @@ export default function StudentPaymentDetail() {
             {activeTab === "followup" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left: Log New Followup */}
-                <div className="lg:col-span-1">
-                  <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm sticky top-24">
-                    <h3 className="text-xl font-black mb-8 flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                        <Plus className="w-5 h-5" />
-                      </div>
-                      Log Interaction
-                    </h3>
-                    {student.status === "Enrolled" ? (
-                      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 text-center space-y-4">
-                        <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-600">
-                          <CheckCircle2 className="w-8 h-8" />
+                {!isPartner && (
+                  <div className="lg:col-span-1">
+                    <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm sticky top-24">
+                      <h3 className="text-xl font-black mb-8 flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                          <Plus className="w-5 h-5" />
                         </div>
-                        <div>
-                          <h4 className="text-lg font-black text-emerald-600">Enrolled</h4>
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
-                            Process Completed
-                          </p>
-                        </div>
-                        {student.enrollmentNumber && (
-                          <div className="pt-4 border-t border-emerald-500/10">
-                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">
-                              Enrollment ID
-                            </p>
-                            <p className="text-sm font-black text-foreground">
-                              {student.enrollmentNumber}
+                        Update Student Status
+                      </h3>
+                      {student.status === "Enrolled" ? (
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 text-center space-y-4">
+                          <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                            <CheckCircle2 className="w-8 h-8" />
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-black text-emerald-600">Enrolled</h4>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                              Process Completed
                             </p>
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <form onSubmit={handleAddFollowup} className="space-y-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                            Student Status
-                          </label>
-                          <select
-                            value={newFollowup.status}
-                            onChange={(e) =>
-                              setNewFollowup({
-                                ...newFollowup,
-                                status: e.target.value,
-                              })
-                            }
-                            className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-xs font-bold uppercase tracking-wider"
-                          >
-                            <option value="">No Change (Current: {student.status})</option>
-                            <option value="On Progress">On Progress</option>
-                            <option value="Enrolled">Enrolled</option>
-                            <option value="Cancelled">Cancelled</option>
-                          </select>
+                          {student.enrollmentNumber && (
+                            <div className="pt-4 border-t border-emerald-500/10">
+                              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                                Enrollment ID
+                              </p>
+                              <p className="text-sm font-black text-foreground">
+                                {student.enrollmentNumber}
+                              </p>
+                            </div>
+                          )}
                         </div>
-
-                        {newFollowup.status === "Enrolled" && (
+                      ) : (
+                        <form onSubmit={handleAddFollowup} className="space-y-6">
                           <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                              Enrollment Number
+                              Student Status
                             </label>
-                            <div className="relative">
-                              <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                              <input
-                                type="text"
-                                required
-                                value={newFollowup.enrollmentNumber}
-                                onChange={(e) =>
-                                  setNewFollowup({
-                                    ...newFollowup,
-                                    enrollmentNumber: e.target.value,
-                                  })
-                                }
-                                placeholder="Enter official enrollment ID"
-                                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm font-bold"
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                            Note / Remark
-                          </label>
-                          <textarea
-                            required
-                            value={newFollowup.note}
-                            onChange={(e) =>
-                              setNewFollowup({
-                                ...newFollowup,
-                                note: e.target.value,
-                              })
-                            }
-                            className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm h-32 leading-relaxed"
-                            placeholder="What was discussed during this interaction?"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                            Next Follow-up Date (Optional)
-                          </label>
-                          <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input
-                              type="date"
-                              value={newFollowup.nextFollowupDate}
+                            <select
+                              value={newFollowup.status}
                               onChange={(e) =>
                                 setNewFollowup({
                                   ...newFollowup,
-                                  nextFollowupDate: e.target.value,
+                                  status: e.target.value,
                                 })
                               }
-                              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm font-bold"
+                              className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-xs font-bold uppercase tracking-wider"
+                            >
+                              <option value="">No Change (Current: {student.status})</option>
+                              <option value="On Progress">On Progress</option>
+                              <option value="Enrolled">Enrolled</option>
+                              <option value="Cancelled">Cancelled</option>
+                            </select>
+                          </div>
+
+                          {newFollowup.status === "Enrolled" && (
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                                Enrollment Number
+                              </label>
+                              <div className="relative">
+                                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <input
+                                  type="text"
+                                  required
+                                  value={newFollowup.enrollmentNumber}
+                                  onChange={(e) =>
+                                    setNewFollowup({
+                                      ...newFollowup,
+                                      enrollmentNumber: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Enter official enrollment ID"
+                                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm font-bold"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                              Note / Remark
+                            </label>
+                            <textarea
+                              required
+                              value={newFollowup.note}
+                              onChange={(e) =>
+                                setNewFollowup({
+                                  ...newFollowup,
+                                  note: e.target.value,
+                                })
+                              }
+                              className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm h-32 leading-relaxed"
+                              placeholder="What was discussed during this interaction?"
                             />
                           </div>
-                        </div>
 
-                        <button
-                          type="submit"
-                          disabled={isFollowupLoading}
-                          className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-                        >
-                          {isFollowupLoading ? (
-                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              <Plus className="w-4 h-4" />
-                              Log Follow-up
-                            </>
-                          )}
-                        </button>
-                      </form>
-                    )}
+                          <button
+                            type="submit"
+                            disabled={isFollowupLoading}
+                            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                          >
+                            {isFollowupLoading ? (
+                              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <>
+                                <Plus className="w-4 h-4" />
+                                Update Status
+                              </>
+                            )}
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Right: History Timeline */}
-                <div className="lg:col-span-2">
+                <div className={isPartner ? "lg:col-span-3" : "lg:col-span-2"}>
                   <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm min-h-[600px]">
                     <h3 className="text-xl font-black mb-8 flex items-center gap-3">
                       <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">

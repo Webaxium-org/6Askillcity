@@ -2,6 +2,7 @@ import ServiceDefinition from "../models/serviceDefinition.js";
 import ServiceFee from "../models/serviceFee.js";
 import ServiceApplication from "../models/serviceApplication.js";
 import Student from "../models/student.js";
+import AdmissionPoint from "../models/admissionPoint.js";
 import Payment from "../models/payment.js";
 import createError from "http-errors";
 import { v4 as uuidv4 } from "uuid";
@@ -156,7 +157,15 @@ export const getServiceApplications = async (req, res, next) => {
     if (studentId) query.student = studentId;
 
     const applications = await ServiceApplication.find(query)
-      .populate("student", "name email phone")
+      .populate({
+        path: "student",
+        select: "name email phone registeredBy",
+        populate: {
+          path: "registeredBy",
+          select: "centerName",
+          model: "AdmissionPoint"
+        }
+      })
       .populate("service", "title")
       .sort("-createdAt");
 

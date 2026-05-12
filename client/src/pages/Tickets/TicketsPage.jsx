@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { MessageSquare, Plus, Search, Clock, AlertCircle, CheckCircle2, ChevronRight, SlidersHorizontal, X, Filter, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,9 +27,10 @@ export default function TicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [searchParams] = useSearchParams();
+  const [filterStatus, setFilterStatus] = useState(searchParams.get("status") || "All");
+  const [startDate, setStartDate] = useState(searchParams.get("startDate") || "");
+  const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
   const [metrics, setMetrics] = useState({ total: 0, open: 0, inProgress: 0, postponed: 0, closed: 0 });
   const [showFilters, setShowFilters] = useState(false);
   const limit = 10;

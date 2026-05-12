@@ -37,8 +37,8 @@ export const submitApplication = async (id) => {
 };
 
 // Admin: Get all pending-eligibility applications
-export const getPendingEligibility = async () => {
-  const response = await axiosInstance.get("/students/pending-eligibility");
+export const getPendingEligibility = async (params = {}) => {
+  const response = await axiosInstance.get("/students/pending-eligibility", { params });
   return response.data;
 };
 

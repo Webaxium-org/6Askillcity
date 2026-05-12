@@ -6,6 +6,7 @@ import path from "path";
 import { s3, bucketName } from "../utils/s3Config.js";
 import Student from "../models/student.js";
 import ProgramFee from "../models/programFee.js";
+import moment from "moment";
 import createError from "http-errors";
 import {
   sendToAdmins,
@@ -557,15 +558,46 @@ export const submitForEligibility = async (req, res, next) => {
 // ─────────────────────────────────────────────
 export const getPendingEligibility = async (req, res, next) => {
   try {
-    const students = await Student.find({
-      applicationStatus: "Pending Eligibility",
-      deleted: { $ne: true },
-    })
+    const { status, startDate, endDate, partnerId } = req.query;
+
+    let query = { deleted: { $ne: true } };
+
+    // Handle Status (Tabs)
+    if (status === "Rejected") {
+      query.applicationStatus = "Rejected";
+    } else if (status === "Approved") {
+      query.applicationStatus = "Eligible";
+    } else {
+      // Default to Pending Eligibility
+      query.applicationStatus = "Pending Eligibility";
+    }
+
+    // Handle Partner Filter
+    if (partnerId && partnerId !== "all") {
+      query.registeredBy = partnerId;
+    }
+
+    // Handle Date Range
+    if (startDate || endDate) {
+      query.applicationSubmittedDate = {};
+
+      if (startDate) {
+        query.applicationSubmittedDate.$gte = moment(startDate)
+          .startOf("day")
+          .toDate();
+      }
+      if (endDate) {
+        const end = moment(endDate).endOf("day").toDate();
+        query.applicationSubmittedDate.$lte = end;
+      }
+    }
+
+    const students = await Student.find(query)
       .populate("registeredBy", "centerName licenseeEmail")
       .populate("university", "name")
       .populate("program", "name")
       .populate("branch", "name")
-      .sort({ applicationSubmittedDate: -1 }); // Newest submissions first
+      .sort({ applicationSubmittedDate: -1 });
 
     res.status(200).json({
       success: true,

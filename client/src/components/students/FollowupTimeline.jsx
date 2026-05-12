@@ -31,7 +31,6 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
   const [loadingFollowups, setLoadingFollowups] = useState(true);
   const [note, setNote] = useState("");
   const [category, setCategory] = useState("general");
-  const [nextFollowupDate, setNextFollowupDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -63,17 +62,16 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
         studentId,
         note,
         category,
-        nextFollowupDate,
+        null, // Removed nextFollowupDate
       );
       if (res.success) {
         setFollowups((prev) => [res.data, ...prev]);
         setNote("");
         setCategory("general");
-        setNextFollowupDate("");
         dispatch(
           showAlert({
             type: "success",
-            message: "Follow-up logged and scheduled!",
+            message: "Follow-up logged!",
           }),
         );
       }
@@ -138,19 +136,6 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
               </select>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded border border-input">
-              <Calendar className="w-3 h-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground mr-1">
-                Next:
-              </span>
-              <input
-                type="date"
-                value={nextFollowupDate}
-                onChange={(e) => setNextFollowupDate(e.target.value)}
-                className="text-[10px] bg-transparent outline-none focus:text-primary transition-all cursor-pointer"
-              />
-            </div>
-
             <button
               type="submit"
               disabled={!note.trim() || submitting}
@@ -160,7 +145,7 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
                 <div className="w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <Plus className="w-3 h-3" /> Log & Schedule
+                  <Plus className="w-3 h-3" /> Log Note
                 </>
               )}
             </button>
@@ -226,16 +211,6 @@ export function FollowupTimeline({ studentId, canAdd = true }) {
                   <p className="text-[11px] text-foreground/80 whitespace-pre-wrap leading-relaxed">
                     {f.note}
                   </p>
-
-                  {f.nextFollowupDate && (
-                    <div className="mt-2 pt-2 border-t border-border flex items-center gap-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                      <Bell className="w-3 h-3" />
-                      Next Scheduled:{" "}
-                      {new Date(f.nextFollowupDate).toLocaleDateString([], {
-                        dateStyle: "medium",
-                      })}
-                    </div>
-                  )}
 
                   <div className="mt-2 text-[9px] text-muted-foreground italic flex items-center gap-1">
                     <Clock className="w-2.5 h-2.5" />

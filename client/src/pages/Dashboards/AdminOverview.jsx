@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
+import { getAdminDashboardStats } from "../../api/admin.api";
 import { motion } from "framer-motion";
 import {
   FileText,
@@ -17,9 +19,22 @@ import {
   Truck,
   Globe,
   Briefcase,
+  Building2,
+  MessageSquare,
 } from "lucide-react";
 
-const StatItem = ({ label, value, color = "blue" }) => {
+const serviceCardConfigs = {
+  "Mandatory Documents": { icon: ClipboardCheck, color: "amber" },
+  "Optional Certificates": { icon: GraduationCap, color: "rose" },
+  "Final Degree": { icon: Package, color: "cyan" },
+  "Embassy Attestation": { icon: Stamp, color: "slate" },
+  "Apostille Services": { icon: ShieldCheck, color: "indigo" },
+  "University Services": { icon: Building2, color: "emerald" },
+  Verification: { icon: ShieldCheck, color: "teal" },
+  "Verification Services": { icon: ShieldCheck, color: "blue" },
+};
+
+const StatItem = ({ label, value, color = "blue", onClick }) => {
   const dotColors = {
     blue: "bg-blue-500 shadow-blue-500/50",
     emerald: "bg-emerald-500 shadow-emerald-500/50",
@@ -34,7 +49,8 @@ const StatItem = ({ label, value, color = "blue" }) => {
   return (
     <motion.div
       whileHover={{ x: 5 }}
-      className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors group"
+      onClick={onClick}
+      className={`flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors group ${onClick ? "cursor-pointer" : ""}`}
     >
       <div className="flex items-center gap-3">
         <div
@@ -51,7 +67,13 @@ const StatItem = ({ label, value, color = "blue" }) => {
   );
 };
 
-const SectionCard = ({ title, items, icon: Icon, color = "blue" }) => {
+const SectionCard = ({
+  title,
+  items,
+  icon: Icon,
+  color = "blue",
+  onItemClick,
+}) => {
   const colorVariants = {
     blue: "from-blue-500/20 to-indigo-500/5 border-blue-500/20 text-blue-600 dark:text-blue-400",
     emerald:
@@ -97,7 +119,13 @@ const SectionCard = ({ title, items, icon: Icon, color = "blue" }) => {
 
       <div className="p-4 space-y-1 flex-grow">
         {items.map((item, index) => (
-          <StatItem key={index} label={item} color={color} />
+          <StatItem
+            key={index}
+            label={typeof item === "string" ? item : item.label}
+            value={typeof item === "string" ? 0 : item.value}
+            color={color}
+            onClick={() => onItemClick?.(item)}
+          />
         ))}
       </div>
 
@@ -133,16 +161,118 @@ const SectionCard = ({ title, items, icon: Icon, color = "blue" }) => {
 };
 
 const AdminOverview = () => {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const res = await getAdminDashboardStats();
+      if (res.success) {
+        setStats(res.data.summary);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatClick = (sectionTitle, item) => {
+    const label = typeof item === "string" ? item : item.label;
+
+    if (sectionTitle === "Application") {
+      let path = "/dashboard/eligibility-queue";
+
+      if (label === "New Application") {
+        const today = new Date().toISOString().split("T")[0];
+        path += `?startDate=${today}&endDate=${today}&status=Pending`;
+      } else if (label === "Application On Review") {
+        path += "?status=Pending";
+      } else if (label === "Application Rejected") {
+        path += "?status=Rejected";
+      } else if (label === "Application Approved") {
+        path = "/dashboard/student-management";
+      }
+
+      navigate(path);
+    } else if (sectionTitle === "Course Fee") {
+      if (label === "Partial Fee Paid") {
+        navigate("/dashboard/student-management?paymentStatus=Partially Paid");
+      } else if (label === "Course Fee Completed") {
+        navigate("/dashboard/student-management?paymentStatus=Paid");
+      }
+    } else if (sectionTitle === "Student") {
+      if (label === "To Be Enrolled" || label === "Enrollment On Progress") {
+        navigate("/dashboard/student-management?tab=On Progress");
+      } else if (label === "Enrolled Students") {
+        navigate("/dashboard/student-management?tab=Enrolled");
+      } else if (label === "Enrollment Cancelled") {
+        navigate("/dashboard/student-management?tab=Cancelled");
+      }
+    } else if (sectionTitle === "Ticket") {
+      let query = "/dashboard/tickets";
+      if (label === "New Tickets") {
+        const today = new Date().toISOString().split("T")[0];
+        query += `?startDate=${today}&endDate=${today}`;
+      } else if (label === "Open Tickets") {
+        query += "?status=Open";
+      } else if (label === "Postponed Tickets") {
+        query += "?status=Postponed";
+      } else if (label === "Closed Tickets") {
+        query += "?status=Closed";
+      }
+      navigate(query);
+    } else {
+      // Dynamic Service Stats Navigation
+      const serviceTitles = stats?.serviceStats?.map((s) => s._id) || [];
+      if (serviceTitles.includes(sectionTitle)) {
+        let query = `?serviceType=${encodeURIComponent(sectionTitle)}`;
+
+        if (label === "Whole Fees Paid") query += "&paymentStatus=Paid";
+        else if (label === "Partial Fees Paid")
+          query += "&paymentStatus=Partially Paid";
+        else if (label === "Fees Pending") query += "&paymentStatus=Unpaid";
+        else if (label === "Pending Applications")
+          query += "&status=Pending Applications";
+        else if (label === "Application On Progress")
+          query += "&status=Application On Progress";
+        else if (label === "Documents Received")
+          query += "&status=Documents Received";
+        else if (label === "Documents Sent Courier")
+          query += "&status=Documents Sent Courier";
+
+        navigate(`/dashboard/documents-services${query}`);
+      }
+    }
+  };
+
   const sections = [
     {
       title: "Application",
       icon: FileText,
       color: "blue",
       items: [
-        "New Application",
-        "Application On Review",
-        "Application Rejected",
-        "Application Approved",
+        {
+          label: "New Application",
+          value: stats?.newApplicationsTodayCount,
+        },
+        {
+          label: "Application On Review",
+          value: stats?.pendingEligibilityCount,
+        },
+        {
+          label: "Application Rejected",
+          value: stats?.rejectedApplicationsCount,
+        },
+        {
+          label: "Application Approved",
+          value: stats?.approvedApplicationsCount,
+        },
       ],
     },
     {
@@ -150,10 +280,28 @@ const AdminOverview = () => {
       icon: CreditCard,
       color: "emerald",
       items: [
-        "Total Fee",
-        "Fees To Be Paid",
-        "Partial Fee Paid",
-        "Course Fee Completed",
+        {
+          label: "Total Fee",
+          value: stats?.courseFeeStats
+            ? `₹${stats.courseFeeStats.totalFee.toLocaleString()}`
+            : "₹0",
+        },
+        {
+          label: "Fees To Be Paid",
+          value: stats?.courseFeeStats
+            ? `₹${stats.courseFeeStats.pendingFeeTotal.toLocaleString()}`
+            : "₹0",
+        },
+        {
+          label: "Partial Fee Paid",
+          value: stats?.courseFeeStats
+            ? `₹${stats.courseFeeStats.partialPaidTotal.toLocaleString()}`
+            : "₹0",
+        },
+        {
+          label: "Course Fee Completed",
+          value: stats?.courseFeeStats?.completedCount || 0,
+        },
       ],
     },
     {
@@ -161,84 +309,82 @@ const AdminOverview = () => {
       icon: Users,
       color: "purple",
       items: [
-        "To Be Enrolled",
-        "Enrollment On Progress",
-        "Enrolled Students",
-        "Enrollment Cancelled",
+        {
+          label: "To Be Enrolled",
+          value: stats?.lifecycleStats?.onProgress || 0,
+        },
+        {
+          label: "Enrollment On Progress",
+          value: stats?.lifecycleStats?.onProgress || 0,
+        },
+        {
+          label: "Enrolled Students",
+          value: stats?.lifecycleStats?.enrolled || 0,
+        },
+        {
+          label: "Enrollment Cancelled",
+          value: stats?.lifecycleStats?.cancelled || 0,
+        },
       ],
     },
     {
-      title: "Mandatory Documents",
-      icon: ClipboardCheck,
-      color: "amber",
-      items: [
-        "Whole Fees Paid",
-        "Partial Fees Paid",
-        "Fees Pending",
-        "Pending Applications",
-        "Application On Progress",
-        "Documents Received",
-        "Documents Sent Courier",
-      ],
-    },
-    {
-      title: "Optional Certificates",
-      icon: GraduationCap,
+      title: "Ticket",
+      icon: MessageSquare,
       color: "rose",
       items: [
-        "Job In India Documents",
-        "Job Abroad Documents",
-        "Study In India Documents",
-        "Study Abroad Documents",
-        "Whole Fees Paid",
-        "Partial Fees Paid",
-        "Fees Pending",
-        "Pending Applications",
-        "Application On Progress",
-        "Documents Received",
-        "Documents Sent Courier",
+        {
+          label: "New Tickets",
+          value: stats?.newTicketsTodayCount || 0,
+        },
+        {
+          label: "Open Tickets",
+          value: stats?.openTicketsCount || 0,
+        },
+        {
+          label: "Postponed Tickets",
+          value: stats?.postponedTicketsCount || 0,
+        },
+        {
+          label: "Closed Tickets",
+          value: stats?.closedTicketsCount || 0,
+        },
       ],
     },
-    {
-      title: "Final Degree",
-      icon: Package,
-      color: "cyan",
+    ...(stats?.serviceStats || []).map((srv) => ({
+      title: srv._id,
+      icon: serviceCardConfigs[srv._id]?.icon || FileText,
+      color: serviceCardConfigs[srv._id]?.color || "blue",
       items: [
-        "Whole Fees Paid",
-        "Partial Fees Paid",
-        "Fees Pending",
-        "Pending Applications",
-        "Application On Progress",
-        "Documents Received",
-        "Documents Sent Courier",
+        {
+          label: "Whole Fees Paid",
+          value: srv.wholePaid || 0,
+        },
+        {
+          label: "Partial Fees Paid",
+          value: srv.partialPaid || 0,
+        },
+        {
+          label: "Fees Pending",
+          value: srv.unpaid || 0,
+        },
+        {
+          label: "Pending Applications",
+          value: srv.pending || 0,
+        },
+        {
+          label: "Application On Progress",
+          value: srv.progress || 0,
+        },
+        {
+          label: "Documents Received",
+          value: srv.received || 0,
+        },
+        {
+          label: "Documents Sent Courier",
+          value: srv.sent || 0,
+        },
       ],
-    },
-    {
-      title: "Embassy Attestation",
-      icon: Stamp,
-      color: "slate",
-      items: [
-        "Embassy Fees Paid",
-        "Fees Pending",
-        "Pending Applications",
-        "Embassy Attestation On Progress",
-        "Stamped Doc Received",
-        "Doc Sent Courier",
-      ],
-    },
-    {
-      title: "Verification",
-      icon: ShieldCheck,
-      color: "teal",
-      items: [
-        "Verification Works Pending",
-        "Verification On Progress",
-        "Verification Completed",
-        "Verification & Courier Fee Paid",
-        "Verification Sent",
-        "Verification Completed",
-      ],
-    },
+    })),
   ];
 
   return (
@@ -280,7 +426,11 @@ const AdminOverview = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {sections.map((section, index) => (
-            <SectionCard key={index} {...section} />
+            <SectionCard
+              key={index}
+              {...section}
+              onItemClick={(item) => handleStatClick(section.title, item)}
+            />
           ))}
         </div>
 

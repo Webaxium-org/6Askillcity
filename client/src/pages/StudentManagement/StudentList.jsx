@@ -23,11 +23,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { StatCard } from "../../components/dashboard/StatCard";
 import { X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "../../components/dashboard/StatCard";
 
 export default function StudentList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const isAdmin = user?.role === "admin" || user?.type === "admin";
@@ -47,6 +48,7 @@ export default function StudentList() {
   const [selectedProg, setSelectedProg] = useState("all");
   const [selectedPartner, setSelectedPartner] = useState("all");
   const [selectedBatch, setSelectedBatch] = useState("all");
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("all"); // all, Unpaid, Partially Paid, Paid
   const [partners, setPartners] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("created"); // created, approved
 
@@ -74,6 +76,7 @@ export default function StudentList() {
     filterType,
     selectedPartner,
     selectedBatch,
+    selectedPaymentStatus,
     dateFilterType,
     statusTab,
   ]);
@@ -114,6 +117,18 @@ export default function StudentList() {
     fetchStudents();
     fetchFilterData();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const paymentStatusParam = params.get("paymentStatus");
+    const tabParam = params.get("tab");
+    if (paymentStatusParam) {
+      setSelectedPaymentStatus(paymentStatusParam);
+    }
+    if (tabParam) {
+      setStatusTab(tabParam);
+    }
+  }, [location.search]);
 
   const fetchFilterData = async () => {
     try {
@@ -232,6 +247,10 @@ export default function StudentList() {
       const studentStatus = s.status || "On Progress";
       if (studentStatus !== statusTab) return false;
     }
+
+    // Payment Status Filter (Advanced)
+    if (selectedPaymentStatus !== "all" && s.paymentStatus !== selectedPaymentStatus)
+      return false;
 
     return true;
   });
@@ -501,6 +520,18 @@ export default function StudentList() {
                 </div>
               )}
 
+              {selectedPaymentStatus !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-emerald-600">
+                  Payment: {selectedPaymentStatus}
+                  <button
+                    onClick={() => setSelectedPaymentStatus("all")}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   setStartDate("");
@@ -509,6 +540,7 @@ export default function StudentList() {
                   setSelectedProg("all");
                   setSelectedPartner("all");
                   setSelectedBatch("all");
+                  setSelectedPaymentStatus("all");
                 }}
                 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 hover:underline ml-2"
               >
@@ -980,6 +1012,33 @@ export default function StudentList() {
                     </div>
                   )}
 
+                  {/* Payment Status */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/5 flex items-center justify-center text-emerald-600">
+                        <BadgeDollarSign className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Payment Status
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Filter by transaction standing
+                        </p>
+                      </div>
+                    </div>
+                    <select
+                      value={selectedPaymentStatus}
+                      onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all appearance-none"
+                    >
+                      <option value="all">Global (All Statuses)</option>
+                      <option value="Unpaid">Unpaid</option>
+                      <option value="Partially Paid">Partially Paid</option>
+                      <option value="Paid">Paid</option>
+                    </select>
+                  </div>
+
                   {/* Batch */}
                   <div className="space-y-5">
                     <div className="flex items-center gap-4">
@@ -1101,6 +1160,7 @@ export default function StudentList() {
                       setSelectedProg("all");
                       setSelectedPartner("all");
                       setSelectedBatch("all");
+                      setSelectedPaymentStatus("all");
                       setFilterType("all");
                       setDateFilterType("created");
                     }}
