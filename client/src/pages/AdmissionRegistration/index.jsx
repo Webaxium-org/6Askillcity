@@ -18,6 +18,7 @@ import { admissionRegistrationSchema } from "./schema";
 import { FormInput } from "@/components/ui/form-input";
 import { FormSelect } from "@/components/ui/form-select";
 import { FormSearchableSelect } from "@/components/ui/form-searchable-select";
+import { FormPhoneInput, COUNTRY_CODES } from "@/components/ui/form-phone-input";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -51,6 +52,9 @@ export default function AdmissionRegistration() {
       businessLicense: [],
       ownershipRentalAgreement: [],
       officePhotos: [],
+      contactPersonPhoneCode: "+91",
+      localRefMobile1Code: "+91",
+      localRefMobile2Code: "+91",
     },
   });
 
@@ -165,6 +169,18 @@ export default function AdmissionRegistration() {
     setValue("city", "");
   }, [selectedState, selectedCountry, setValue]);
 
+  // Auto-sync phone codes with selected country
+  useEffect(() => {
+    const countryData = COUNTRY_CODES.find(
+      (c) => c.country === selectedCountry,
+    );
+    if (countryData) {
+      setValue("contactPersonPhoneCode", countryData.code);
+      setValue("localRefMobile1Code", countryData.code);
+      setValue("localRefMobile2Code", countryData.code);
+    }
+  }, [selectedCountry, setValue]);
+
   const watchedValues = watch();
 
   const handleFileChange = (fieldName, newFiles) => {
@@ -233,6 +249,14 @@ export default function AdmissionRegistration() {
           if (data[key] && data[key].length > 0) {
             data[key].forEach((file) => formData.append(key, file));
           }
+        } else if (["contactPersonPhoneCode", "localRefMobile1Code", "localRefMobile2Code"].includes(key)) {
+          // Skip individual code fields
+        } else if (key === "contactPersonPhone") {
+          formData.append(key, (data.contactPersonPhoneCode || "") + data.contactPersonPhone);
+        } else if (key === "localRefMobile1") {
+          formData.append(key, (data.localRefMobile1Code || "") + data.localRefMobile1);
+        } else if (key === "localRefMobile2") {
+          formData.append(key, (data.localRefMobile2Code || "") + data.localRefMobile2);
         } else {
           formData.append(key, data[key]);
         }
@@ -308,10 +332,48 @@ export default function AdmissionRegistration() {
           >
             Admission Point <span className="text-primary">Registration</span>
           </motion.h1>
-          <p className="text-slate-500 text-sm font-medium max-w-lg mx-auto">
+          <p className="text-slate-500 text-sm font-medium max-w-lg mx-auto mb-8">
             Partner with 6A Skillcity. Complete the form below to register your
             center.
           </p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="max-w-2xl mx-auto p-6 bg-blue-500/5 border border-blue-500/20 rounded-[2rem] text-left mb-4"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 shrink-0">
+                <FileText size={20} />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-[11px] font-black uppercase tracking-widest text-blue-600 mb-2">
+                  Required Documents Checklist
+                </h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-4">
+                  Please keep digital copies of these documents ready for the
+                  upload stage:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Licensee Photo",
+                    "Licensee Aadhar Card",
+                    "Business License",
+                    "Ownership / Rental Agreement",
+                    "Office Photos",
+                  ].map((doc) => (
+                    <span
+                      key={doc}
+                      className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] font-bold text-slate-700 dark:text-slate-300 shadow-sm"
+                    >
+                      {doc}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         <motion.div
@@ -384,10 +446,12 @@ export default function AdmissionRegistration() {
                     error={errors.contactPersonName}
                     className="text-slate-700 dark:text-slate-200"
                   />
-                  <FormInput
+                  <FormPhoneInput
                     label="Contact Person Phone"
                     id="contactPersonPhone"
-                    placeholder="+91 00000 00000"
+                    placeholder="00000 00000"
+                    codeValue={watch("contactPersonPhoneCode")}
+                    onCodeChange={(val) => setValue("contactPersonPhoneCode", val)}
                     {...register("contactPersonPhone")}
                     error={errors.contactPersonPhone}
                     className="text-slate-700 dark:text-slate-200"
@@ -425,10 +489,12 @@ export default function AdmissionRegistration() {
                     error={errors.localRefName1}
                     className="text-slate-700 dark:text-slate-200"
                   />
-                  <FormInput
+                  <FormPhoneInput
                     label="Ref Person 1 Mobile"
                     id="localRefMobile1"
-                    placeholder="+91 00000 00000"
+                    placeholder="00000 00000"
+                    codeValue={watch("localRefMobile1Code")}
+                    onCodeChange={(val) => setValue("localRefMobile1Code", val)}
                     {...register("localRefMobile1")}
                     error={errors.localRefMobile1}
                     className="text-slate-700 dark:text-slate-200"
@@ -441,10 +507,12 @@ export default function AdmissionRegistration() {
                     error={errors.localRefName2}
                     className="text-slate-700 dark:text-slate-200"
                   />
-                  <FormInput
+                  <FormPhoneInput
                     label="Ref Person 2 Mobile"
                     id="localRefMobile2"
-                    placeholder="+91 00000 00000"
+                    placeholder="00000 00000"
+                    codeValue={watch("localRefMobile2Code")}
+                    onCodeChange={(val) => setValue("localRefMobile2Code", val)}
                     {...register("localRefMobile2")}
                     error={errors.localRefMobile2}
                     className="text-slate-700 dark:text-slate-200"
