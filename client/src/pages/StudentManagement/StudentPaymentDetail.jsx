@@ -32,6 +32,7 @@ import {
   Building2,
   GraduationCap,
   Briefcase,
+  MessageSquare,
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +53,8 @@ import {
   updateStudentStatus,
 } from "../../api/student.api";
 import { showAlert } from "../../redux/alertSlice";
+import { getTickets } from "../../api/ticket.api";
+import TicketChat from "../Tickets/TicketChat";
 
 const getFileUrl = (path) => {
   if (!path) return "";
@@ -109,6 +112,11 @@ export default function StudentPaymentDetail() {
   });
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  // Tickets state
+  const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [isTicketsLoading, setIsTicketsLoading] = useState(false);
+
   const { user } = useSelector((state) => state.user);
   const isPartner = user?.role === "partner" || user?.type === "partner";
   const isManager = user?.role === "manager";
@@ -142,6 +150,7 @@ export default function StudentPaymentDetail() {
       if (paymentsRes.success) setPayments(paymentsRes.data);
       if (schedulesRes.success) setSchedules(schedulesRes.data);
       if (followupsRes.success) setFollowups(followupsRes.data);
+      fetchStudentTickets();
     } catch (error) {
       dispatch(showAlert({ type: "error", message: "Failed to load details" }));
     } finally {
@@ -158,6 +167,18 @@ export default function StudentPaymentDetail() {
       console.error("Failed to fetch followups", error);
     } finally {
       setIsFollowupLoading(false);
+    }
+  };
+
+  const fetchStudentTickets = async () => {
+    setIsTicketsLoading(true);
+    try {
+      const res = await getTickets({ studentId: id, limit: 100 });
+      if (res.success) setTickets(res.data);
+    } catch (error) {
+      console.error("Failed to fetch tickets", error);
+    } finally {
+      setIsTicketsLoading(false);
     }
   };
 
@@ -360,6 +381,7 @@ export default function StudentPaymentDetail() {
     { id: "payment", label: "Payment Overview", icon: CreditCard },
     { id: "profile", label: "Student Profile", icon: User },
     { id: "documents", label: "Documents", icon: FileDigit },
+    { id: "tickets", label: "Tickets", icon: MessageSquare },
     { id: "followup", label: "Status", icon: History },
   ].filter((tab) => {
     if (isManager) {
@@ -1357,6 +1379,81 @@ export default function StudentPaymentDetail() {
               </div>
             )}
 
+            {activeTab === "tickets" && (
+              <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                  <div>
+                    <h3 className="text-xl font-black mb-1">Support Tickets</h3>
+                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                      Tickets raised for this student
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedTicket({ isNew: true, studentName: student.name })}
+                    className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Raise Ticket
+                  </button>
+                </div>
+
+                {isTicketsLoading ? (
+                  <div className="py-20 flex justify-center">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : tickets.length === 0 ? (
+                  <div className="py-20 text-center space-y-4">
+                    <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto">
+                      <MessageSquare className="w-10 h-10 text-muted-foreground opacity-20" />
+                    </div>
+                    <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                      No tickets found for this student.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {tickets.map((ticket) => (
+                      <div
+                        key={ticket._id}
+                        onClick={() => setSelectedTicket(ticket)}
+                        className="p-6 bg-muted/20 rounded-[2rem] border border-border/50 hover:border-primary/30 cursor-pointer transition-all group"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                              ticket.status === "Open"
+                                ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                : ticket.status === "Closed"
+                                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                  : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            }`}
+                          >
+                            {ticket.status}
+                          </span>
+                          <span className="text-[10px] font-bold text-muted-foreground">
+                            #{ticket._id.slice(-6)}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-black mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                          {ticket.title}
+                        </h4>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-4 h-8">
+                          {ticket.description}
+                        </p>
+                        <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                          <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5">
+                            <Clock className="w-3 h-3" />
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-all" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === "followup" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left: Log New Followup */}
@@ -1869,6 +1966,19 @@ export default function StudentPaymentDetail() {
         title={viewingDoc?.title}
         onClose={() => setViewingDoc(null)}
       />
+
+      <AnimatePresence>
+        {selectedTicket && (
+          <TicketChat
+            ticket={selectedTicket}
+            prefilledStudentId={id}
+            onClose={() => {
+              setSelectedTicket(null);
+              fetchStudentTickets();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <InvoiceModal
         isOpen={showInvoiceModal}

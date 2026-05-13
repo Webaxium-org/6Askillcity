@@ -58,6 +58,11 @@ const TicketSchema = new mongoose.Schema(
       enum: ["User", "AdmissionPoint"],
       default: null,
     },
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+      default: null,
+    },
   },
   { timestamps: true },
 );

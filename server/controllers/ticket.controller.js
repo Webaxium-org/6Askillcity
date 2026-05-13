@@ -19,6 +19,7 @@ export const createTicket = async (req, res, next) => {
       creatorModel,
       assignedToPartner,
       assignedTo,
+      studentId: req.body.studentId,
     });
 
     res.status(201).json({
@@ -46,6 +47,10 @@ export const getTickets = async (req, res, next) => {
     // Admins can see all by default, or filter by status/priority if provided in query
     if (req.query.status && req.query.status !== "All") {
       filter.status = req.query.status;
+    }
+
+    if (req.query.studentId) {
+      filter.studentId = req.query.studentId;
     }
 
     if (req.query.startDate && req.query.endDate) {

@@ -19,7 +19,8 @@ export const createTicket = async (data) => {
       "creatorId",
       "fullName email centerName licenseeName licenseeEmail",
     )
-    .populate("assignedToPartner", "centerName licenseeName");
+    .populate("assignedToPartner", "centerName licenseeName")
+    .populate("studentId", "name enrollmentNumber");
 
   const io = getIo();
   if (io) {
@@ -58,7 +59,8 @@ export const getTickets = async (filter, query) => {
       "fullName email centerName licenseeName licenseeEmail",
     )
     .populate("assignedToPartner", "centerName licenseeName")
-    .populate("assignedTo", "fullName email");
+    .populate("assignedTo", "fullName email")
+    .populate("studentId", "name enrollmentNumber");
 
   return {
     tickets,
@@ -89,7 +91,8 @@ export const getTicketById = async (ticketId, userId, userType) => {
     )
     .populate("assignedToPartner", "centerName licenseeName")
     .populate("assignedTo", "fullName email")
-    .populate("closedBy", "fullName email centerName licenseeName");
+    .populate("closedBy", "fullName email centerName licenseeName")
+    .populate("studentId", "name enrollmentNumber");
 
   if (!ticket) {
     throw new Error("Ticket not found");

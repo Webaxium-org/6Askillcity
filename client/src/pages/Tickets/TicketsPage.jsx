@@ -233,7 +233,7 @@ export default function TicketsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-muted/20">
-                      {["Ticket Details", "Creator / Assigned", "Status", "Created", ""].map(h => (
+                      {["Ticket Details", "Related Student", "Creator / Assigned", "Status", "Created", ""].map(h => (
                         <th key={h} className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -257,6 +257,16 @@ export default function TicketsPage() {
                             <span className="uppercase text-[10px] tracking-wider font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded">#{ticket._id.slice(-6)}</span>
                             <span className={cn("uppercase text-[10px] tracking-wider font-bold px-2 py-0.5 rounded border", getPriorityColor(ticket.priority))}>{ticket.priority}</span>
                           </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          {ticket.studentId ? (
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-primary">{ticket.studentId.name}</span>
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{ticket.studentId.enrollmentNumber || "No EN"}</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="px-5 py-4 text-sm">
                           {ticket.creatorModel === "AdmissionPoint"
@@ -302,8 +312,11 @@ export default function TicketsPage() {
                         <div className="font-medium text-foreground text-sm leading-snug line-clamp-2">{ticket.title}</div>
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                           <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase tracking-wider">#{ticket._id.slice(-6)}</span>
-                          <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider", getPriorityColor(ticket.priority))}>{ticket.priority}</span>
-                        </div>
+                           <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider", getPriorityColor(ticket.priority))}>{ticket.priority}</span>
+                           {ticket.studentId && (
+                             <span className="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider">Student: {ticket.studentId.name}</span>
+                           )}
+                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, Send, ChevronLeft, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
+import { X, Send, ChevronLeft, Calendar as CalendarIcon, CheckCircle2, GraduationCap } from "lucide-react";
 import { cn } from "../../components/dashboard/StatCard";
 import { useSelector, useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -9,7 +9,7 @@ import { getAllApprovedAdmissionPoints } from "../../api/admissionPoint.api";
 import { getAllUsers } from "../../api/auth.api";
 import { useSocket } from "../../context/SocketContext";
 
-export default function TicketChat({ ticket, onClose }) {
+export default function TicketChat({ ticket, onClose, prefilledStudentId }) {
   const { user } = useSelector((s) => s.user);
   const dispatch = useDispatch();
   const [messages, setMessages] = useState([]);
@@ -122,6 +122,7 @@ export default function TicketChat({ ticket, onClose }) {
       const payload = { title, description, priority };
       if (assigneeType === "partner" && assigneeId) payload.assignedToPartner = assigneeId;
       if (assigneeType === "user"    && assigneeId) payload.assignedTo        = assigneeId;
+      if (prefilledStudentId) payload.studentId = prefilledStudentId;
       const res = await createTicket(payload);
       if (res.success) onClose();
     } catch (e) { console.error(e); }
@@ -149,8 +150,18 @@ export default function TicketChat({ ticket, onClose }) {
               <h2 className="text-base sm:text-lg font-bold truncate">
                 {ticket?.isNew ? "Create New Ticket" : ticket.title}
               </h2>
+              {ticket?.isNew && prefilledStudentId && (
+                <p className="text-xs text-primary font-bold">For Student: {ticket.studentName || "Selected Student"}</p>
+              )}
+              {!ticket?.isNew && ticketState?.studentId && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-bold text-primary">{ticketState.studentId.name}</span>
+                  <span className="text-[10px] text-muted-foreground">• {ticketState.studentId.enrollmentNumber || "No EN"}</span>
+                </div>
+              )}
               {!ticket?.isNew && (
-                <p className="text-xs text-muted-foreground truncate">#{ticket._id}</p>
+                <p className="text-[10px] text-muted-foreground truncate opacity-70">Ticket ID: #{ticket._id}</p>
               )}
             </div>
           </div>
