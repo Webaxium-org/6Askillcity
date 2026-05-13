@@ -1119,7 +1119,11 @@ export default function ApplicationDetailPage() {
                                   : "bg-amber-500/10 text-amber-600"
                             }`}
                           >
-                            {item.doc.status || "Pending"}
+                            {item.doc.status === "Verified"
+                              ? "Verified"
+                              : item.doc.status === "Rejected"
+                                ? "Rejected"
+                                : "Pending verification"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1185,7 +1189,11 @@ export default function ApplicationDetailPage() {
                                     : "bg-amber-500/10 text-amber-600"
                               }`}
                             >
-                              {doc.status || "Pending"}
+                              {doc.status === "Verified"
+                                ? "Verified"
+                                : doc.status === "Rejected"
+                                  ? "Rejected"
+                                  : "Pending verification"}
                             </span>
                           </div>
                         ))}
@@ -1222,7 +1230,11 @@ export default function ApplicationDetailPage() {
                                     : "bg-amber-500/10 text-amber-600"
                               }`}
                             >
-                              {doc.status || "Pending"}
+                              {doc.status === "Verified"
+                                ? "Verified"
+                                : doc.status === "Rejected"
+                                  ? "Rejected"
+                                  : "Pending verification"}
                             </span>
                           </div>
                         ))}
