@@ -22,6 +22,11 @@ const TicketSchema = new mongoose.Schema(
       enum: ["Low", "Medium", "High", "Critical"],
       default: "Medium",
     },
+    category: {
+      type: String,
+      enum: ["Student", "Finance", "University", "Other"],
+      default: "Other",
+    },
     creatorId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,

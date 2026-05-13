@@ -1389,7 +1389,7 @@ export default function StudentPaymentDetail() {
                     </p>
                   </div>
                   <button
-                    onClick={() => setSelectedTicket({ isNew: true, studentName: student.name })}
+                    onClick={() => setSelectedTicket({ isNew: true, studentName: student.name, prefilledCategory: "Student" })}
                     className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
                   >
                     <Plus className="w-5 h-5" />
@@ -1972,6 +1972,7 @@ export default function StudentPaymentDetail() {
           <TicketChat
             ticket={selectedTicket}
             prefilledStudentId={id}
+            prefilledCategory={selectedTicket.prefilledCategory}
             onClose={() => {
               setSelectedTicket(null);
               fetchStudentTickets();

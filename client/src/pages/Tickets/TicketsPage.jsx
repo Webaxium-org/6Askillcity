@@ -36,6 +36,7 @@ export default function TicketsPage() {
   const [filterStatus, setFilterStatus] = useState(searchParams.get("status") || "All");
   const [startDate, setStartDate] = useState(searchParams.get("startDate") || "");
   const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
+  const [filterCategory, setFilterCategory] = useState("All");
   const [metrics, setMetrics] = useState({ total: 0, open: 0, inProgress: 0, postponed: 0, closed: 0 });
   const [showFilters, setShowFilters] = useState(false);
   const limit = 10;
@@ -58,6 +59,7 @@ export default function TicketsPage() {
       const params = { page, limit };
       if (searchTerm) params.search = searchTerm;
       if (filterStatus !== "All") params.status = filterStatus;
+      if (filterCategory !== "All") params.category = filterCategory;
       if (startDate && endDate) { params.startDate = startDate; params.endDate = endDate; }
       const [res, metricsRes] = await Promise.all([getTickets(params), getTicketMetrics()]);
       if (res.success) { setTickets(res.data); setTotalPages(res.pagination.pages); }
@@ -66,7 +68,7 @@ export default function TicketsPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { const t = setTimeout(fetchTickets, 400); return () => clearTimeout(t); }, [page, limit, filterStatus, startDate, endDate, searchTerm]);
+  useEffect(() => { const t = setTimeout(fetchTickets, 400); return () => clearTimeout(t); }, [page, limit, filterStatus, filterCategory, startDate, endDate, searchTerm]);
   useEffect(() => {
     if (!socket) return;
     const fn = ({ ticketId, status, postponedUntil }) => setTickets(prev => prev.map(t => t._id === ticketId ? { ...t, status, postponedUntil } : t));
@@ -179,7 +181,7 @@ export default function TicketsPage() {
                   : "bg-card border-border text-muted-foreground hover:border-primary hover:text-primary shadow-sm"
               )}>
               <Filter className="w-3.5 h-3.5" />
-              {filterStatus !== "All" || startDate || endDate ? "Active" : "Filters"}
+              {filterStatus !== "All" || filterCategory !== "All" || startDate || endDate ? "Active" : "Filters"}
             </button>
           </div>
 
@@ -192,7 +194,7 @@ export default function TicketsPage() {
 
         {/* Active Filter Chips */}
         <AnimatePresence>
-          {(filterStatus !== "All" || startDate || endDate) && (
+          {(filterStatus !== "All" || filterCategory !== "All" || startDate || endDate) && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-1">Active:</span>
               
@@ -210,7 +212,7 @@ export default function TicketsPage() {
                 </div>
               )}
 
-              <button onClick={() => { setFilterStatus("All"); setStartDate(""); setEndDate(""); }}
+              <button onClick={() => { setFilterStatus("All"); setFilterCategory("All"); setStartDate(""); setEndDate(""); }}
                 className="text-[9px] font-black uppercase tracking-widest text-rose-500 hover:underline ml-1">
                 Clear All
               </button>
@@ -233,7 +235,7 @@ export default function TicketsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-muted/20">
-                      {["Ticket Details", "Related Student", "Creator / Assigned", "Status", "Created", ""].map(h => (
+                      {["Ticket Details", "Related Student", "Category", "Creator / Assigned", "Status", "Created", ""].map(h => (
                         <th key={h} className="px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -267,6 +269,9 @@ export default function TicketsPage() {
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-[10px] font-black uppercase tracking-widest bg-muted px-2 py-1 rounded-md text-muted-foreground border border-border/50">{ticket.category || "Other"}</span>
                         </td>
                         <td className="px-5 py-4 text-sm">
                           {ticket.creatorModel === "AdmissionPoint"
@@ -316,6 +321,7 @@ export default function TicketsPage() {
                            {ticket.studentId && (
                              <span className="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider">Student: {ticket.studentId.name}</span>
                            )}
+                           <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded uppercase tracking-wider">{ticket.category || "Other"}</span>
                          </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
@@ -389,6 +395,24 @@ export default function TicketsPage() {
                     ))}
                   </div>
                 </div>
+                {/* Category Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Filter className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Category</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["All", "Student", "Finance", "University", "Other"].map((c) => (
+                      <button key={c} onClick={() => setFilterCategory(c)}
+                        className={cn(
+                          "px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                          filterCategory === c ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" : "bg-muted/30 border-transparent text-muted-foreground hover:border-border"
+                        )}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Date Section */}
                 <div className="space-y-4">
@@ -428,7 +452,7 @@ export default function TicketsPage() {
               </div>
 
               <div className="p-8 border-t border-border/50 bg-muted/20">
-                <button onClick={() => { setFilterStatus("All"); setStartDate(""); setEndDate(""); setShowFilters(false); }}
+                <button onClick={() => { setFilterStatus("All"); setFilterCategory("All"); setStartDate(""); setEndDate(""); setShowFilters(false); }}
                   className="w-full py-4 rounded-2xl border border-rose-500/30 text-rose-500 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all">
                   Reset All Filters
                 </button>

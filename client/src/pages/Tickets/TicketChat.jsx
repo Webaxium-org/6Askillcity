@@ -9,7 +9,7 @@ import { getAllApprovedAdmissionPoints } from "../../api/admissionPoint.api";
 import { getAllUsers } from "../../api/auth.api";
 import { useSocket } from "../../context/SocketContext";
 
-export default function TicketChat({ ticket, onClose, prefilledStudentId }) {
+export default function TicketChat({ ticket, onClose, prefilledStudentId, prefilledCategory }) {
   const { user } = useSelector((s) => s.user);
   const dispatch = useDispatch();
   const [messages, setMessages] = useState([]);
@@ -29,6 +29,7 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId }) {
   const [title, setTitle]           = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority]     = useState("Medium");
+  const [category, setCategory]     = useState(prefilledCategory || "Other");
   const [assigneeType, setAssigneeType] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
   const [partners, setPartners]     = useState([]);
@@ -119,7 +120,7 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId }) {
     if (!title || !description || isSubmitting) return;
     try {
       setIsSubmitting(true);
-      const payload = { title, description, priority };
+      const payload = { title, description, priority, category };
       if (assigneeType === "partner" && assigneeId) payload.assignedToPartner = assigneeId;
       if (assigneeType === "user"    && assigneeId) payload.assignedTo        = assigneeId;
       if (prefilledStudentId) payload.studentId = prefilledStudentId;
@@ -193,6 +194,13 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId }) {
                 <select value={priority} onChange={(e) => setPriority(e.target.value)}
                   className="w-full border border-border bg-background px-4 py-2.5 rounded-xl focus:outline-none focus:border-primary text-sm">
                   {["Low", "Medium", "High", "Critical"].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold">Category</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)}
+                  className="w-full border border-border bg-background px-4 py-2.5 rounded-xl focus:outline-none focus:border-primary text-sm">
+                  {["Student", "Finance", "University", "Other"].map(v => <option key={v}>{v}</option>)}
                 </select>
               </div>
               {user?.type === "admin" && (

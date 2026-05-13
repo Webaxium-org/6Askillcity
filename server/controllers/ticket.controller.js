@@ -4,7 +4,7 @@ import moment from "moment";
 
 export const createTicket = async (req, res, next) => {
   try {
-    const { title, description, priority, assignedToPartner, assignedTo } =
+    const { title, description, priority, category, assignedToPartner, assignedTo } =
       req.body;
     const creatorId = req.user.userId;
     // Map userType from auth middleware to the Model name
@@ -19,6 +19,7 @@ export const createTicket = async (req, res, next) => {
       creatorModel,
       assignedToPartner,
       assignedTo,
+      category,
       studentId: req.body.studentId,
     });
 
@@ -51,6 +52,10 @@ export const getTickets = async (req, res, next) => {
 
     if (req.query.studentId) {
       filter.studentId = req.query.studentId;
+    }
+
+    if (req.query.category && req.query.category !== "All") {
+      filter.category = req.query.category;
     }
 
     if (req.query.startDate && req.query.endDate) {
