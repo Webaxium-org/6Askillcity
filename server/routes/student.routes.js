@@ -13,12 +13,16 @@ import {
   getPendingEligibility,
   updateApplicationStatus,
   updateStudentStatus,
+  proxyDownload,
 } from "../controllers/student.controller.js";
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(requireAuth);
+
+// SHARED: Download proxy to bypass CORS and force attachment
+router.get("/download-proxy", proxyDownload);
 
 // ── Partner Routes ─────────────────────────────
 // Partner: Create a draft application

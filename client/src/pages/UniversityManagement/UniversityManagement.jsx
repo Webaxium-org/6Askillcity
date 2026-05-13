@@ -21,6 +21,10 @@ import {
   LayoutGrid,
   List,
   Filter,
+  X,
+  Clock,
+  Sparkles,
+  Calendar,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -59,6 +63,39 @@ export default function UniversityManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("grid");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all"); // all, active, inactive
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const setQuickRange = (range) => {
+    const today = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    switch (range) {
+      case "today":
+        start = today;
+        end = today;
+        break;
+      case "week":
+        const diff = today.getDate() - today.getDay();
+        start = new Date(today.setDate(diff));
+        end = new Date();
+        break;
+      case "month":
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date();
+        break;
+      case "year":
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date();
+        break;
+    }
+
+    setStartDate(start.toISOString().split("T")[0]);
+    setEndDate(end.toISOString().split("T")[0]);
+  };
 
   // Modals state
   const [isUniversityModalOpen, setIsUniversityModalOpen] = useState(false);
@@ -259,28 +296,112 @@ export default function UniversityManagement() {
     }
   };
 
-  const filteredUniversities = universities.filter(
-    (u) =>
+  const filteredUniversities = universities.filter((u) => {
+    const matchesSearch =
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.location.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      u.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? u.isActive : !u.isActive);
 
-  const filteredPrograms = programs.filter(
-    (p) =>
+    const matchesDate =
+      (!startDate || new Date(u.createdAt) >= new Date(startDate)) &&
+      (!endDate || new Date(u.createdAt) <= new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+
+  const filteredPrograms = programs.filter((p) => {
+    const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.university?.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      p.university?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? p.isActive : !p.isActive);
 
-  const filteredBranches = branches.filter(
-    (b) =>
+    const matchesDate =
+      (!startDate || new Date(p.createdAt) >= new Date(startDate)) &&
+      (!endDate || new Date(p.createdAt) <= new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+
+  const filteredBranches = branches.filter((b) => {
+    const matchesSearch =
       b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.program?.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      b.program?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.program?.university?.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? b.isActive : !b.isActive);
+
+    const matchesDate =
+      (!startDate || new Date(b.createdAt) >= new Date(startDate)) &&
+      (!endDate || new Date(b.createdAt) <= new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   return (
     <DashboardLayout title="University Management">
       <div className="space-y-6">
-        {/* Search & Controls Row - Image Style */}
+        {/* Active Filter Chips */}
+        <AnimatePresence>
+          {(filterStatus !== "all" || startDate || endDate) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="flex flex-wrap items-center gap-2 px-2"
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-2">
+                Active:
+              </span>
+
+              {filterStatus !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-bold text-primary">
+                  Status: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
+                  <button
+                    onClick={() => setFilterStatus("all")}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {(startDate || endDate) && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-emerald-600">
+                  Date: {startDate || "Start"} to {endDate || "End"}
+                  <button
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setFilterStatus("all");
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 hover:underline ml-2"
+              >
+                Clear All
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Search & Controls Row */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-border/50">
           <div className="relative w-full lg:max-w-md group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
@@ -315,9 +436,19 @@ export default function UniversityManagement() {
               </button>
             </div>
 
-            <button className="flex items-center gap-2.5 px-5 py-3.5 bg-card border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-muted transition-all shadow-sm">
+            <button
+              onClick={() => setShowFilters(true)}
+              className={cn(
+                "flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border",
+                showFilters || filterStatus !== "all" || startDate || endDate
+                  ? "bg-primary text-white border-primary"
+                  : "bg-card border-border hover:bg-muted"
+              )}
+            >
               <Filter className="w-4 h-4" />
-              Advanced
+              {filterStatus !== "all" || startDate || endDate
+                ? "Active Filters"
+                : "Advanced"}
             </button>
 
             {/* Action Buttons */}
@@ -618,6 +749,9 @@ export default function UniversityManagement() {
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           Duration
                         </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Total Fee
+                        </th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
                           Actions
                         </th>
@@ -648,14 +782,22 @@ export default function UniversityManagement() {
                                 {branch.isActive ? "Active" : "Inactive"}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium">
-                              {branch.program?.name || "N/A"}
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium">{branch.program?.name || "N/A"}</div>
+                              {branch.program?.university?.name && (
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">
+                                  {branch.program?.university?.name}
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4 text-sm font-bold text-primary">
                               {branch.type || "N/A"}
                             </td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
                               {branch.duration}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-black text-foreground">
+                              {branch.currentFee ? `₹${branch.currentFee.totalFee.toLocaleString()}` : "N/A"}
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-2">
@@ -1252,6 +1394,159 @@ export default function UniversityManagement() {
                 </div>
               </motion.div>
             </div>
+          )}
+        </AnimatePresence>
+        {/* Filter Drawer */}
+        <AnimatePresence>
+          {showFilters && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowFilters(false)}
+                className="fixed inset-0 h-screen w-screen bg-slate-900/40 backdrop-blur-md z-[9999]"
+              />
+
+              {/* Drawer */}
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="fixed right-0 top-0 h-screen w-full max-w-md bg-card border-l border-border/50 z-[10000] shadow-[-20px_0_80px_rgba(0,0,0,0.15)] flex flex-col"
+              >
+                {/* Header */}
+                <div className="p-10 border-b border-border/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">
+                      Filters
+                    </h3>
+                    <button
+                      onClick={() => setShowFilters(false)}
+                      className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    Institutional Filtering
+                  </p>
+                </div>
+
+                {/* Filter Content */}
+                <div className="flex-1 overflow-y-auto p-10 space-y-12">
+                  {/* Status */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                        <Activity className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Record Status
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Filter by active/inactive state
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex p-1 bg-muted/50 rounded-2xl border border-border/50">
+                      {["all", "active", "inactive"].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => setFilterStatus(status)}
+                          className={cn(
+                            "flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                            filterStatus === status
+                              ? "bg-card text-primary shadow-sm border border-border/50"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/5 flex items-center justify-center text-emerald-600">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Creation Period
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Select date range for records
+                        </p>
+                      </div>
+                    </div>
+                    {/* Quick Ranges */}
+                    <div className="grid grid-cols-2 gap-2 mb-6">
+                      {["today", "week", "month", "year"].map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setQuickRange(range)}
+                          className="py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-[8px] font-black uppercase tracking-widest text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all"
+                        >
+                          {range === "week"
+                            ? "This Week"
+                            : range === "month"
+                              ? "This Month"
+                              : range === "year"
+                                ? "This Year"
+                                : "Today"}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="group">
+                        <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                        />
+                      </div>
+                      <div className="group">
+                        <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="p-10 border-t border-border/10 bg-muted/5">
+                  <button
+                    onClick={() => {
+                      setFilterStatus("all");
+                      setStartDate("");
+                      setEndDate("");
+                      setShowFilters(false);
+                    }}
+                    className="w-full py-4 bg-slate-900 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10"
+                  >
+                    Reset All Protocol
+                  </button>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

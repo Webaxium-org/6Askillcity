@@ -10,6 +10,7 @@ import {
   BadgeDollarSign,
   Receipt,
   Download,
+  Eye,
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -52,6 +53,88 @@ import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import InvoiceModal from "../../components/payment/InvoiceModal";
 
+const getFileUrl = (path) => {
+  if (!path) return "";
+  const normalizedPath = path.replace(/\\/g, "/");
+  if (normalizedPath.startsWith("http")) return normalizedPath;
+  const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+  if (normalizedPath.startsWith("uploads/"))
+    return `${baseUrl}/${normalizedPath}`;
+  return `${baseUrl}/uploads/${normalizedPath}`;
+};
+
+const handleDownload = async (url, label, studentName) => {
+  try {
+    const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+    const proxyUrl = `${baseUrl}/api/students/download-proxy?url=${encodeURIComponent(url)}`;
+    const link = document.createElement("a");
+    link.href = proxyUrl;
+    link.setAttribute("download", "");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("Download failed:", error);
+    window.open(url, "_blank");
+  }
+};
+
+function DocViewerModal({ url, title, onClose }) {
+  if (!url) return null;
+  const isImage = /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(url);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="relative bg-card border border-border w-full max-w-5xl h-[90vh] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col"
+      >
+        <div className="p-6 border-b border-border flex items-center justify-between bg-muted/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <FileDigit className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-widest leading-none">
+                {title}
+              </h3>
+              <p className="text-[10px] text-muted-foreground font-bold mt-1">
+                DOCUMENT PREVIEW
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 bg-muted/10 overflow-hidden relative flex items-center justify-center">
+          {isImage ? (
+            <img
+              src={url}
+              alt={title}
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            <iframe
+              src={`${url}#toolbar=0`}
+              className="w-full h-full border-none"
+              title={title}
+            />
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function StudentPaymentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -92,6 +175,8 @@ export default function StudentPaymentDetail() {
 
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(null);
+  const [activePaymentSubTab, setActivePaymentSubTab] = useState("schedule");
 
   useEffect(() => {
     fetchData();
@@ -316,10 +401,9 @@ export default function StudentPaymentDetail() {
     { id: "profile", label: "Student Profile", icon: User },
     { id: "documents", label: "Documents", icon: FileDigit },
     { id: "followup", label: "Status", icon: History },
-    { id: "history", label: "Transaction History", icon: CreditCard },
   ].filter((tab) => {
     if (isManager) {
-      return tab.id !== "payment" && tab.id !== "history";
+      return tab.id !== "payment";
     }
     if (isPartner) {
       return tab.id !== "followup";
@@ -453,7 +537,8 @@ export default function StudentPaymentDetail() {
             className="space-y-8"
           >
             {activeTab === "payment" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Financial Stats */}
                 <div className="lg:col-span-1 space-y-6">
                   <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm h-full flex flex-col">
@@ -539,17 +624,31 @@ export default function StudentPaymentDetail() {
 
                 {/* Payment Schedule */}
                 <div className="lg:col-span-2">
-                  <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm h-full">
-                    <div className="p-8 border-b border-border flex items-center justify-between bg-muted/10">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                          <Calendar className="w-5 h-5" />
-                        </div>
-                        <h3 className="text-lg font-black uppercase tracking-widest">
-                          Payment Schedule
-                        </h3>
+                  <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm h-full flex flex-col">
+                    <div className="p-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-muted/10">
+                      <div className="flex items-center gap-2 p-1 bg-background border border-border rounded-2xl w-fit">
+                        <button
+                          onClick={() => setActivePaymentSubTab("schedule")}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            activePaymentSubTab === "schedule"
+                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                              : "text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          Schedule
+                        </button>
+                        <button
+                          onClick={() => setActivePaymentSubTab("history")}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            activePaymentSubTab === "history"
+                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                              : "text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          History
+                        </button>
                       </div>
-                      {isPartner && (
+                      {isPartner && activePaymentSubTab === "schedule" && (
                         <button
                           onClick={() => setShowScheduleModal(true)}
                           className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-4 py-2 rounded-xl transition-all border border-primary/20"
@@ -559,7 +658,9 @@ export default function StudentPaymentDetail() {
                         </button>
                       )}
                     </div>
-                    <div className="p-8">
+                    <div className="flex-1 overflow-hidden">
+                      {activePaymentSubTab === "schedule" ? (
+                        <div className="p-8">
                       {schedules.length === 0 ? (
                         <div className="py-20 text-center space-y-4">
                           <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto">
@@ -611,11 +712,142 @@ export default function StudentPaymentDetail() {
                             </div>
                           ))}
                         </div>
+                      )
+                    }
+                  </div>
+                ) : (
+                        <div className="p-0">
+                          {/* Desktop Table View */}
+                          <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead className="bg-muted/30">
+                                <tr>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                                    Timestamp
+                                  </th>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                                    Method
+                                  </th>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
+                                    Amount
+                                  </th>
+                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
+                                    Invoice
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border/50">
+                                {payments.map((payment, idx) => (
+                                  <tr
+                                    key={idx}
+                                    className="group hover:bg-muted/20 transition-all"
+                                  >
+                                    <td className="px-8 py-6">
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-black">
+                                          {new Date(payment.date).toLocaleDateString(
+                                            "en-IN",
+                                            { dateStyle: "medium" },
+                                          )}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
+                                          {new Date(payment.date).toLocaleTimeString()}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                      <span className="text-[10px] font-black bg-primary/10 text-primary px-3 py-1.5 rounded-xl uppercase tracking-widest border border-primary/10">
+                                        {payment.method}
+                                      </span>
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                      <p className="text-lg font-black text-foreground">
+                                        ₹{payment.amount.toLocaleString()}
+                                      </p>
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                      <button
+                                        className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-2xl transition-all border border-blue-600/10"
+                                        onClick={() => {
+                                          setSelectedInvoice(payment);
+                                          setShowInvoiceModal(true);
+                                        }}
+                                      >
+                                        <Receipt className="w-4 h-4" />
+                                        Invoice
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Mobile Card View */}
+                          <div className="md:hidden space-y-4 p-4 bg-muted/5">
+                            {payments.map((payment, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-card border border-border rounded-3xl p-5 space-y-4 shadow-sm"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                      {new Date(payment.date).toLocaleDateString(
+                                        "en-IN",
+                                        { dateStyle: "medium" },
+                                      )}
+                                    </span>
+                                    <span className="text-xs font-black">
+                                      {new Date(payment.date).toLocaleTimeString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-lg font-black text-primary">
+                                    ₹{payment.amount.toLocaleString()}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                                      Payment Method
+                                    </span>
+                                    <span className="text-[10px] font-black uppercase">
+                                      {payment.method}
+                                    </span>
+                                  </div>
+                                  <button
+                                    className="flex items-center gap-2 text-[10px] font-black uppercase bg-primary/10 text-primary px-4 py-2 rounded-xl transition-all border border-primary/5"
+                                    onClick={() => {
+                                      setSelectedInvoice(payment);
+                                      setShowInvoiceModal(true);
+                                    }}
+                                  >
+                                    <Receipt className="w-3.5 h-3.5" />
+                                    Invoice
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {payments.length === 0 && (
+                            <div className="px-8 py-32 text-center">
+                              <div className="opacity-10 mb-4">
+                                <History className="w-16 h-16 mx-auto" />
+                              </div>
+                              <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                                No financial history yet.
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             {activeTab === "profile" && (
@@ -777,7 +1009,7 @@ export default function StudentPaymentDetail() {
                               Higher Ed
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             <div>
                               <p className="text-[10px] font-black uppercase text-muted-foreground">
                                 University
@@ -788,10 +1020,60 @@ export default function StudentPaymentDetail() {
                             </div>
                             <div>
                               <p className="text-[10px] font-black uppercase text-muted-foreground">
-                                Course
+                                Course / Branch
                               </p>
                               <p className="text-sm font-bold">
                                 {student.bachelors.course}
+                                {student.bachelors.branch && ` (${student.bachelors.branch})`}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase text-muted-foreground">
+                                Year
+                              </p>
+                              <p className="text-sm font-bold">
+                                {student.bachelors.completionYear || "N/A"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Masters if any */}
+                      {student.masters?.university && (
+                        <div className="p-6 bg-muted/30 rounded-3xl border border-border/50 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-black text-base">
+                              Master's Degree
+                            </h4>
+                            <span className="px-3 py-1 bg-purple-500/10 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                              Higher Ed
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-[10px] font-black uppercase text-muted-foreground">
+                                University
+                              </p>
+                              <p className="text-sm font-bold">
+                                {student.masters.university}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase text-muted-foreground">
+                                Course / Branch
+                              </p>
+                              <p className="text-sm font-bold">
+                                {student.masters.course}
+                                {student.masters.branch && ` (${student.masters.branch})`}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase text-muted-foreground">
+                                Year
+                              </p>
+                              <p className="text-sm font-bold">
+                                {student.masters.completionYear || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -866,19 +1148,14 @@ export default function StudentPaymentDetail() {
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[
-                    {
-                      label: "Identity Proof (Aadhar/Passport)",
-                      key: "identityProof",
-                    },
-                    { label: "10th Marksheet", key: "tenthMarksheet" },
-                    { label: "Plus Two Marksheet", key: "plusTwoMarksheet" },
-                    { label: "Degree Certificate", key: "degreeCertificate" },
-                    {
-                      label: "TC / Conduct Certificate",
-                      key: "tcConductCertificate",
-                    },
-                  ].map((doc, idx) => {
-                    const docPath = student.documents?.[doc.key];
+                    { label: "Identity Proof", doc: student.idProof },
+                    { label: "10th Certificate", doc: student.tenth?.certificate },
+                    { label: "Plus Two Certificate", doc: student.plusTwo?.certificate },
+                    { label: "Affidavit", doc: student.affidavit },
+                    { label: "Migration Certificate", doc: student.migrationCertificate },
+                    { label: "Project Submission", doc: student.projectSubmission },
+                  ].map((item, idx) => {
+                    const docPath = item.doc?.path;
                     return (
                       <div
                         key={idx}
@@ -886,148 +1163,173 @@ export default function StudentPaymentDetail() {
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground truncate max-w-[150px]">
-                            {doc.label}
+                            {item.label}
                           </p>
                           {docPath ? (
-                            <a
-                              href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${docPath.replace(/\\/g, "/")}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() =>
+                                  setViewingDoc({
+                                    url: getFileUrl(docPath),
+                                    title: item.label,
+                                  })
+                                }
+                                className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
+                                title="View"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDownload(
+                                    getFileUrl(docPath),
+                                    item.label,
+                                    student.name,
+                                  )
+                                }
+                                className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all"
+                                title="Download"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
                           ) : (
-                            <span className="text-[8px] font-black bg-muted px-2 py-1 rounded-lg">
+                            <span className="text-[8px] font-black bg-rose-500/10 text-rose-600 px-2 py-1 rounded-lg">
                               Missing
                             </span>
                           )}
                         </div>
                         <div className="aspect-[4/3] rounded-2xl bg-card border border-border/50 overflow-hidden flex items-center justify-center relative group-hover:shadow-lg transition-all">
                           {docPath ? (
-                            <img
-                              src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${docPath.replace(/\\/g, "/")}`}
-                              alt={doc.label}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = "none";
-                                e.target.nextSibling.style.display = "flex";
-                              }}
-                            />
-                          ) : null}
-                          <div
-                            className={`flex w-full h-full items-center justify-center text-[10px] font-black uppercase text-muted-foreground tracking-widest text-center p-4 ${docPath ? "hidden" : "flex"}`}
-                          >
-                            {docPath ? "PDF Document" : "Not Uploaded"}
-                          </div>
+                            /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(docPath) ? (
+                              <img
+                                src={getFileUrl(docPath)}
+                                alt={item.label}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center gap-2 text-muted-foreground/40">
+                                <FileDigit className="w-10 h-10" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                  PDF Document
+                                </span>
+                              </div>
+                            )
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground/20">
+                              <AlertCircle className="w-10 h-10" />
+                              <span className="text-[10px] font-black uppercase tracking-widest">
+                                Not Uploaded
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Higher Ed Certificates */}
+                {((student.bachelors?.certificates && student.bachelors.certificates.length > 0) ||
+                  (student.masters?.certificates && student.masters.certificates.length > 0)) && (
+                  <div className="mt-12 pt-12 border-t border-border space-y-8">
+                    {student.bachelors?.certificates?.length > 0 && (
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Bachelors Certificates
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {student.bachelors.certificates.map((cert, idx) => (
+                            <div
+                              key={idx}
+                              className="p-4 bg-muted/20 border border-border rounded-2xl flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3">
+                                <FileDigit className="w-4 h-4 text-indigo-500" />
+                                <span className="text-[10px] font-bold">Cert {idx + 1}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() =>
+                                    setViewingDoc({
+                                      url: getFileUrl(cert.path),
+                                      title: `Bachelor Certificate ${idx + 1}`,
+                                    })
+                                  }
+                                  className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-all"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleDownload(
+                                      getFileUrl(cert.path),
+                                      `Bachelor Certificate ${idx + 1}`,
+                                      student.name,
+                                    )
+                                  }
+                                  className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-600 transition-all"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {student.masters?.certificates?.length > 0 && (
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Masters Certificates
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {student.masters.certificates.map((cert, idx) => (
+                            <div
+                              key={idx}
+                              className="p-4 bg-muted/20 border border-border rounded-2xl flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3">
+                                <FileDigit className="w-4 h-4 text-rose-500" />
+                                <span className="text-[10px] font-bold">Cert {idx + 1}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() =>
+                                    setViewingDoc({
+                                      url: getFileUrl(cert.path),
+                                      title: `Master Certificate ${idx + 1}`,
+                                    })
+                                  }
+                                  className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-all"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleDownload(
+                                      getFileUrl(cert.path),
+                                      `Master Certificate ${idx + 1}`,
+                                      student.name,
+                                    )
+                                  }
+                                  className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-600 transition-all"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {activeTab === "history" && (
-              <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm">
-                <div className="p-8 border-b border-border flex items-center justify-between bg-muted/10">
-                  <div className="flex items-center gap-3">
-                    <History className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-black uppercase tracking-widest text-muted-foreground/80">
-                      Transaction Ledger
-                    </h3>
-                  </div>
-                  <span className="text-xs font-black text-muted-foreground bg-muted px-4 py-2 rounded-full border border-border/50">
-                    {payments.length} Transactions Found
-                  </span>
-                </div>
-                <div className="p-0 overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-muted/30">
-                      <tr>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                          Timestamp
-                        </th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                          Method
-                        </th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                          Transaction Ref
-                        </th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
-                          Amount
-                        </th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
-                          Invoice
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/50">
-                      {payments.map((payment, idx) => (
-                        <tr
-                          key={idx}
-                          className="group hover:bg-muted/20 transition-all"
-                        >
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-black">
-                                {new Date(payment.date).toLocaleDateString(
-                                  "en-IN",
-                                  { dateStyle: "medium" },
-                                )}
-                              </span>
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                {new Date(payment.date).toLocaleTimeString()}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <span className="text-[10px] font-black bg-primary/10 text-primary px-3 py-1.5 rounded-xl uppercase tracking-widest border border-primary/10">
-                              {payment.method}
-                            </span>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-2 text-xs font-mono font-black text-muted-foreground">
-                              <Hash className="w-3.5 h-3.5 opacity-40" />
-                              {payment.transactionId}
-                            </div>
-                          </td>
-                          <td className="px-8 py-6 text-right">
-                            <p className="text-lg font-black text-foreground">
-                              ₹{payment.amount.toLocaleString()}
-                            </p>
-                          </td>
-                          <td className="px-8 py-6 text-right">
-                            <button
-                              className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-2xl transition-all border border-blue-600/10"
-                              onClick={() => {
-                                setSelectedInvoice(payment);
-                                setShowInvoiceModal(true);
-                              }}
-                            >
-                              <Receipt className="w-4 h-4" />
-                              Download
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {payments.length === 0 && (
-                        <tr>
-                          <td colSpan="5" className="px-8 py-32 text-center">
-                            <div className="opacity-10 mb-4">
-                              <History className="w-16 h-16 mx-auto" />
-                            </div>
-                            <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                              No financial history yet.
-                            </p>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+
 
             {activeTab === "followup" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1287,7 +1589,14 @@ export default function StudentPaymentDetail() {
                         required
                         max={remaining}
                         value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (Number(val) > remaining) {
+                            setPaymentAmount(remaining.toString());
+                          } else {
+                            setPaymentAmount(val);
+                          }
+                        }}
                         placeholder="Enter amount"
                         className="w-full pl-10 pr-4 py-4 rounded-[1.5rem] border border-border bg-muted/50 focus:border-primary outline-none transition-all font-black text-lg"
                       />
@@ -1459,6 +1768,12 @@ export default function StudentPaymentDetail() {
           </div>
         )}
       </AnimatePresence>
+
+      <DocViewerModal
+        url={viewingDoc?.url}
+        title={viewingDoc?.title}
+        onClose={() => setViewingDoc(null)}
+      />
 
       <InvoiceModal
         isOpen={showInvoiceModal}

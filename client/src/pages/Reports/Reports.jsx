@@ -245,10 +245,6 @@ export default function Reports() {
                 <List className="w-4 h-4" />
               </button>
             </div>
-            <button className="flex items-center gap-2 px-4 py-3 bg-card border border-border rounded-xl text-xs font-black uppercase tracking-widest hover:bg-muted transition-all">
-              <Filter className="w-4 h-4" />
-              Advanced
-            </button>
           </div>
         </div>
 

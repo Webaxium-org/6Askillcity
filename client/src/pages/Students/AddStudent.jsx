@@ -79,68 +79,106 @@ const FileUploadBox = ({
   onChange,
   error,
   required,
-}) => (
-  <div className="space-y-1.5">
-    <label
-      className={cn(
-        "text-[9px] font-black uppercase tracking-widest transition-colors",
-        error ? "text-rose-500" : "text-muted-foreground/60",
-      )}
-    >
-      {label} {required && <span className="text-rose-500">*</span>}
-    </label>
-    <div
-      className={cn(
-        "relative border border-dashed rounded-xl p-3 transition-all group",
-        error
-          ? "border-rose-500 bg-rose-500/5"
-          : (multiple ? value.length > 0 : value)
-            ? "border-emerald-500/30 bg-emerald-500/5"
-            : "border-border hover:border-primary/30 hover:bg-muted/30",
-      )}
-    >
-      <input
-        type="file"
-        multiple={multiple}
-        onChange={(e) => onChange(e, field)}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      />
-      <div className="flex flex-col items-center justify-center text-center py-1">
-        {(!multiple && value) || (multiple && value.length > 0) ? (
-          <div
-            className={cn(
-              "flex items-center gap-2 text-[10px] font-bold",
-              error ? "text-rose-600" : "text-emerald-600",
-            )}
-          >
-            {error ? (
-              <UploadCloud className="w-3 h-3" />
-            ) : (
-              <CheckCircle2 className="w-3 h-3" />
-            )}
-            {multiple ? `${value.length} Files` : error ? "ERROR" : "Attached"}
-          </div>
-        ) : (
-          <div
-            className={cn(
-              "flex items-center gap-2 text-[9px] font-black transition-colors",
-              error
-                ? "text-rose-500"
-                : "text-muted-foreground/50 group-hover:text-primary",
-            )}
-          >
-            <UploadCloud className="w-3 h-3" /> {error ? "REQUIRED" : "UPLOAD"}
-          </div>
+}) => {
+  const hasValue = multiple
+    ? Array.isArray(value) && value.length > 0
+    : value && (value instanceof File || typeof value === "string");
+
+  return (
+    <div className="space-y-1.5">
+      <label
+        className={cn(
+          "text-[9px] font-black uppercase tracking-widest transition-colors",
+          error ? "text-rose-500" : "text-foreground",
         )}
+      >
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <div
+        className={cn(
+          "relative border border-dashed rounded-xl p-3 transition-all group",
+          error
+            ? "border-rose-500 bg-rose-500/5"
+            : hasValue
+              ? "border-emerald-500/30 bg-emerald-500/5"
+              : "border-border hover:border-primary/30 hover:bg-muted/30",
+        )}
+      >
+        <input
+          type="file"
+          multiple={multiple}
+          onChange={(e) => onChange(e, field)}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+        />
+        <div className="flex flex-col items-center justify-center text-center py-1">
+          {hasValue ? (
+            <div
+              className={cn(
+                "flex items-center gap-2 text-[10px] font-bold",
+                error ? "text-rose-600" : "text-emerald-600",
+              )}
+            >
+              {error ? (
+                <UploadCloud className="w-3 h-3" />
+              ) : (
+                <CheckCircle2 className="w-3 h-3" />
+              )}
+              {multiple
+                ? `${value.length} Files`
+                : error
+                  ? "ERROR"
+                  : "Attached"}
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "flex items-center gap-2 text-[9px] font-black transition-colors",
+                error
+                  ? "text-rose-500"
+                  : "text-muted-foreground/50 group-hover:text-primary",
+              )}
+            >
+              <UploadCloud className="w-3 h-3" />{" "}
+              {error ? "REQUIRED" : "UPLOAD"}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      {hasValue && (
+        <div className="flex flex-col gap-1 px-1 pt-1">
+          {multiple ? (
+            value.map((v, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <FileText className="w-3 h-3 text-primary/60" />
+                <p className="text-[10px] font-bold text-muted-foreground truncate max-w-[200px]">
+                  {v instanceof File ? v.name : v.split("/").pop()}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <FileText className="w-3 h-3 text-primary/60" />
+              <p className="text-[10px] font-bold text-muted-foreground truncate max-w-[200px]">
+                {value instanceof File
+                  ? value.name
+                  : typeof value === "string"
+                    ? value.split("/").pop()
+                    : "Attached"}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
     {error && (
-      <p className="text-[8px] font-black uppercase text-rose-500 ml-1">
+      <p className="text-[8px] font-black uppercase text-rose-500 ml-1 mt-1">
         {error}
       </p>
     )}
-  </div>
-);
+
+    </div>
+  );
+};
 
 const InputField = ({
   label,
@@ -160,7 +198,7 @@ const InputField = ({
         "text-[10px] font-black uppercase tracking-widest transition-colors",
         error
           ? "text-rose-500"
-          : "text-muted-foreground/60 group-focus-within:text-primary",
+          : "text-foreground group-focus-within:text-primary",
       )}
     >
       {label} {required && <span className="text-rose-500">*</span>}
@@ -248,7 +286,7 @@ const PhoneInputField = ({
         "text-[10px] font-black uppercase tracking-widest transition-colors",
         error
           ? "text-rose-500"
-          : "text-muted-foreground/60 group-focus-within:text-primary",
+          : "text-foreground group-focus-within:text-primary",
       )}
     >
       {label} {required && <span className="text-rose-500">*</span>}
@@ -352,6 +390,8 @@ const ALL_REQUIRED_FIELDS = [
   { key: "branch", label: "Branch" },
   { key: "batch", label: "Batch" },
   { key: "highestQualification", label: "Highest Qualification" },
+  { key: "bachelorsCompletionYear", label: "Bachelors Completion Year" },
+  { key: "mastersCompletionYear", label: "Masters Completion Year" },
 ];
 
 const ALL_REQUIRED_FILES = [
@@ -440,11 +480,13 @@ export default function AddStudent() {
             bachelorsUniversity: s.bachelors?.university || "",
             bachelorsCourse: s.bachelors?.course || "",
             bachelorsBranch: s.bachelors?.branch || "",
+            bachelorsCompletionYear: s.bachelors?.completionYear || "",
             bachelorsPapersPassed: s.bachelors?.papersPassed || "",
             bachelorsPapersEqualised: s.bachelors?.papersEqualised || "",
             mastersUniversity: s.masters?.university || "",
             mastersCourse: s.masters?.course || "",
             mastersBranch: s.masters?.branch || "",
+            mastersCompletionYear: s.masters?.completionYear || "",
             mastersPapersPassed: s.masters?.papersPassed || "",
             mastersPapersEqualised: s.masters?.papersEqualised || "",
             videoKycStatus: s.videoKycStatus || "Pending",
@@ -529,11 +571,13 @@ export default function AddStudent() {
     bachelorsUniversity: "",
     bachelorsCourse: "",
     bachelorsBranch: "",
+    bachelorsCompletionYear: "",
     bachelorsPapersPassed: "",
     bachelorsPapersEqualised: "",
     mastersUniversity: "",
     mastersCourse: "",
     mastersBranch: "",
+    mastersCompletionYear: "",
     mastersPapersPassed: "",
     mastersPapersEqualised: "",
     videoKycStatus: "Pending",
@@ -893,12 +937,12 @@ export default function AddStudent() {
         }
       });
 
-      // Optional: Other Phone validation if provided
+      // Optional: Alternate Phone validation if provided
       if (formData.otherPhone?.trim()) {
         const phoneRegex = /^\d{7,15}$/;
         if (!phoneRegex.test(formData.otherPhone.trim())) {
-          newErrors.otherPhone = "Invalid Other Phone (7-15 digits).";
-          if (!firstErrorField) firstErrorField = "Other Phone";
+          newErrors.otherPhone = "Invalid Alternate Phone (7-15 digits).";
+          if (!firstErrorField) firstErrorField = "Alternate Phone";
         }
       }
 
@@ -1324,7 +1368,7 @@ export default function AddStudent() {
                       required
                     />
                     <PhoneInputField
-                      label="Other Phone"
+                      label="Alternate Phone"
                       name="otherPhone"
                       value={formData.otherPhone}
                       codeName="otherPhoneCode"
@@ -1426,6 +1470,7 @@ export default function AddStudent() {
                       name="tenthCompletionYear"
                       value={formData.tenthCompletionYear}
                       onChange={handleChange}
+                      type="number"
                       icon={Calendar}
                       error={errors.tenthCompletionYear}
                     />
@@ -1453,7 +1498,7 @@ export default function AddStudent() {
                       error={errors.tenthObtainedMarks}
                     />
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase text-muted-foreground/60">
+                      <label className="text-[10px] font-black uppercase text-foreground">
                         Percentage
                       </label>
                       <div className="px-5 py-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-600 font-black text-sm">
@@ -1479,6 +1524,7 @@ export default function AddStudent() {
                       name="plusTwoCompletionYear"
                       value={formData.plusTwoCompletionYear}
                       onChange={handleChange}
+                      type="number"
                       error={errors.plusTwoCompletionYear}
                     />
                     <InputField
@@ -1547,6 +1593,13 @@ export default function AddStudent() {
                         onChange={handleChange}
                       />
                       <InputField
+                        label="Completion Year"
+                        name="bachelorsCompletionYear"
+                        value={formData.bachelorsCompletionYear}
+                        onChange={handleChange}
+                        type="number"
+                      />
+                      <InputField
                         label="Passed Papers"
                         name="bachelorsPapersPassed"
                         value={formData.bachelorsPapersPassed}
@@ -1594,6 +1647,13 @@ export default function AddStudent() {
                         name="mastersBranch"
                         value={formData.mastersBranch}
                         onChange={handleChange}
+                      />
+                      <InputField
+                        label="Completion Year"
+                        name="mastersCompletionYear"
+                        value={formData.mastersCompletionYear}
+                        onChange={handleChange}
+                        type="number"
                       />
                       <InputField
                         label="Passed Papers"
@@ -1691,6 +1751,7 @@ export default function AddStudent() {
                       name="completionYear"
                       value={formData.completionYear}
                       onChange={handleChange}
+                      type="number"
                       icon={Calendar}
                       error={errors.completionYear}
                       required

@@ -32,6 +32,7 @@ const StudentSchema = new mongoose.Schema(
     },
     alternativePhone: { type: String },
     otherPhone: String,
+    country: { type: String, default: "India" },
 
     // Family Details
     fatherName: { type: String },
@@ -130,6 +131,7 @@ const StudentSchema = new mongoose.Schema(
       university: String,
       course: String,
       branch: String,
+      completionYear: String,
       papersPassed: Number,
       papersEqualised: Number,
     },
@@ -155,6 +157,7 @@ const StudentSchema = new mongoose.Schema(
       university: String,
       course: String,
       branch: String,
+      completionYear: String,
       papersPassed: Number,
       papersEqualised: Number,
     },

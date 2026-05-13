@@ -47,6 +47,10 @@ import {
   School,
   ShieldCheck,
   Briefcase,
+  ExternalLink,
+  X,
+  Eye,
+  Download,
 } from "lucide-react";
 
 // ── Constants ─────────────────────────────────────────────────
@@ -87,6 +91,99 @@ const CATEGORY_COLORS = {
   callback: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   other: "bg-slate-500/10 text-slate-500 border-slate-500/20",
 };
+
+// ── Helper ───────────────────────────────────────────────────
+const getFileUrl = (path) => {
+  if (!path) return "";
+  const normalizedPath = path.replace(/\\/g, "/");
+  if (normalizedPath.startsWith("http")) return normalizedPath;
+  const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+  if (normalizedPath.startsWith("uploads/"))
+    return `${baseUrl}/${normalizedPath}`;
+  return `${baseUrl}/uploads/${normalizedPath}`;
+};
+
+const handleDownload = (url, label, studentName = "Document") => {
+  try {
+    const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+    const proxyUrl = `${baseUrl}/api/students/download-proxy?url=${encodeURIComponent(url)}`;
+    const link = document.createElement("a");
+    link.href = proxyUrl;
+    link.setAttribute("download", "");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("Download failed:", error);
+    window.open(url, "_blank");
+  }
+};
+
+// ── Document Viewer Modal ──────────────────────────────────────
+function DocViewerModal({ url, title, onClose }) {
+  if (!url) return null;
+  const isImage = /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(url);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="relative bg-card border border-border w-full max-w-5xl h-[90vh] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col"
+      >
+        <div className="p-6 border-b border-border flex items-center justify-between bg-muted/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-widest leading-none">
+                {title}
+              </h3>
+              <p className="text-[10px] text-muted-foreground font-bold mt-1">
+                DOCUMENT PREVIEW
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all flex items-center gap-2 text-[10px] font-black"
+            >
+              <ExternalLink className="w-4 h-4" />
+              OPEN FULL
+            </a>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 bg-muted/10 overflow-hidden relative flex items-center justify-center">
+          {isImage ? (
+            <img
+              src={url}
+              alt={title}
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            <iframe
+              src={`${url}#toolbar=0`}
+              className="w-full h-full border-none"
+              title={title}
+            />
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 // ── Form Field component ───────────────────────────────────────
 function Field({
@@ -162,6 +259,7 @@ export default function ApplicationDetailPage() {
     universities: [],
     programs: [],
   });
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const fetchApp = useCallback(async () => {
     setLoading(true);
@@ -200,11 +298,13 @@ export default function ApplicationDetailPage() {
           bachelorsUniversity: res.data.bachelors?.university || "",
           bachelorsCourse: res.data.bachelors?.course || "",
           bachelorsBranch: res.data.bachelors?.branch || "",
+          bachelorsCompletionYear: res.data.bachelors?.completionYear || "",
           bachelorsPapersPassed: res.data.bachelors?.papersPassed || "",
           bachelorsPapersEqualised: res.data.bachelors?.papersEqualised || "",
           mastersUniversity: res.data.masters?.university || "",
           mastersCourse: res.data.masters?.course || "",
           mastersBranch: res.data.masters?.branch || "",
+          mastersCompletionYear: res.data.masters?.completionYear || "",
           mastersPapersPassed: res.data.masters?.papersPassed || "",
           mastersPapersEqualised: res.data.masters?.papersEqualised || "",
           videoKycStatus: res.data.videoKycStatus || "Pending",
@@ -796,6 +896,13 @@ export default function ApplicationDetailPage() {
                           readOnly={!editing}
                         />
                         <Field
+                          label="Completion Year"
+                          name="bachelorsCompletionYear"
+                          value={formData.bachelorsCompletionYear}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
                           label="Papers Passed"
                           name="bachelorsPapersPassed"
                           type="number"
@@ -838,6 +945,13 @@ export default function ApplicationDetailPage() {
                           label="Branch"
                           name="mastersBranch"
                           value={formData.mastersBranch}
+                          onChange={handleChange}
+                          readOnly={!editing}
+                        />
+                        <Field
+                          label="Completion Year"
+                          name="mastersCompletionYear"
+                          value={formData.mastersCompletionYear}
                           onChange={handleChange}
                           readOnly={!editing}
                         />
@@ -943,7 +1057,9 @@ export default function ApplicationDetailPage() {
                     </div>
 
                     {/* Display current fee info if program selected */}
-                    {(editing ? fees.find((f) => f.isCurrent) : app.programFee) && (
+                    {(editing
+                      ? fees.find((f) => f.isCurrent)
+                      : app.programFee) && (
                       <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
@@ -1058,55 +1174,81 @@ export default function ApplicationDetailPage() {
                               {item.label}
                             </span>
                           </div>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
-                            item.doc.status === "Verified" ? "bg-emerald-500/10 text-emerald-600" :
-                            item.doc.status === "Rejected" ? "bg-rose-500/10 text-rose-600" :
-                            "bg-amber-500/10 text-amber-600"
-                          }`}>
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
+                              item.doc.status === "Verified"
+                                ? "bg-emerald-500/10 text-emerald-600"
+                                : item.doc.status === "Rejected"
+                                  ? "bg-rose-500/10 text-rose-600"
+                                  : "bg-amber-500/10 text-amber-600"
+                            }`}
+                          >
                             {item.doc.status || "Pending"}
                           </span>
                         </div>
-                        <a
-                          href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${item.doc.path.replace(/\\/g, "/")}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-1.5 rounded-lg bg-background border border-border hover:bg-primary hover:text-white hover:border-primary text-[10px] font-black transition-all"
-                        >
-                          VIEW
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              setViewingDoc({
+                                url: getFileUrl(item.doc.path),
+                                title: item.label,
+                              })
+                            }
+                            className="p-2 rounded-lg bg-background border border-border hover:bg-primary hover:text-white hover:border-primary text-[10px] font-black transition-all flex items-center gap-1.5"
+                            title="View"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDownload(getFileUrl(item.doc.path), item.label, app.name)
+                            }
+                            className="p-2 rounded-lg bg-background border border-border hover:bg-emerald-500 hover:text-white hover:border-emerald-500 text-[10px] font-black transition-all flex items-center gap-1.5"
+                            title="Download"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ),
                 )}
               </div>
 
               {/* Multiple Certificates */}
-              {((app.bachelorsCertificates &&
-                app.bachelorsCertificates.length > 0) ||
-                (app.mastersCertificates &&
-                  app.mastersCertificates.length > 0)) && (
+              {((app.bachelors?.certificates &&
+                app.bachelors.certificates.length > 0) ||
+                (app.masters?.certificates &&
+                  app.masters.certificates.length > 0)) && (
                 <div className="space-y-4 pt-4 border-t border-border">
-                  {app.bachelorsCertificates?.length > 0 && (
+                  {app.bachelors?.certificates?.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                         Bachelors Certificates
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {app.bachelorsCertificates.map((doc, idx) => (
+                        {app.bachelors.certificates.map((doc, idx) => (
                           <div key={idx} className="flex flex-col gap-1">
-                            <a
-                              href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${doc.path.replace(/\\/g, "/")}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
+                            <button
+                              onClick={() =>
+                                setViewingDoc({
+                                  url: getFileUrl(doc.path),
+                                  title: `Bachelor Certificate ${idx + 1}`,
+                                })
+                              }
+                              className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all text-left w-full"
                             >
                               <FileText className="w-3 h-3 text-indigo-500" />
                               Cert {idx + 1}
-                            </a>
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
-                              doc.status === "Verified" ? "bg-emerald-500/10 text-emerald-600" :
-                              doc.status === "Rejected" ? "bg-rose-500/10 text-rose-600" :
-                              "bg-amber-500/10 text-amber-600"
-                            }`}>
+                            </button>
+                            <span
+                              className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
+                                doc.status === "Verified"
+                                  ? "bg-emerald-500/10 text-emerald-600"
+                                  : doc.status === "Rejected"
+                                    ? "bg-rose-500/10 text-rose-600"
+                                    : "bg-amber-500/10 text-amber-600"
+                              }`}
+                            >
                               {doc.status || "Pending"}
                             </span>
                           </div>
@@ -1115,29 +1257,35 @@ export default function ApplicationDetailPage() {
                     </div>
                   )}
 
-                  {app.mastersCertificates?.length > 0 && (
+                  {app.masters?.certificates?.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                         Masters Certificates
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {app.mastersCertificates.map((doc, idx) => (
+                        {app.masters.certificates.map((doc, idx) => (
                           <div key={idx} className="flex flex-col gap-1">
-                            <a
-                              key={idx}
-                              href={`${import.meta.env.VITE_BASE_URL || "http://localhost:4040"}/${doc.path.replace(/\\/g, "/")}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all"
+                            <button
+                              onClick={() =>
+                                setViewingDoc({
+                                  url: getFileUrl(doc.path),
+                                  title: `Master Certificate ${idx + 1}`,
+                                })
+                              }
+                              className="p-3 rounded-lg border border-border bg-muted/10 text-[10px] font-bold flex items-center gap-2 hover:bg-muted/30 transition-all text-left w-full"
                             >
                               <FileText className="w-3 h-3 text-rose-500" />
                               Cert {idx + 1}
-                            </a>
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
-                              doc.status === "Verified" ? "bg-emerald-500/10 text-emerald-600" :
-                              doc.status === "Rejected" ? "bg-rose-500/10 text-rose-600" :
-                              "bg-amber-500/10 text-amber-600"
-                            }`}>
+                            </button>
+                            <span
+                              className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full w-fit ${
+                                doc.status === "Verified"
+                                  ? "bg-emerald-500/10 text-emerald-600"
+                                  : doc.status === "Rejected"
+                                    ? "bg-rose-500/10 text-rose-600"
+                                    : "bg-amber-500/10 text-amber-600"
+                              }`}
+                            >
                               {doc.status || "Pending"}
                             </span>
                           </div>
@@ -1170,6 +1318,15 @@ export default function ApplicationDetailPage() {
           </motion.div>
         </div>
       </div>
+      <AnimatePresence>
+        {viewingDoc && (
+          <DocViewerModal
+            url={viewingDoc.url}
+            title={viewingDoc.title}
+            onClose={() => setViewingDoc(null)}
+          />
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }

@@ -141,12 +141,42 @@ export const getBranches = async (req, res, next) => {
     const { programId } = req.query;
     const filter = { isActive: true };
     if (programId) filter.program = programId;
-    const branches = await Branch.find(filter)
-      .populate({
-        path: "program",
-        populate: { path: "university", select: "name" }
-      })
-      .sort({ name: 1 });
+
+    // Use aggregation to get branches with their current fees
+    const branches = await Branch.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: "programs",
+          localField: "program",
+          foreignField: "_id",
+          as: "program"
+        }
+      },
+      { $unwind: { path: "$program", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "universities",
+          localField: "program.university",
+          foreignField: "_id",
+          as: "program.university"
+        }
+      },
+      { $unwind: { path: "$program.university", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "programfees",
+          let: { branchId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $and: [{ $eq: ["$branch", "$$branchId"] }, { $eq: ["$isCurrent", true] }] } } }
+          ],
+          as: "currentFee"
+        }
+      },
+      { $unwind: { path: "$currentFee", preserveNullAndEmptyArrays: true } },
+      { $sort: { name: 1 } }
+    ]);
+
     res.status(200).json({ success: true, data: branches });
   } catch (error) {
     next(error);

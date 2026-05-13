@@ -46,10 +46,32 @@ export const ReviewModal = ({
     return `${baseUrl}/${path.replace(/\\/g, "/")}`;
   };
 
+  const handleDownload = async (url, label) => {
+    try {
+      // Use the backend proxy to bypass CORS and force attachment headers
+      const proxyUrl = `${baseUrl}/api/students/download-proxy?url=${encodeURIComponent(url)}`;
+      
+      // Creating a temporary link and clicking it is the most reliable way to trigger 
+      // the download using the server-side Content-Disposition header.
+      const link = document.createElement("a");
+      link.href = proxyUrl;
+      // The server will provide the filename, but we can hint it here as well
+      link.setAttribute("download", ""); 
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback to opening in a new tab if proxy fails
+      window.open(url, "_blank");
+    }
+  };
+
   const DocumentLink = ({ label, doc }) => {
     // Handle both old (string) and new (object) structures
     const path = typeof doc === "string" ? doc : doc?.path;
-    const status = typeof doc === "string" ? "Pending" : doc?.status || "Pending";
+    const status =
+      typeof doc === "string" ? "Pending" : doc?.status || "Pending";
 
     if (!path) return null;
     const url = getFileUrl(path);
@@ -85,16 +107,17 @@ export const ReviewModal = ({
             target="_blank"
             rel="noreferrer"
             className="p-2 rounded-lg hover:bg-primary hover:text-white transition-all text-muted-foreground"
+            title="View Document"
           >
             <ExternalLink className="w-4 h-4" />
           </a>
-          <a
-            href={url}
-            download
+          <button
+            onClick={() => handleDownload(url, label)}
             className="p-2 rounded-lg hover:bg-primary hover:text-white transition-all text-muted-foreground"
+            title="Download Document"
           >
             <Download className="w-4 h-4" />
-          </a>
+          </button>
         </div>
       </div>
     );
@@ -126,8 +149,10 @@ export const ReviewModal = ({
                     </span>
                     <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Submitted{" "}
-                      {app.applicationSubmittedDate 
-                        ? new Date(app.applicationSubmittedDate).toLocaleDateString() 
+                      {app.applicationSubmittedDate
+                        ? new Date(
+                            app.applicationSubmittedDate,
+                          ).toLocaleDateString()
                         : new Date(app.updatedAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -150,7 +175,8 @@ export const ReviewModal = ({
                   <div className="flex-1">
                     <p className="text-sm font-bold">Resubmitted Application</p>
                     <p className="text-xs font-medium opacity-90">
-                      This application was previously reviewed. Please check the history timeline below for past rejection remarks.
+                      This application was previously reviewed. Please check the
+                      history timeline below for past rejection remarks.
                     </p>
                   </div>
                 </div>
@@ -262,66 +288,103 @@ export const ReviewModal = ({
                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-4">
-                      {/* Detailed Academic Stats */}
-                      <div className="overflow-hidden border border-border rounded-3xl">
-                        <table className="w-full text-left">
-                          <thead className="bg-muted/50 text-[10px] font-black uppercase tracking-widest">
-                            <tr>
-                              <th className="px-5 py-3">Level</th>
-                              <th className="px-5 py-3">Board / University</th>
-                              <th className="px-5 py-3">Year</th>
-                              <th className="px-5 py-3">Result</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border text-sm">
-                            {app.tenth && (
+                    <div className="space-y-6 pt-4">
+                      {/* Schooling */}
+                      <div className="space-y-2">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Schooling (10th & +2)
+                        </p>
+                        <div className="overflow-hidden border border-border rounded-3xl">
+                          <table className="w-full text-left">
+                            <thead className="bg-muted/50 text-[10px] font-black uppercase tracking-widest">
                               <tr>
-                                <td className="px-5 py-3 font-bold">
-                                  10th Std
-                                </td>
-                                <td className="px-5 py-3">{app.tenth.board}</td>
-                                <td className="px-5 py-3">
-                                  {app.tenth.completionYear}
-                                </td>
-                                <td className="px-5 py-3 font-black text-emerald-600">
-                                  {app.tenth.percentage}%
-                                </td>
+                                <th className="px-5 py-3">Level</th>
+                                <th className="px-5 py-3">Board</th>
+                                <th className="px-5 py-3">Year</th>
+                                <th className="px-5 py-3">Result</th>
                               </tr>
-                            )}
-                            {app.plusTwo && (
-                              <tr>
-                                <td className="px-5 py-3 font-bold">
-                                  Plus Two (+2)
-                                </td>
-                                <td className="px-5 py-3">
-                                  {app.plusTwo.board}
-                                </td>
-                                <td className="px-5 py-3">
-                                  {app.plusTwo.completionYear}
-                                </td>
-                                <td className="px-5 py-3 font-black text-emerald-600">
-                                  {app.plusTwo.percentage}%
-                                </td>
-                              </tr>
-                            )}
-                            {app.bachelors && app.bachelors.university && (
-                              <tr>
-                                <td className="px-5 py-3 font-bold">
-                                  Bachelors
-                                </td>
-                                <td className="px-5 py-3">
-                                  {app.bachelors.university}
-                                </td>
-                                <td className="px-5 py-3">—</td>
-                                <td className="px-5 py-3 font-bold">
-                                  {app.bachelors.course}
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y divide-border text-sm">
+                              {app.tenth && (
+                                <tr>
+                                  <td className="px-5 py-3 font-bold">10th Std</td>
+                                  <td className="px-5 py-3">{app.tenth.board}</td>
+                                  <td className="px-5 py-3">{app.tenth.completionYear}</td>
+                                  <td className="px-5 py-3 font-black text-emerald-600">
+                                    {app.tenth.percentage}%
+                                  </td>
+                                </tr>
+                              )}
+                              {app.plusTwo && (
+                                <tr>
+                                  <td className="px-5 py-3 font-bold">Plus Two (+2)</td>
+                                  <td className="px-5 py-3">{app.plusTwo.board}</td>
+                                  <td className="px-5 py-3">{app.plusTwo.completionYear}</td>
+                                  <td className="px-5 py-3 font-black text-emerald-600">
+                                    {app.plusTwo.percentage}%
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
+
+                      {/* Higher Education */}
+                      {(app.bachelors?.university || app.masters?.university) && (
+                        <div className="space-y-2">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Higher Education
+                          </p>
+                          <div className="overflow-hidden border border-border rounded-3xl">
+                            <table className="w-full text-left">
+                              <thead className="bg-muted/50 text-[10px] font-black uppercase tracking-widest">
+                                <tr>
+                                  <th className="px-5 py-3">Level</th>
+                                  <th className="px-5 py-3">University</th>
+                                  <th className="px-5 py-3">Course & Branch</th>
+                                  <th className="px-5 py-3">Year</th>
+                                  <th className="px-5 py-3">Papers</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border text-sm">
+                                {app.bachelors && app.bachelors.university && (
+                                  <tr>
+                                    <td className="px-5 py-3 font-bold">Bachelors</td>
+                                    <td className="px-5 py-3">{app.bachelors.university}</td>
+                                    <td className="px-5 py-3">
+                                      <div className="font-bold">{app.bachelors.course}</div>
+                                      <div className="text-[10px] text-muted-foreground uppercase">{app.bachelors.branch}</div>
+                                    </td>
+                                    <td className="px-5 py-3">{app.bachelors.completionYear || "—"}</td>
+                                    <td className="px-5 py-3">
+                                      <div className="text-[10px] font-black">
+                                        P: {app.bachelors.papersPassed || 0} / E: {app.bachelors.papersEqualised || 0}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                {app.masters && app.masters.university && (
+                                  <tr>
+                                    <td className="px-5 py-3 font-bold">Masters</td>
+                                    <td className="px-5 py-3">{app.masters.university}</td>
+                                    <td className="px-5 py-3">
+                                      <div className="font-bold">{app.masters.course}</div>
+                                      <div className="text-[10px] text-muted-foreground uppercase">{app.masters.branch}</div>
+                                    </td>
+                                    <td className="px-5 py-3">{app.masters.completionYear || "—"}</td>
+                                    <td className="px-5 py-3">
+                                      <div className="text-[10px] font-black">
+                                        P: {app.masters.papersPassed || 0} / E: {app.masters.papersEqualised || 0}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </section>
 
@@ -366,28 +429,47 @@ export const ReviewModal = ({
                   {app.applicationHistory?.length > 0 && (
                     <section className="space-y-4">
                       <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                        <Clock className="w-3 h-3" /> Application History Timeline
+                        <Clock className="w-3 h-3" /> Application History
+                        Timeline
                       </h4>
                       <div className="relative space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
-                        {app.applicationHistory.slice().reverse().map((history, idx) => (
-                          <div key={idx} className="relative pl-10">
-                            <div className={`absolute left-0 top-1.5 w-5 h-5 rounded-full border-2 border-background ${
-                              history.status === "Eligible" ? "bg-emerald-500" : 
-                              history.status === "Rejected" ? "bg-red-500" : "bg-primary"
-                            }`} />
-                            <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-1">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold">{history.status}</p>
-                                <p className="text-[10px] text-muted-foreground font-medium">
-                                  {new Date(history.date).toLocaleDateString()} {new Date(history.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
+                        {app.applicationHistory
+                          .slice()
+                          .reverse()
+                          .map((history, idx) => (
+                            <div key={idx} className="relative pl-10">
+                              <div
+                                className={`absolute left-0 top-1.5 w-5 h-5 rounded-full border-2 border-background ${
+                                  history.status === "Eligible"
+                                    ? "bg-emerald-500"
+                                    : history.status === "Rejected"
+                                      ? "bg-red-500"
+                                      : "bg-primary"
+                                }`}
+                              />
+                              <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-bold">
+                                    {history.status}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground font-medium">
+                                    {new Date(
+                                      history.date,
+                                    ).toLocaleDateString()}{" "}
+                                    {new Date(history.date).toLocaleTimeString(
+                                      [],
+                                      { hour: "2-digit", minute: "2-digit" },
+                                    )}
+                                  </p>
+                                </div>
+                                {history.remarks && (
+                                  <p className="text-xs text-muted-foreground italic">
+                                    "{history.remarks}"
+                                  </p>
+                                )}
                               </div>
-                              {history.remarks && (
-                                <p className="text-xs text-muted-foreground italic">"{history.remarks}"</p>
-                              )}
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </section>
                   )}

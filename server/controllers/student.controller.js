@@ -12,11 +12,13 @@ import {
   sendToAdmins,
   sendToRecipient,
 } from "../services/notification.service.js";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 // S3 Storage Configuration
 const storage = multerS3({
   s3: s3,
   bucket: bucketName,
+  contentType: multerS3.AUTO_CONTENT_TYPE,
   metadata: (req, file, cb) => {
     cb(null, { fieldName: file.fieldname });
   },
@@ -162,6 +164,7 @@ export const enrollStudent = async (req, res, next) => {
       phone: data.phone || undefined,
       alternativePhone: data.alternativePhone,
       otherPhone: data.otherPhone,
+      country: data.country || "India",
 
       fatherName: data.fatherName,
       motherName: data.motherName,
@@ -192,6 +195,7 @@ export const enrollStudent = async (req, res, next) => {
         university: data.bachelorsUniversity,
         course: data.bachelorsCourse,
         branch: data.bachelorsBranch,
+        completionYear: data.bachelorsCompletionYear,
         papersPassed: data.bachelorsPapersPassed || undefined,
         papersEqualised: data.bachelorsPapersEqualised || undefined,
       },
@@ -200,6 +204,7 @@ export const enrollStudent = async (req, res, next) => {
         university: data.mastersUniversity,
         course: data.mastersCourse,
         branch: data.mastersBranch,
+        completionYear: data.mastersCompletionYear,
         papersPassed: data.mastersPapersPassed || undefined,
         papersEqualised: data.mastersPapersEqualised || undefined,
       },
@@ -367,6 +372,8 @@ export const updateStudentDetails = async (req, res, next) => {
       student.bachelors.course = req.body.bachelorsCourse;
     if (req.body.bachelorsBranch)
       student.bachelors.branch = req.body.bachelorsBranch;
+    if (req.body.bachelorsCompletionYear)
+      student.bachelors.completionYear = req.body.bachelorsCompletionYear;
     if (req.body.bachelorsPapersPassed)
       student.bachelors.papersPassed = req.body.bachelorsPapersPassed;
     if (req.body.bachelorsPapersEqualised)
@@ -376,6 +383,8 @@ export const updateStudentDetails = async (req, res, next) => {
       student.masters.university = req.body.mastersUniversity;
     if (req.body.mastersCourse) student.masters.course = req.body.mastersCourse;
     if (req.body.mastersBranch) student.masters.branch = req.body.mastersBranch;
+    if (req.body.mastersCompletionYear)
+      student.masters.completionYear = req.body.mastersCompletionYear;
     if (req.body.mastersPapersPassed)
       student.masters.papersPassed = req.body.mastersPapersPassed;
     if (req.body.mastersPapersEqualised)
@@ -766,6 +775,46 @@ export const updateStudentStatus = async (req, res, next) => {
       data: student,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// SHARED: Proxy Download from S3 to bypass CORS
+// ─────────────────────────────────────────────
+export const proxyDownload = async (req, res, next) => {
+  try {
+    const { url } = req.query;
+    if (!url) throw createError(400, "URL is required");
+
+    let key;
+    try {
+      const urlObj = new URL(url);
+      // For S3, the key is the pathname without the leading slash
+      key = decodeURIComponent(urlObj.pathname.substring(1));
+    } catch (e) {
+      // If it's just a path
+      key = url.replace(/\\/g, "/");
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    const response = await s3.send(command);
+    const byteArray = await response.Body.transformToByteArray();
+    const buffer = Buffer.from(byteArray);
+
+    const filename = path.basename(key);
+    res.setHeader("Content-Type", response.ContentType || "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`
+    );
+    res.send(buffer);
+  } catch (error) {
+    console.error("Proxy Download Error:", error);
     next(error);
   }
 };
