@@ -170,12 +170,11 @@ const FileUploadBox = ({
         </div>
       )}
 
-    {error && (
-      <p className="text-[8px] font-black uppercase text-rose-500 ml-1 mt-1">
-        {error}
-      </p>
-    )}
-
+      {error && (
+        <p className="text-[8px] font-black uppercase text-rose-500 ml-1 mt-1">
+          {error}
+        </p>
+      )}
     </div>
   );
 };
@@ -444,6 +443,29 @@ export default function AddStudent() {
 
         if (studentRes?.data?.success) {
           const s = studentRes.data.data;
+
+          const splitPhone = (fullPhone) => {
+            if (!fullPhone) return { code: "+91", number: "" };
+            // Sort by length desc to match longest code first (e.g. +971 vs +9)
+            const sortedCodes = [...COUNTRY_CODES].sort(
+              (a, b) => b.code.length - a.code.length,
+            );
+            const match = sortedCodes.find((c) => fullPhone.startsWith(c.code));
+            if (match) {
+              return {
+                code: match.code,
+                number: fullPhone.slice(match.code.length),
+              };
+            }
+            return { code: "+91", number: fullPhone };
+          };
+
+          const p = splitPhone(s.phone);
+          const ap = splitPhone(s.alternativePhone);
+          const op = splitPhone(s.otherPhone);
+          const fp = splitPhone(s.fatherPhone);
+          const mp = splitPhone(s.motherPhone);
+
           setFormData({
             name: s.name || "",
             dob: s.dob ? s.dob.split("T")[0] : "",
@@ -453,18 +475,18 @@ export default function AddStudent() {
             address: s.address || "",
             email: s.email || "",
             country: s.country || "India",
-            phoneCode: "+91", // Assuming default or extracting from phone if possible
-            phone: s.phone || "",
-            alternativePhoneCode: "+91",
-            alternativePhone: s.alternativePhone || "",
-            otherPhoneCode: "+91",
-            otherPhone: s.otherPhone || "",
+            phoneCode: p.code,
+            phone: p.number,
+            alternativePhoneCode: ap.code,
+            alternativePhone: ap.number,
+            otherPhoneCode: op.code,
+            otherPhone: op.number,
             fatherName: s.fatherName || "",
             motherName: s.motherName || "",
-            fatherPhoneCode: "+91",
-            fatherPhone: s.fatherPhone || "",
-            motherPhoneCode: "+91",
-            motherPhone: s.motherPhone || "",
+            fatherPhoneCode: fp.code,
+            fatherPhone: fp.number,
+            motherPhoneCode: mp.code,
+            motherPhone: mp.number,
             university: s.university?._id || s.university || "",
             program: s.program?._id || s.program || "",
             branch: s.branch?._id || s.branch || "",
@@ -820,11 +842,35 @@ export default function AddStudent() {
     setLoading(true);
     try {
       const payload = new FormData();
+      // Group phone fields to concatenate them
+      const phoneFields = [
+        { main: "phone", code: "phoneCode" },
+        { main: "alternativePhone", code: "alternativePhoneCode" },
+        { main: "otherPhone", code: "otherPhoneCode" },
+        { main: "fatherPhone", code: "fatherPhoneCode" },
+        { main: "motherPhone", code: "motherPhoneCode" },
+      ];
+
+      const phoneMainKeys = phoneFields.map((f) => f.main);
+      const phoneCodeKeys = phoneFields.map((f) => f.code);
+
       Object.keys(formData).forEach((key) => {
-        // Send all fields, including empty strings, to ensure the backend can clear them if needed
-        // but skip internal UI state keys if any (none currently identified as problematic)
+        // Skip phone code fields as they will be merged with main phone fields
+        if (phoneCodeKeys.includes(key)) return;
+
         if (formData[key] !== undefined && formData[key] !== null) {
-          payload.append(key, formData[key]);
+          let value = formData[key];
+
+          // If this is a main phone field, concatenate with its code
+          if (phoneMainKeys.includes(key)) {
+            const codeKey = phoneFields.find((f) => f.main === key).code;
+            const code = formData[codeKey] || "";
+            const number = formData[key] || "";
+            // Only concatenate if number is provided
+            value = number ? `${code}${number}` : "";
+          }
+
+          payload.append(key, value);
         }
       });
 
@@ -1368,7 +1414,7 @@ export default function AddStudent() {
                       required
                     />
                     <PhoneInputField
-                      label="Alternate Phone"
+                      label="Alternative Phone 2"
                       name="otherPhone"
                       value={formData.otherPhone}
                       codeName="otherPhoneCode"

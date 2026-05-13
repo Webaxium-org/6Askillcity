@@ -7,12 +7,24 @@ import { s3, bucketName } from "../utils/s3Config.js";
 const storage = multerS3({
   s3: s3,
   bucket: bucketName,
+  contentType: multerS3.AUTO_CONTENT_TYPE,
   metadata: (req, file, cb) => {
     cb(null, { fieldName: file.fieldname });
   },
   key: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `ocr/ocr-${uuidv4()}${ext}`);
+    let folder = "ocr";
+    let prefix = "ocr";
+
+    if (file.fieldname === "receipt") {
+      folder = "payments";
+      prefix = "receipt";
+    } else if (req.studentId) {
+      folder = `students/${req.studentId}`;
+      prefix = file.fieldname;
+    }
+
+    cb(null, `${folder}/${prefix}-${uuidv4()}${ext}`);
   },
 });
 

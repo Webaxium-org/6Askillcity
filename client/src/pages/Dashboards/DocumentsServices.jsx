@@ -18,6 +18,7 @@ import {
   FileText,
   Download,
   X,
+  Upload,
   ArrowUpDown,
   MoreHorizontal,
   Mail,
@@ -1482,13 +1483,23 @@ const RecordPaymentForm = ({ application, onSuccess }) => {
     transactionId: "",
     remarks: ""
   });
+  const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await serviceApi.recordServicePayment(application._id, formData);
+      const data = new FormData();
+      data.append("amount", formData.amount);
+      data.append("method", formData.method);
+      data.append("transactionId", formData.transactionId);
+      data.append("remarks", formData.remarks);
+      if (receipt) {
+        data.append("receipt", receipt);
+      }
+
+      const res = await serviceApi.recordServicePayment(application._id, data);
       if (res.success) onSuccess();
     } catch (error) {
       console.error(error);
@@ -1559,6 +1570,38 @@ const RecordPaymentForm = ({ application, onSuccess }) => {
               className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
             />
           </div>
+        </div>
+
+        {/* Receipt Upload */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Receipt (Optional)</label>
+          <div className="relative">
+            <input 
+              type="file"
+              id="service-receipt"
+              className="hidden"
+              onChange={(e) => setReceipt(e.target.files[0])}
+              accept="image/*,.pdf"
+            />
+            <label 
+              htmlFor="service-receipt"
+              className={cn(
+                "w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-dashed cursor-pointer transition-all",
+                receipt ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Upload size={18} className={receipt ? "text-emerald-500" : "text-muted-foreground"} />
+                <span className="text-xs font-bold truncate max-w-[200px]">
+                  {receipt ? receipt.name : "Attach proof of payment..."}
+                </span>
+              </div>
+              {receipt && (
+                <CheckCircle2 size={16} className="text-emerald-500" />
+              )}
+            </label>
+          </div>
+          <p className="text-[9px] font-medium text-muted-foreground ml-1 italic">JPG, PNG or PDF. Max 5MB.</p>
         </div>
 
         <div className="space-y-1.5">

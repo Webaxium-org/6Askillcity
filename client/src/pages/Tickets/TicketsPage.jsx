@@ -16,7 +16,12 @@ const getPriorityColor = (p) => {
   return "bg-muted text-muted-foreground border-transparent";
 };
 const getStatusColor = (s) => {
-  const map = { "Open": "bg-blue-500/10 text-blue-500 border-blue-500/20", "In Progress": "bg-amber-500/10 text-amber-500 border-amber-500/20", "Closed": "bg-slate-500/10 text-slate-500 border-slate-500/20", "Postponed": "bg-purple-500/10 text-purple-500 border-purple-500/20" };
+  const map = {
+    Open: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    "In Progress": "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    Closed: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    Postponed: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  };
   return map[s] || "bg-primary/10 text-primary border-primary/20";
 };
 
@@ -90,11 +95,71 @@ export default function TicketsPage() {
 
         {/* Metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <StatCard title="Total"       value={metrics.total}      icon={MessageSquare} color="blue"    />
-          <StatCard title="Open"        value={metrics.open}       icon={AlertCircle}   color="rose"    />
-          <StatCard title="In Progress" value={metrics.inProgress} icon={Clock}         color="purple"  />
-          <StatCard title="Postponed"   value={metrics.postponed}  icon={Clock}         color="purple"  />
-          <StatCard title="Closed"      value={metrics.closed}     icon={CheckCircle2}  color="slate"   />
+          <StatCard
+            title="Total"
+            value={metrics.total}
+            icon={MessageSquare}
+            color="blue"
+            onClick={() => {
+              setFilterStatus("All");
+              setPage(1);
+            }}
+            className={cn(
+              filterStatus === "All" && "ring-2 ring-blue-500 shadow-lg shadow-blue-500/20"
+            )}
+          />
+          <StatCard
+            title="Open"
+            value={metrics.open}
+            icon={AlertCircle}
+            color="rose"
+            onClick={() => {
+              setFilterStatus("Open");
+              setPage(1);
+            }}
+            className={cn(
+              filterStatus === "Open" && "ring-2 ring-rose-500 shadow-lg shadow-rose-500/20"
+            )}
+          />
+          <StatCard
+            title="In Progress"
+            value={metrics.inProgress}
+            icon={Clock}
+            color="purple"
+            onClick={() => {
+              setFilterStatus("In Progress");
+              setPage(1);
+            }}
+            className={cn(
+              filterStatus === "In Progress" && "ring-2 ring-purple-500 shadow-lg shadow-purple-500/20"
+            )}
+          />
+          <StatCard
+            title="Postponed"
+            value={metrics.postponed}
+            icon={Clock}
+            color="amber"
+            onClick={() => {
+              setFilterStatus("Postponed");
+              setPage(1);
+            }}
+            className={cn(
+              filterStatus === "Postponed" && "ring-2 ring-amber-500 shadow-lg shadow-amber-500/20"
+            )}
+          />
+          <StatCard
+            title="Closed"
+            value={metrics.closed}
+            icon={CheckCircle2}
+            color="emerald"
+            onClick={() => {
+              setFilterStatus("Closed");
+              setPage(1);
+            }}
+            className={cn(
+              filterStatus === "Closed" && "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/20"
+            )}
+          />
         </div>
 
         {/* Toolbar */}
@@ -175,8 +240,17 @@ export default function TicketsPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {tickets.map((ticket, i) => (
-                      <motion.tr key={ticket._id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                        className="hover:bg-muted/30 transition-colors cursor-pointer group" onClick={() => setSelectedTicket(ticket)}>
+                      <motion.tr
+                        key={ticket._id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        className={cn(
+                          "hover:bg-muted/30 transition-colors cursor-pointer group",
+                          ticket.status === "Closed" && "bg-emerald-500/5"
+                        )}
+                        onClick={() => setSelectedTicket(ticket)}
+                      >
                         <td className="px-5 py-4">
                           <div className="font-medium text-foreground text-sm">{ticket.title}</div>
                           <div className="flex items-center gap-2 mt-1">
@@ -212,8 +286,17 @@ export default function TicketsPage() {
               {/* Mobile cards */}
               <div className="md:hidden divide-y divide-border">
                 {tickets.map((ticket, i) => (
-                  <motion.div key={ticket._id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                    className="p-4 active:bg-muted/50 transition-colors cursor-pointer" onClick={() => setSelectedTicket(ticket)}>
+                  <motion.div
+                    key={ticket._id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className={cn(
+                      "p-4 active:bg-muted/50 transition-colors cursor-pointer",
+                      ticket.status === "Closed" && "bg-emerald-500/5"
+                    )}
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-foreground text-sm leading-snug line-clamp-2">{ticket.title}</div>

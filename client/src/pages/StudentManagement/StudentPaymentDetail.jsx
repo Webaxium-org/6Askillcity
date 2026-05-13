@@ -33,8 +33,10 @@ import {
   GraduationCap,
   Briefcase,
 } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
+import DocViewerModal from "../../components/common/DocViewerModal";
+import InvoiceModal from "../../components/payment/InvoiceModal";
 import { getStudentById } from "../../api/student.api";
 import {
   recordPayment,
@@ -49,9 +51,7 @@ import {
   deleteFollowup,
   updateStudentStatus,
 } from "../../api/student.api";
-import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
-import InvoiceModal from "../../components/payment/InvoiceModal";
 
 const getFileUrl = (path) => {
   if (!path) return "";
@@ -79,62 +79,6 @@ const handleDownload = async (url, label, studentName) => {
   }
 };
 
-function DocViewerModal({ url, title, onClose }) {
-  if (!url) return null;
-  const isImage = /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(url);
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="relative bg-card border border-border w-full max-w-5xl h-[90vh] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col"
-      >
-        <div className="p-6 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <FileDigit className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-widest leading-none">
-                {title}
-              </h3>
-              <p className="text-[10px] text-muted-foreground font-bold mt-1">
-                DOCUMENT PREVIEW
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 bg-muted/10 overflow-hidden relative flex items-center justify-center">
-          {isImage ? (
-            <img
-              src={url}
-              alt={title}
-              className="max-w-full max-h-full object-contain"
-            />
-          ) : (
-            <iframe
-              src={`${url}#toolbar=0`}
-              className="w-full h-full border-none"
-              title={title}
-            />
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
 export default function StudentPaymentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -148,6 +92,7 @@ export default function StudentPaymentDetail() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentRemarks, setPaymentRemarks] = useState("");
+  const [paymentReceipt, setPaymentReceipt] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [scheduleItems, setScheduleItems] = useState([
     { dueDate: "", amount: "", description: "" },
@@ -198,9 +143,7 @@ export default function StudentPaymentDetail() {
       if (schedulesRes.success) setSchedules(schedulesRes.data);
       if (followupsRes.success) setFollowups(followupsRes.data);
     } catch (error) {
-      dispatch(
-        showAlert({ type: "error", message: "Failed to load details" }),
-      );
+      dispatch(showAlert({ type: "error", message: "Failed to load details" }));
     } finally {
       setLoading(false);
     }
@@ -237,16 +180,20 @@ export default function StudentPaymentDetail() {
 
     setIsProcessing(true);
     try {
-      const res = await recordPayment(id, {
-        amount: paymentAmount,
-        remarks: paymentRemarks,
-        method: "Offline (Dummy)",
-      });
+      const formData = new FormData();
+      formData.append("amount", paymentAmount);
+      formData.append("remarks", paymentRemarks);
+      formData.append("method", "Offline (Direct)");
+      if (paymentReceipt) {
+        formData.append("receipt", paymentReceipt);
+      }
+
+      const res = await recordPayment(id, formData);
       if (res.success) {
         dispatch(
           showAlert({
             type: "success",
-            message: "Payment recorded successfully!",
+            message: "Payment submitted for verification!",
           }),
         );
         // Refresh all data to sync totals
@@ -254,12 +201,13 @@ export default function StudentPaymentDetail() {
         setShowPayModal(false);
         setPaymentAmount("");
         setPaymentRemarks("");
+        setPaymentReceipt(null);
       }
     } catch (error) {
       dispatch(
         showAlert({
           type: "error",
-          message: error.response?.data?.message || "Payment failed",
+          message: error.response?.data?.message || "Payment submission failed",
         }),
       );
     } finally {
@@ -343,7 +291,11 @@ export default function StudentPaymentDetail() {
     try {
       // 1. Update status if changed in the form
       if (newFollowup.status && newFollowup.status !== student.status) {
-        await updateStudentStatus(id, newFollowup.status, newFollowup.enrollmentNumber);
+        await updateStudentStatus(
+          id,
+          newFollowup.status,
+          newFollowup.enrollmentNumber,
+        );
       }
 
       // 2. Save followup with category 'eligibility'
@@ -356,13 +308,21 @@ export default function StudentPaymentDetail() {
       );
 
       if (res.success) {
-        dispatch(showAlert({ type: "success", message: "Interaction logged and status updated" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Interaction logged and status updated",
+          }),
+        );
         setNewFollowup({ note: "", status: "", enrollmentNumber: "" });
         await Promise.all([fetchData(), fetchFollowups()]);
       }
     } catch (error) {
       dispatch(
-        showAlert({ type: "error", message: error.response?.data?.message || "Failed to log interaction" }),
+        showAlert({
+          type: "error",
+          message: error.response?.data?.message || "Failed to log interaction",
+        }),
       );
     } finally {
       setIsFollowupLoading(false);
@@ -539,312 +499,360 @@ export default function StudentPaymentDetail() {
             {activeTab === "payment" && (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Financial Stats */}
-                <div className="lg:col-span-1 space-y-6">
-                  <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm h-full flex flex-col">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-8">
-                      Financial Overview
-                    </h3>
+                  {/* Financial Stats */}
+                  <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm h-full flex flex-col">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-8">
+                        Financial Overview
+                      </h3>
 
-                    <div className="space-y-4 flex-1">
-                      <div className="p-6 rounded-3xl bg-muted/30 border border-border flex justify-between items-center group hover:border-primary/30 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                            <BadgeDollarSign className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                              Total Fee
-                            </p>
-                            <p className="text-xl font-black">
-                              ₹{totalFee?.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 flex justify-between items-center group hover:border-emerald-500/30 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                            <Wallet className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 opacity-60">
-                              Paid Amount
-                            </p>
-                            <p className="text-xl font-black text-emerald-600">
-                              ₹{(student.totalFeePaid || 0).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/10 flex justify-between items-center group hover:border-blue-500/30 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600">
-                            <Activity className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 opacity-60">
-                              Remaining
-                            </p>
-                            <p className="text-xl font-black text-blue-600">
-                              ₹{remaining.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-8 pt-8 border-t border-border">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                          Completion
-                        </span>
-                        <span className="text-lg font-black text-primary">
-                          {Math.round(
-                            ((student.totalFeePaid || 0) / (totalFee || 1)) *
-                              100,
-                          )}
-                          %
-                        </span>
-                      </div>
-                      <div className="h-3 w-full bg-muted rounded-full overflow-hidden p-0.5 border border-border">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{
-                            width: `${Math.round(((student.totalFeePaid || 0) / (totalFee || 1)) * 100)}%`,
-                          }}
-                          className="h-full bg-primary rounded-full"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Schedule */}
-                <div className="lg:col-span-2">
-                  <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm h-full flex flex-col">
-                    <div className="p-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-muted/10">
-                      <div className="flex items-center gap-2 p-1 bg-background border border-border rounded-2xl w-fit">
-                        <button
-                          onClick={() => setActivePaymentSubTab("schedule")}
-                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                            activePaymentSubTab === "schedule"
-                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                              : "text-muted-foreground hover:bg-muted"
-                          }`}
-                        >
-                          Schedule
-                        </button>
-                        <button
-                          onClick={() => setActivePaymentSubTab("history")}
-                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                            activePaymentSubTab === "history"
-                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                              : "text-muted-foreground hover:bg-muted"
-                          }`}
-                        >
-                          History
-                        </button>
-                      </div>
-                      {isPartner && activePaymentSubTab === "schedule" && (
-                        <button
-                          onClick={() => setShowScheduleModal(true)}
-                          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-4 py-2 rounded-xl transition-all border border-primary/20"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Modify Plan
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      {activePaymentSubTab === "schedule" ? (
-                        <div className="p-8">
-                      {schedules.length === 0 ? (
-                        <div className="py-20 text-center space-y-4">
-                          <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto">
-                            <Clock className="w-10 h-10 text-muted-foreground opacity-20" />
-                          </div>
-                          <p className="text-sm font-bold text-muted-foreground">
-                            No upcoming payment milestones.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {schedules.map((item, idx) => (
-                            <div
-                              key={idx}
-                              className="flex flex-col p-6 bg-muted/30 rounded-[2rem] border border-border/50 group hover:border-primary/30 transition-all relative overflow-hidden"
-                            >
-                              <div className="flex justify-between items-start mb-6">
-                                <div
-                                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${item.status === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}
-                                >
-                                  {item.status}
-                                </div>
-                                {isPartner && item.status === "Pending" && (
-                                  <button
-                                    onClick={() =>
-                                      handleDeleteSchedule(item._id)
-                                    }
-                                    className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </div>
-                              <h4 className="text-lg font-black mb-1">
-                                {item.description}
-                              </h4>
-                              <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground mb-6">
-                                <Calendar className="w-3.5 h-3.5" />
-                                {new Date(item.dueDate).toLocaleDateString(
-                                  "en-IN",
-                                  { dateStyle: "medium" },
-                                )}
-                              </div>
-                              <div className="mt-auto pt-4 border-t border-border/50">
-                                <p className="text-2xl font-black text-foreground">
-                                  ₹{item.amount.toLocaleString()}
-                                </p>
-                              </div>
+                      <div className="space-y-4 flex-1">
+                        <div className="p-6 rounded-3xl bg-muted/30 border border-border flex justify-between items-center group hover:border-primary/30 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                              <BadgeDollarSign className="w-6 h-6" />
                             </div>
-                          ))}
-                        </div>
-                      )
-                    }
-                  </div>
-                ) : (
-                        <div className="p-0">
-                          {/* Desktop Table View */}
-                          <div className="hidden md:block overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                              <thead className="bg-muted/30">
-                                <tr>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                                    Timestamp
-                                  </th>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                                    Method
-                                  </th>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
-                                    Amount
-                                  </th>
-                                  <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
-                                    Invoice
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-border/50">
-                                {payments.map((payment, idx) => (
-                                  <tr
-                                    key={idx}
-                                    className="group hover:bg-muted/20 transition-all"
-                                  >
-                                    <td className="px-8 py-6">
-                                      <div className="flex flex-col">
-                                        <span className="text-sm font-black">
-                                          {new Date(payment.date).toLocaleDateString(
-                                            "en-IN",
-                                            { dateStyle: "medium" },
-                                          )}
-                                        </span>
-                                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                          {new Date(payment.date).toLocaleTimeString()}
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                      <span className="text-[10px] font-black bg-primary/10 text-primary px-3 py-1.5 rounded-xl uppercase tracking-widest border border-primary/10">
-                                        {payment.method}
-                                      </span>
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                      <p className="text-lg font-black text-foreground">
-                                        ₹{payment.amount.toLocaleString()}
-                                      </p>
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                      <button
-                                        className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-2xl transition-all border border-blue-600/10"
-                                        onClick={() => {
-                                          setSelectedInvoice(payment);
-                                          setShowInvoiceModal(true);
-                                        }}
-                                      >
-                                        <Receipt className="w-4 h-4" />
-                                        Invoice
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-
-                          {/* Mobile Card View */}
-                          <div className="md:hidden space-y-4 p-4 bg-muted/5">
-                            {payments.map((payment, idx) => (
-                              <div
-                                key={idx}
-                                className="bg-card border border-border rounded-3xl p-5 space-y-4 shadow-sm"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                                      {new Date(payment.date).toLocaleDateString(
-                                        "en-IN",
-                                        { dateStyle: "medium" },
-                                      )}
-                                    </span>
-                                    <span className="text-xs font-black">
-                                      {new Date(payment.date).toLocaleTimeString()}
-                                    </span>
-                                  </div>
-                                  <p className="text-lg font-black text-primary">
-                                    ₹{payment.amount.toLocaleString()}
-                                  </p>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                                  <div className="flex flex-col gap-1">
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                                      Payment Method
-                                    </span>
-                                    <span className="text-[10px] font-black uppercase">
-                                      {payment.method}
-                                    </span>
-                                  </div>
-                                  <button
-                                    className="flex items-center gap-2 text-[10px] font-black uppercase bg-primary/10 text-primary px-4 py-2 rounded-xl transition-all border border-primary/5"
-                                    onClick={() => {
-                                      setSelectedInvoice(payment);
-                                      setShowInvoiceModal(true);
-                                    }}
-                                  >
-                                    <Receipt className="w-3.5 h-3.5" />
-                                    Invoice
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          {payments.length === 0 && (
-                            <div className="px-8 py-32 text-center">
-                              <div className="opacity-10 mb-4">
-                                <History className="w-16 h-16 mx-auto" />
-                              </div>
-                              <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                                No financial history yet.
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                                Total Fee
+                              </p>
+                              <p className="text-xl font-black">
+                                ₹{totalFee?.toLocaleString()}
                               </p>
                             </div>
-                          )}
+                          </div>
                         </div>
-                      )}
+
+                        <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 flex justify-between items-center group hover:border-emerald-500/30 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                              <Wallet className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 opacity-60">
+                                Paid Amount
+                              </p>
+                              <p className="text-xl font-black text-emerald-600">
+                                ₹{(student.totalFeePaid || 0).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/10 flex justify-between items-center group hover:border-blue-500/30 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600">
+                              <Activity className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 opacity-60">
+                                Remaining
+                              </p>
+                              <p className="text-xl font-black text-blue-600">
+                                ₹{remaining.toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-8 pt-8 border-t border-border">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                            Completion
+                          </span>
+                          <span className="text-lg font-black text-primary">
+                            {Math.round(
+                              ((student.totalFeePaid || 0) / (totalFee || 1)) *
+                                100,
+                            )}
+                            %
+                          </span>
+                        </div>
+                        <div className="h-3 w-full bg-muted rounded-full overflow-hidden p-0.5 border border-border">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{
+                              width: `${Math.round(((student.totalFeePaid || 0) / (totalFee || 1)) * 100)}%`,
+                            }}
+                            className="h-full bg-primary rounded-full"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Payment Schedule */}
+                  <div className="lg:col-span-2">
+                    <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm h-full flex flex-col">
+                      <div className="p-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-muted/10">
+                        <div className="flex items-center gap-2 p-1 bg-background border border-border rounded-2xl w-fit">
+                          <button
+                            onClick={() => setActivePaymentSubTab("schedule")}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                              activePaymentSubTab === "schedule"
+                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                : "text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            Schedule
+                          </button>
+                          <button
+                            onClick={() => setActivePaymentSubTab("history")}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                              activePaymentSubTab === "history"
+                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                : "text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            History
+                          </button>
+                        </div>
+                        {isPartner && activePaymentSubTab === "schedule" && (
+                          <button
+                            onClick={() => setShowScheduleModal(true)}
+                            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-4 py-2 rounded-xl transition-all border border-primary/20"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Modify Plan
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        {activePaymentSubTab === "schedule" ? (
+                          <div className="p-8">
+                            {schedules.length === 0 ? (
+                              <div className="py-20 text-center space-y-4">
+                                <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto">
+                                  <Clock className="w-10 h-10 text-muted-foreground opacity-20" />
+                                </div>
+                                <p className="text-sm font-bold text-muted-foreground">
+                                  No upcoming payment milestones.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {schedules.map((item, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex flex-col p-6 bg-muted/30 rounded-[2rem] border border-border/50 group hover:border-primary/30 transition-all relative overflow-hidden"
+                                  >
+                                    <div className="flex justify-between items-start mb-6">
+                                      <div
+                                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${item.status === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}
+                                      >
+                                        {item.status}
+                                      </div>
+                                      {isPartner &&
+                                        item.status === "Pending" && (
+                                          <button
+                                            onClick={() =>
+                                              handleDeleteSchedule(item._id)
+                                            }
+                                            className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                    </div>
+                                    <h4 className="text-lg font-black mb-1">
+                                      {item.description}
+                                    </h4>
+                                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground mb-6">
+                                      <Calendar className="w-3.5 h-3.5" />
+                                      {new Date(
+                                        item.dueDate,
+                                      ).toLocaleDateString("en-IN", {
+                                        dateStyle: "medium",
+                                      })}
+                                    </div>
+                                    <div className="mt-auto pt-4 border-t border-border/50">
+                                      <p className="text-2xl font-black text-foreground">
+                                        ₹{item.amount.toLocaleString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-0">
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                <thead className="bg-muted/30">
+                                  <tr>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                                      Timestamp
+                                    </th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-center">
+                                      Status
+                                    </th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                                      Method
+                                    </th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
+                                      Amount
+                                    </th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest text-right">
+                                      Invoice
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/50">
+                                  {payments.map((payment, idx) => (
+                                    <tr
+                                      key={idx}
+                                      className="group hover:bg-muted/20 transition-all"
+                                    >
+                                      <td className="px-8 py-6">
+                                        <div className="flex flex-col">
+                                          <span className="text-sm font-black">
+                                            {new Date(
+                                              payment.date,
+                                            ).toLocaleDateString("en-IN", {
+                                              dateStyle: "medium",
+                                            })}
+                                          </span>
+                                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
+                                            {new Date(
+                                              payment.date,
+                                            ).toLocaleTimeString()}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className="px-8 py-6 text-center">
+                                        <div className="flex flex-col items-center gap-1.5">
+                                          <span
+                                            className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                                              payment.approvalStatus ===
+                                              "approved"
+                                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                                : payment.approvalStatus ===
+                                                    "rejected"
+                                                  ? "bg-red-500/10 text-red-600 border-red-500/20"
+                                                  : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                            }`}
+                                          >
+                                            {payment.approvalStatus ||
+                                              "pending"}
+                                          </span>
+                                          {payment.receipt && (
+                                            <button
+                                              onClick={() =>
+                                                setViewingDoc({
+                                                  url: getFileUrl(
+                                                    payment.receipt,
+                                                  ),
+                                                  title: "Payment Receipt",
+                                                })
+                                              }
+                                              className="flex items-center gap-1 text-[8px] font-black text-primary hover:underline uppercase tracking-widest"
+                                            >
+                                              <Eye className="w-3 h-3" /> View
+                                              Receipt
+                                            </button>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                        <span className="text-[10px] font-black bg-primary/10 text-primary px-3 py-1.5 rounded-xl uppercase tracking-widest border border-primary/10">
+                                          {payment.method}
+                                        </span>
+                                      </td>
+                                      <td className="px-8 py-6 text-right">
+                                        <p className="text-lg font-black text-foreground">
+                                          ₹{payment.amount.toLocaleString()}
+                                        </p>
+                                      </td>
+                                      <td className="px-8 py-6 text-right">
+                                        <button
+                                          disabled={
+                                            payment.approvalStatus !==
+                                            "approved"
+                                          }
+                                          className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2.5 rounded-2xl transition-all border border-blue-600/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-blue-600"
+                                          onClick={() => {
+                                            setSelectedInvoice(payment);
+                                            setShowInvoiceModal(true);
+                                          }}
+                                        >
+                                          <Receipt className="w-4 h-4" />
+                                          Invoice
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Mobile Card View */}
+                            <div className="md:hidden space-y-4 p-4 bg-muted/5">
+                              {payments.map((payment, idx) => (
+                                <div
+                                  key={idx}
+                                  className="bg-card border border-border rounded-3xl p-5 space-y-4 shadow-sm"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                        {new Date(
+                                          payment.date,
+                                        ).toLocaleDateString("en-IN", {
+                                          dateStyle: "medium",
+                                        })}
+                                      </span>
+                                      <span className="text-xs font-black">
+                                        {new Date(
+                                          payment.date,
+                                        ).toLocaleTimeString()}
+                                      </span>
+                                    </div>
+                                    <p className="text-lg font-black text-primary">
+                                      ₹{payment.amount.toLocaleString()}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                                        Payment Method
+                                      </span>
+                                      <span className="text-[10px] font-black uppercase">
+                                        {payment.method}
+                                      </span>
+                                    </div>
+                                    <button
+                                      className="flex items-center gap-2 text-[10px] font-black uppercase bg-primary/10 text-primary px-4 py-2 rounded-xl transition-all border border-primary/5"
+                                      onClick={() => {
+                                        setSelectedInvoice(payment);
+                                        setShowInvoiceModal(true);
+                                      }}
+                                    >
+                                      <Receipt className="w-3.5 h-3.5" />
+                                      Invoice
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {payments.length === 0 && (
+                              <div className="px-8 py-32 text-center">
+                                <div className="opacity-10 mb-4">
+                                  <History className="w-16 h-16 mx-auto" />
+                                </div>
+                                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                                  No financial history yet.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>
@@ -1024,7 +1032,8 @@ export default function StudentPaymentDetail() {
                               </p>
                               <p className="text-sm font-bold">
                                 {student.bachelors.course}
-                                {student.bachelors.branch && ` (${student.bachelors.branch})`}
+                                {student.bachelors.branch &&
+                                  ` (${student.bachelors.branch})`}
                               </p>
                             </div>
                             <div>
@@ -1065,7 +1074,8 @@ export default function StudentPaymentDetail() {
                               </p>
                               <p className="text-sm font-bold">
                                 {student.masters.course}
-                                {student.masters.branch && ` (${student.masters.branch})`}
+                                {student.masters.branch &&
+                                  ` (${student.masters.branch})`}
                               </p>
                             </div>
                             <div>
@@ -1149,11 +1159,23 @@ export default function StudentPaymentDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[
                     { label: "Identity Proof", doc: student.idProof },
-                    { label: "10th Certificate", doc: student.tenth?.certificate },
-                    { label: "Plus Two Certificate", doc: student.plusTwo?.certificate },
+                    {
+                      label: "10th Certificate",
+                      doc: student.tenth?.certificate,
+                    },
+                    {
+                      label: "Plus Two Certificate",
+                      doc: student.plusTwo?.certificate,
+                    },
                     { label: "Affidavit", doc: student.affidavit },
-                    { label: "Migration Certificate", doc: student.migrationCertificate },
-                    { label: "Project Submission", doc: student.projectSubmission },
+                    {
+                      label: "Migration Certificate",
+                      doc: student.migrationCertificate,
+                    },
+                    {
+                      label: "Project Submission",
+                      doc: student.projectSubmission,
+                    },
                   ].map((item, idx) => {
                     const docPath = item.doc?.path;
                     return (
@@ -1230,8 +1252,10 @@ export default function StudentPaymentDetail() {
                 </div>
 
                 {/* Higher Ed Certificates */}
-                {((student.bachelors?.certificates && student.bachelors.certificates.length > 0) ||
-                  (student.masters?.certificates && student.masters.certificates.length > 0)) && (
+                {((student.bachelors?.certificates &&
+                  student.bachelors.certificates.length > 0) ||
+                  (student.masters?.certificates &&
+                    student.masters.certificates.length > 0)) && (
                   <div className="mt-12 pt-12 border-t border-border space-y-8">
                     {student.bachelors?.certificates?.length > 0 && (
                       <div className="space-y-4">
@@ -1246,7 +1270,9 @@ export default function StudentPaymentDetail() {
                             >
                               <div className="flex items-center gap-3">
                                 <FileDigit className="w-4 h-4 text-indigo-500" />
-                                <span className="text-[10px] font-bold">Cert {idx + 1}</span>
+                                <span className="text-[10px] font-bold">
+                                  Cert {idx + 1}
+                                </span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <button
@@ -1292,7 +1318,9 @@ export default function StudentPaymentDetail() {
                             >
                               <div className="flex items-center gap-3">
                                 <FileDigit className="w-4 h-4 text-rose-500" />
-                                <span className="text-[10px] font-bold">Cert {idx + 1}</span>
+                                <span className="text-[10px] font-bold">
+                                  Cert {idx + 1}
+                                </span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <button
@@ -1329,8 +1357,6 @@ export default function StudentPaymentDetail() {
               </div>
             )}
 
-
-
             {activeTab === "followup" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left: Log New Followup */}
@@ -1349,7 +1375,9 @@ export default function StudentPaymentDetail() {
                             <CheckCircle2 className="w-8 h-8" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-black text-emerald-600">Enrolled</h4>
+                            <h4 className="text-lg font-black text-emerald-600">
+                              Enrolled
+                            </h4>
                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
                               Process Completed
                             </p>
@@ -1366,7 +1394,10 @@ export default function StudentPaymentDetail() {
                           )}
                         </div>
                       ) : (
-                        <form onSubmit={handleAddFollowup} className="space-y-6">
+                        <form
+                          onSubmit={handleAddFollowup}
+                          className="space-y-6"
+                        >
                           <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                               Student Status
@@ -1381,7 +1412,9 @@ export default function StudentPaymentDetail() {
                               }
                               className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-xs font-bold uppercase tracking-wider"
                             >
-                              <option value="">No Change (Current: {student.status})</option>
+                              <option value="">
+                                No Change (Current: {student.status})
+                              </option>
                               <option value="On Progress">On Progress</option>
                               <option value="Enrolled">Enrolled</option>
                               <option value="Cancelled">Cancelled</option>
@@ -1493,15 +1526,22 @@ export default function StudentPaymentDetail() {
                                   </span>
                                   <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5">
                                     <Calendar className="w-3 h-3" />
-                                    {new Date(item.createdAt).toLocaleString("en-IN", {
-                                      dateStyle: "medium",
-                                      timeStyle: "short",
-                                    })}
+                                    {new Date(item.createdAt).toLocaleString(
+                                      "en-IN",
+                                      {
+                                        dateStyle: "medium",
+                                        timeStyle: "short",
+                                      },
+                                    )}
                                   </span>
                                 </div>
-                                {(isAdmin || String(item.authorId) === String(user._id)) && (
+                                {(isAdmin ||
+                                  String(item.authorId) ===
+                                    String(user._id)) && (
                                   <button
-                                    onClick={() => handleDeleteFollowup(item._id)}
+                                    onClick={() =>
+                                      handleDeleteFollowup(item._id)
+                                    }
                                     className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1526,7 +1566,10 @@ export default function StudentPaymentDetail() {
                                   <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full border border-amber-500/10">
                                     <Clock className="w-3 h-3" />
                                     <span className="text-[8px] font-black uppercase tracking-widest">
-                                      Next: {new Date(item.nextFollowupDate).toLocaleDateString()}
+                                      Next:{" "}
+                                      {new Date(
+                                        item.nextFollowupDate,
+                                      ).toLocaleDateString()}
                                     </span>
                                   </div>
                                 )}
@@ -1602,6 +1645,54 @@ export default function StudentPaymentDetail() {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      Attach Receipt (Optional)
+                    </label>
+                    <div className="relative group">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => setPaymentReceipt(e.target.files[0])}
+                        className="hidden"
+                        id="receipt-upload"
+                      />
+                      <label
+                        htmlFor="receipt-upload"
+                        className="flex items-center gap-3 w-full p-4 rounded-[1.5rem] border border-dashed border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50 cursor-pointer transition-all"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                          <Plus className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
+                            {paymentReceipt
+                              ? paymentReceipt.name
+                              : "Choose File"}
+                          </p>
+                          <p className="text-[8px] font-bold text-muted-foreground uppercase">
+                            {paymentReceipt
+                              ? `${(paymentReceipt.size / 1024 / 1024).toFixed(2)} MB`
+                              : "JPG, PNG or PDF (Max 5MB)"}
+                          </p>
+                        </div>
+                        {paymentReceipt && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPaymentReceipt(null);
+                            }}
+                            className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
                       Remarks (Optional)
@@ -1617,7 +1708,10 @@ export default function StudentPaymentDetail() {
                   <div className="flex gap-4 pt-4">
                     <button
                       type="button"
-                      onClick={() => setShowPayModal(false)}
+                      onClick={() => {
+                        setShowPayModal(false);
+                        setPaymentReceipt(null);
+                      }}
                       className="flex-1 py-4 rounded-3xl border border-border font-black text-sm hover:bg-muted transition-all"
                     >
                       Cancel
@@ -1770,6 +1864,7 @@ export default function StudentPaymentDetail() {
       </AnimatePresence>
 
       <DocViewerModal
+        isOpen={!!viewingDoc}
         url={viewingDoc?.url}
         title={viewingDoc?.title}
         onClose={() => setViewingDoc(null)}

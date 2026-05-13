@@ -260,6 +260,9 @@ export const recordServicePayment = async (req, res, next) => {
     // Determine partner ID
     const partnerId = req.user.userType === "partner" ? req.user.userId : application.student.registeredBy;
 
+    // Handle receipt upload
+    const receiptUrl = req.file ? req.file.location : undefined;
+
     // Create Payment record
     const payment = new Payment({
       student: application.student._id,
@@ -270,40 +273,29 @@ export const recordServicePayment = async (req, res, next) => {
       invoiceId: `INV-${Date.now().toString().slice(-6)}`,
       remarks: remarks || `Payment for ${application.subCategory || "Service"}`,
       type: "Documents & Services",
-      serviceApplication: application._id
+      serviceApplication: application._id,
+      receipt: receiptUrl,
+      approvalStatus: "pending"
     });
 
     await payment.save();
 
-    // Update application
-    application.paidAmount += payAmount;
-    
-    if (application.paidAmount >= application.feeAmount) {
-      application.paymentStatus = "Paid";
-      // Only advance status if full payment is done
-      if (application.status === "Waiting for Payment") {
-        application.status = "Pending Applications";
-        application.pendingDate = new Date();
-        application.history.push({
-          status: "Pending Applications",
-          updatedBy: req.user.id,
-          remarks: "Full payment confirmed, moved to processing."
-        });
-      }
-    } else {
-      application.paymentStatus = "Partially Paid";
-      application.history.push({
-        status: application.status,
-        updatedBy: req.user.id,
-        remarks: `Partial payment of ₹${payAmount} recorded. Balance: ₹${application.feeAmount - application.paidAmount}`
-      });
-    }
+    // Notify admins
+    const { sendToAdmins } = await import("../services/notification.service.js");
+    await sendToAdmins({
+      title: "New Service Payment Verification",
+      message: `A payment of ₹${payAmount.toLocaleString()} for ${application.subCategory || "Service"} (Student: ${application.student.name}) requires verification.`,
+      type: "payment_completed",
+      relatedId: payment._id,
+      link: "/dashboard/payment-management",
+    });
 
-    await application.save();
+    // NOTE: We do NOT update application.paidAmount here anymore.
+    // It will be updated upon admin approval in payment.controller.js.
 
     res.status(200).json({
       success: true,
-      message: application.paymentStatus === "Paid" ? "Full payment recorded" : "Partial payment recorded",
+      message: "Payment submitted for verification.",
       data: application
     });
   } catch (error) {
@@ -317,8 +309,9 @@ export const getServiceDashboardStats = async (req, res, next) => {
       ServiceApplication.countDocuments(),
       ServiceApplication.countDocuments({ status: "Pending Applications" }),
       ServiceApplication.countDocuments({ status: "Application On Progress" }),
-      ServiceApplication.aggregate([
-        { $group: { _id: null, total: { $sum: "$paidAmount" } } }
+      Payment.aggregate([
+        { $match: { approvalStatus: "approved", type: "Documents & Services" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
       ])
     ]);
 

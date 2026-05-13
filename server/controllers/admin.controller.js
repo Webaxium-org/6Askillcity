@@ -39,7 +39,7 @@ export const getAdminStats = async (req, res, next) => {
       Student.countDocuments({ applicationStatus: "Eligible" }),
       AdmissionPoint.countDocuments({ status: "approved" }),
       University.countDocuments({ isActive: true }),
-      Payment.find({}),
+      Payment.find({ approvalStatus: "approved" }),
       Student.countDocuments({ applicationStatus: "Pending Eligibility" }),
       AdmissionPoint.countDocuments({ status: "pending" }),
       Ticket.countDocuments({
@@ -52,6 +52,34 @@ export const getAdminStats = async (req, res, next) => {
       }),
       Student.aggregate([
         { $match: { deleted: { $ne: true }, applicationStatus: "Eligible" } },
+        {
+          $lookup: {
+            from: "payments",
+            let: { studentId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$student", "$$studentId"] },
+                      { $eq: ["$approvalStatus", "approved"] },
+                      { $eq: ["$type", "Course Fee"] },
+                    ],
+                  },
+                },
+              },
+              { $group: { _id: null, total: { $sum: "$amount" } } },
+            ],
+            as: "approvedPayments",
+          },
+        },
+        {
+          $addFields: {
+            actualApprovedPaid: {
+              $ifNull: [{ $arrayElemAt: ["$approvedPayments.total", 0] }, 0],
+            },
+          },
+        },
         {
           $lookup: {
             from: "programfees",
@@ -67,26 +95,12 @@ export const getAdminStats = async (req, res, next) => {
             completedCount: {
               $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] },
             },
-            partialPaidTotal: {
-              $sum: {
-                $cond: [
-                  { $ne: ["$paymentStatus", "Paid"] },
-                  "$totalFeePaid",
-                  0,
-                ],
-              },
-            },
+            totalApprovedPaid: { $sum: "$actualApprovedPaid" },
             pendingFeeTotal: {
               $sum: {
-                $cond: [
-                  { $ne: ["$paymentStatus", "Paid"] },
-                  {
-                    $subtract: [
-                      { $ifNull: ["$feeInfo.totalFee", 0] },
-                      "$totalFeePaid",
-                    ],
-                  },
-                  0,
+                $subtract: [
+                  { $ifNull: ["$feeInfo.totalFee", 0] },
+                  "$actualApprovedPaid",
                 ],
               },
             },
@@ -238,14 +252,15 @@ export const getAdminStats = async (req, res, next) => {
 
     const fStats = feeStats[0] || {
       completedCount: 0,
-      partialPaidTotal: 0,
+      totalApprovedPaid: 0,
       pendingFeeTotal: 0,
     };
+
     const courseFeeStats = {
       completedCount: fStats.completedCount,
-      partialPaidTotal: fStats.partialPaidTotal,
+      partialPaidTotal: fStats.totalApprovedPaid,
       pendingFeeTotal: Math.max(0, fStats.pendingFeeTotal),
-      totalFee: fStats.partialPaidTotal + Math.max(0, fStats.pendingFeeTotal),
+      totalFee: fStats.totalApprovedPaid + Math.max(0, fStats.pendingFeeTotal),
     };
 
     const lifecycleStats = {

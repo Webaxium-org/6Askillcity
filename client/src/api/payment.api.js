@@ -34,3 +34,13 @@ export const deletePaymentSchedule = async (scheduleId) => {
   const res = await axiosInstance.delete(`/payments/schedules/${scheduleId}`);
   return res.data;
 };
+
+export const approvePayment = async (id) => {
+  const res = await axiosInstance.post(`/payments/${id}/approve`);
+  return res.data;
+};
+
+export const rejectPayment = async (id, reason) => {
+  const res = await axiosInstance.post(`/payments/${id}/reject`, { reason });
+  return res.data;
+};

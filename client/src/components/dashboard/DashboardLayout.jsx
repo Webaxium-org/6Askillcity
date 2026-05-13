@@ -127,6 +127,7 @@ const Sidebar = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const { user } = useSelector((state) => state.user);
+  const { items: notifications } = useSelector((state) => state.notifications);
   const userName = user?.fullName || user?.centerName;
   const userRole = user?.type === "partner" ? "partner" : user?.role || "User";
   const navigate = useNavigate();
@@ -310,6 +311,11 @@ const Sidebar = ({
                     location.pathname === item.path ||
                     (location.pathname === "/dashboard" &&
                       item.id === "dashboard");
+
+                  const hasUnread = notifications.some(
+                    (n) => !n.isRead && n.link === item.path
+                  );
+
                   return (
                     <button
                       key={item.id}
@@ -352,9 +358,15 @@ const Sidebar = ({
                         <item.icon
                           className={cn(
                             "shrink-0",
-                            isCollapsed ? "w-6 h-6" : "w-5 h-5",
+                            isCollapsed ? "w-6 h-6" : "w-5 h-5"
                           )}
                         />
+                        {hasUnread && isCollapsed && (
+                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-card" />
+                          </span>
+                        )}
                         {isActive && (
                           <span className="absolute inset-0 bg-primary/20 blur-lg rounded-full" />
                         )}
@@ -372,6 +384,13 @@ const Sidebar = ({
 
                       {!isCollapsed && isActive && (
                         <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-primary-foreground shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                      )}
+
+                      {!isCollapsed && hasUnread && !isActive && (
+                        <div className="absolute right-3 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                        </div>
                       )}
                     </button>
                   );
