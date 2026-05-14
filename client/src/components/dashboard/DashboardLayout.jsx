@@ -24,7 +24,9 @@ import {
   X,
   Activity,
   Layers,
+  Volume2,
 } from "lucide-react";
+
 import logo from "../../assets/logo.png";
 import { useTheme } from "../global/ThemeProvider";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -41,6 +43,8 @@ import {
 } from "../../redux/notificationSlice";
 import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
+import notificationSound from "../../assets/sounds/notification.mp3";
+
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -481,6 +485,8 @@ export const DashboardLayout = ({ children, title }) => {
   const { items: notifications, unreadCount } = useSelector(
     (state) => state.notifications,
   );
+  const audioRef = React.useRef(new Audio(notificationSound));
+
 
   React.useEffect(() => {
     dispatch(fetchNotifications());
@@ -491,6 +497,16 @@ export const DashboardLayout = ({ children, title }) => {
 
     const handleNotification = (data) => {
       dispatch(addLiveNotification(data));
+      
+      // Play notification sound
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch((err) => {
+          console.warn("Notification sound blocked:", err);
+        });
+      }
+
+
       dispatch(
         showAlert({
           type: "info",
@@ -718,6 +734,20 @@ export const DashboardLayout = ({ children, title }) => {
             </div>
 
             <button
+              onClick={() => {
+                if (audioRef.current) {
+                  audioRef.current.currentTime = 0;
+                  audioRef.current.play().catch((e) => console.warn(e));
+                }
+              }}
+              className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-primary transition-all duration-200 shadow-sm"
+              title="Test Notification Sound"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+
+            <button
+
               onClick={toggleTheme}
               className="hidden md:flex p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200 shadow-sm"
             >
