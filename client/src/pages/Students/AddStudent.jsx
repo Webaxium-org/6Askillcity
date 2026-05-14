@@ -31,10 +31,9 @@ import {
   Baby,
   Cpu,
   GitBranch,
+  ChevronDown,
 } from "lucide-react";
 import { axiosInstance } from "../../api/axiosInstance";
-import Tesseract from "tesseract.js";
-import { ChevronDown } from "lucide-react";
 import { getPermittedCourses } from "../../api/partner.api";
 
 const COUNTRY_CODES = [
@@ -713,70 +712,19 @@ export default function AddStudent() {
     }));
   };
 
-  const runLocalTesseract = async (file) => {
-    try {
-      const worker = await Tesseract.createWorker("eng", 1, {
-        logger: (m) => {
-          if (m.status === "recognizing text")
-            setScanProgress(Math.round(m.progress * 100));
-        },
-      });
-      const {
-        data: { text },
-      } = await worker.recognize(file);
-      await worker.terminate();
-
-      const cleanText = text.replace(/\s\s+/g, " ").trim();
-      const fields = {};
-
-      const nameMatch = text.match(
-        /(?:Name of Candidate|Name)[\s]*[:]*[\s]*([A-Z\s.]{3,45})/i,
-      );
-      if (nameMatch)
-        fields.name = nameMatch[1]
-          .trim()
-          .replace(/BOARD|GOVERNMENT|CERTIFICATE/gi, "")
-          .trim();
-
-      const dobMatch = text.match(
-        /(?:Date of Birth|DOB)[\s]*[\(]*[in figures]*[\)]*[\s]*[:]*[\s]*(\d{2}[\/\-]\d{2}[\/\-]\d{4})/i,
-      );
-      if (dobMatch) {
-        const p = dobMatch[1].split(/[\/\-]/);
-        fields.dob = `${p[2]}-${p[1]}-${p[0]}`;
-      }
-
-      const sexMatch = text.match(/(?:Sex|Gender)[\s]*[:]*[\s]*(MALE|FEMALE)/i);
-      if (sexMatch)
-        fields.gender =
-          sexMatch[1].charAt(0).toUpperCase() +
-          sexRes[1].slice(1).toLowerCase();
-
-      const yearMatch = text.match(
-        /(?:Month & Year|Year)[\s]*[:]*[\s]*[A-Z\s]*(\d{4})/i,
-      );
-      if (yearMatch) fields.tenthCompletionYear = yearMatch[1];
-
-      return fields;
-    } catch (err) {
-      console.error("Local OCR Failed:", err);
-      return {};
-    }
-  };
-
   const handleOCR = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setFiles((p) => ({ ...p, tenthCertificate: file }));
     setScanning(true);
-    setScanProgress(10);
+    setScanProgress(30);
 
     try {
       const payload = new FormData();
       payload.append("certificate", file);
 
-      setScanProgress(30);
+      setScanProgress(60);
 
       const response = await axiosInstance.post(
         "/ocr/scan-certificate",
@@ -786,33 +734,20 @@ export default function AddStudent() {
         },
       );
 
-      if (response.data.fallback) {
-        setScanProgress(40);
-        dispatch(
-          showAlert({
-            type: "info",
-            message: "Cloud AI pending activation. Using local engine...",
-          }),
-        );
-        const localFields = await runLocalTesseract(file);
-        setFormData((prev) => ({ ...prev, ...localFields }));
-        dispatch(
-          showAlert({ type: "success", message: "Local scan complete." }),
-        );
-      } else if (response.data.success) {
+      if (response.data.success) {
         setScanProgress(100);
         setFormData((prev) => ({ ...prev, ...response.data.data.fields }));
         dispatch(
-          showAlert({ type: "success", message: "Google AI scan successful!" }),
+          showAlert({ type: "success", message: "Gemini AI scan successful!" }),
         );
       }
     } catch (error) {
       console.error("OCR API Error:", error);
-      // HARD FALLBACK
-      const localFields = await runLocalTesseract(file);
-      setFormData((prev) => ({ ...prev, ...localFields }));
       dispatch(
-        showAlert({ type: "info", message: "Used local fallback scanner." }),
+        showAlert({
+          type: "error",
+          message: error.response?.data?.message || "AI Scan failed. Please enter details manually.",
+        }),
       );
     } finally {
       setTimeout(() => {
@@ -1300,8 +1235,8 @@ export default function AddStudent() {
                         AI Smart Scan
                       </h3>
                       <p className="text-muted-foreground font-semibold text-[10px] leading-relaxed">
-                        Hybrid Engine: Uses Google Vision or local Fallback to
-                        fill demographics & academics.
+                        Powered by Gemini 1.5 Flash: Instantly extracts
+                        demographics & academics from certificates.
                       </p>
                     </div>
 

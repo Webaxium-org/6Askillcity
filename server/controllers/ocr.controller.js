@@ -1,28 +1,10 @@
-import vision from "@google-cloud/vision";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import createError from "http-errors";
-import fs from "fs";
-import path from "path";
 import { s3, bucketName } from "../utils/s3Config.js";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 
-// Initialize the client
-let client = null;
-
-try {
-  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  console.log("🔍 Checking Google Credentials at:", credentialsPath);
-
-  if (!credentialsPath) {
-    console.warn("⚠️ GOOGLE_APPLICATION_CREDENTIALS not set in .env");
-  } else if (!fs.existsSync(credentialsPath)) {
-    console.warn("❌ Google Key file NOT FOUND at specified path!");
-  } else {
-    console.log("✅ Google Key file detected.");
-    client = new vision.ImageAnnotatorClient();
-  }
-} catch (err) {
-  console.error("❌ Google Vision Client failed to initialize:", err.message);
-}
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const scanCertificate = async (req, res, next) => {
   try {
@@ -32,6 +14,7 @@ export const scanCertificate = async (req, res, next) => {
     }
 
     let imageContent;
+    let mimeType = imageFile.mimetype || "image/jpeg";
     
     // Handle S3 storage
     if (imageFile.key) {
@@ -41,104 +24,67 @@ export const scanCertificate = async (req, res, next) => {
       });
       const response = await s3.send(command);
       const byteArray = await response.Body.transformToByteArray();
-      imageContent = Buffer.from(byteArray);
+      imageContent = Buffer.from(byteArray).toString("base64");
+    } else if (imageFile.buffer) {
+      imageContent = imageFile.buffer.toString("base64");
     } else {
-      // Fallback for local storage (if any still exists)
-      imageContent = imageFile.path;
+      throw createError(400, "Image content not found.");
     }
 
-    let fullText = "";
-    let extractionSuccessful = false;
+    console.log("🚀 Starting Gemini AI scan...");
 
-    if (client) {
-      try {
-        console.log("🚀 Starting Google Cloud Vision scan...");
-        // Pass imageContent (buffer or path)
-        const [result] = await client.textDetection(imageContent);
-        const detections = result.textAnnotations;
-        
-        if (detections && detections.length > 0) {
-          fullText = detections[0].description;
-          extractionSuccessful = true;
-          console.log("✅ Google Cloud Vision scan successful!");
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+    const prompt = `
+      Analyze this student certificate (SSLC/10th or similar) and extract the following details in a strict JSON format.
+      If a field is not found, return an empty string.
+      
+      Required Fields:
+      - name: Full name of the candidate
+      - dob: Date of Birth in YYYY-MM-DD format
+      - gender: "Male", "Female", or "Other"
+      - religion: Candidate's religion
+      - caste: Candidate's caste
+      - fatherName: Father's name
+      - motherName: Mother's name
+      - address: Full permanent address
+      - tenthCompletionYear: Year of passing (4 digits)
+      - tenthBoard: Name of the education board (e.g., KERALA STATE BOARD, CBSE, ICSE)
+      - tenthTotalMarks: Maximum marks possible
+      - tenthObtainedMarks: Marks obtained by the candidate
+
+      Return ONLY the JSON object.
+    `;
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: imageContent,
+          mimeType
         }
-      } catch (googleError) {
-        console.error("❌ Google Vision API Error:", googleError.message);
-        // Billing/Activation errors usually fall here
       }
-    }
+    ]);
 
-    // If Google failed or was not initialized, send fallback signal
-    if (!extractionSuccessful) {
-      return res.status(200).json({
-        success: false,
-        fallback: true,
-        message: "Cloud AI pending or unavailable. Switching to local engine..."
-      });
-    }
+    const response = await result.response;
+    const text = response.text();
+    
+    // Clean JSON response from Gemini (it might include markdown code blocks)
+    const jsonString = text.replace(/```json|```/g, "").trim();
+    const fields = JSON.parse(jsonString);
 
-    // Process data if Google succeeded
-    const fields = extractFields(fullText);
+    console.log("✅ Gemini AI scan successful!");
 
     res.status(200).json({
       success: true,
-      engine: "google",
+      engine: "gemini",
       data: {
-        text: fullText,
         fields
       }
     });
 
   } catch (error) {
+    console.error("❌ Gemini API Error:", error.message);
     next(error);
   }
 };
-
-function extractFields(fullText) {
-    const cleanText = fullText.replace(/\s\s+/g, ' ').trim();
-    const fields = {};
-    
-    // 1. Name (Flexible matching)
-    const nameMatch = fullText.match(/(?:Name of Candidate|Name)[\s]*[:]*[\s]*([A-Z\s.]{3,45})/i);
-    if (nameMatch) fields.name = nameMatch[1].trim().replace(/BOARD|GOVERNMENT|CERTIFICATE|SSLC/gi, "").trim();
-
-    // 2. DOB
-    const dobMatch = fullText.match(/(?:Date of Birth|DOB)[\s]*[\(]*[in figures]*[\)]*[\s]*[:]*[\s]*(\d{2}[\/\-]\d{2}[\/\-]\d{4})/i);
-    if (dobMatch) {
-      const p = dobMatch[1].split(/[\/\-]/);
-      fields.dob = `${p[2]}-${p[1]}-${p[0]}`;
-    }
-
-    // 3. Gender
-    const sexMatch = fullText.match(/(?:Sex|Gender)[\s]*[:]*[\s]*(MALE|FEMALE)/i);
-    if (sexMatch) fields.gender = sexMatch[1].charAt(0).toUpperCase() + sexMatch[1].slice(1).toLowerCase();
-
-    // 4. Religion & Caste
-    const rcMatch = fullText.match(/(?:Religion & Caste|Religion)[\s]*[:]*[\s]*([A-Z\s,]{3,35})/i);
-    if (rcMatch) {
-      const split = rcMatch[1].split(",");
-      fields.religion = split[0]?.trim();
-      fields.caste = split[1]?.trim();
-    }
-
-    // 5. Parents
-    const motherMatch = fullText.match(/(?:Name of Mother|Mother)[\s]*[:]*[\s]*([A-Z\s.]{3,40})/i);
-    if (motherMatch) fields.motherName = motherMatch[1].trim();
-
-    const fatherMatch = fullText.match(/(?:Name of Father|Father)[\s]*[:]*[\s]*([A-Z\s.]{3,40})/i);
-    if (fatherMatch) fields.fatherName = fatherMatch[1].trim();
-
-    // 6. Address
-    const addressMatch = fullText.match(/(?:Home Address|Address)[\s]*[:]*[\s]*([A-Z0-9\s,\-().\n]{15,200})/i);
-    if (addressMatch) fields.address = addressMatch[1].trim().replace(/\n/g, " ");
-
-    // 7. Year
-    const yearMatch = fullText.match(/(?:Month & Year|Year)[\s]*[:]*[\s]*[A-Z\s]*(\d{4})/i);
-    if (yearMatch) fields.tenthCompletionYear = yearMatch[1];
-
-    if (fullText.toLowerCase().includes("kerala")) {
-      fields.tenthBoard = "KERALA STATE BOARD";
-    }
-
-    return fields;
-}
