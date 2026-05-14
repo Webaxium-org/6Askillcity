@@ -746,7 +746,9 @@ export default function AddStudent() {
       dispatch(
         showAlert({
           type: "error",
-          message: error.response?.data?.message || "AI Scan failed. Please enter details manually.",
+          message:
+            error.response?.data?.message ||
+            "AI Scan failed. Please enter details manually.",
         }),
       );
     } finally {
@@ -1211,8 +1213,8 @@ export default function AddStudent() {
                 className="space-y-6"
               >
                 {/* Compact AI Smart Scan */}
-                <div className="flex justify-center">
-                  <div className="w-full max-w-xl bg-card border smart-scan-box rounded-[2rem] p-8 flex items-center gap-6 relative overflow-hidden shadow-lg group">
+                <div className="flex justify-center px-4">
+                  <div className="w-full max-w-xl bg-card border smart-scan-box rounded-[2rem] p-6 sm:p-8 flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 sm:gap-6 relative overflow-hidden shadow-lg group">
                     {scanning && (
                       <motion.div
                         initial={{ top: "-10%" }}
@@ -1234,7 +1236,7 @@ export default function AddStudent() {
                       <h3 className="text-lg font-black tracking-tight text-emerald-500 uppercase">
                         AI Smart Scan
                       </h3>
-                      <p className="text-muted-foreground font-semibold text-[10px] leading-relaxed">
+                      <p className="text-muted-foreground font-semibold text-[10px] leading-relaxed max-w-[280px] sm:max-w-none mx-auto sm:mx-0">
                         Powered by Gemini 1.5 Flash: Instantly extracts
                         demographics & academics from certificates.
                       </p>
@@ -1243,7 +1245,7 @@ export default function AddStudent() {
                     <button
                       type="button"
                       onClick={() => sslcFileInputRef.current?.click()}
-                      className="px-6 py-3 bg-foreground text-background rounded-xl font-black shadow-lg hover:scale-105 transition-all text-[10px] uppercase shrink-0"
+                      className="w-full sm:w-auto px-6 py-3 bg-foreground text-background rounded-xl font-black shadow-lg hover:scale-105 transition-all text-[10px] uppercase shrink-0"
                     >
                       {scanning ? `${scanProgress}%` : "Scan with AI"}
                     </button>
