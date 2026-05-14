@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -419,6 +425,29 @@ export default function AddStudent() {
   });
   const [errors, setErrors] = useState({});
 
+  // 3D Tilt Logic
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [10, -10]), {
+    stiffness: 150,
+    damping: 20,
+  });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-10, 10]), {
+    stiffness: 150,
+    damping: 20,
+  });
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -718,13 +747,19 @@ export default function AddStudent() {
 
     setFiles((p) => ({ ...p, tenthCertificate: file }));
     setScanning(true);
-    setScanProgress(30);
+    setScanProgress(0);
+
+    // Smooth progress simulation
+    const progressInterval = setInterval(() => {
+      setScanProgress((prev) => {
+        if (prev >= 95) return prev;
+        return prev + Math.floor(Math.random() * 5) + 1;
+      });
+    }, 200);
 
     try {
       const payload = new FormData();
       payload.append("certificate", file);
-
-      setScanProgress(60);
 
       const response = await axiosInstance.post(
         "/ocr/scan-certificate",
@@ -735,6 +770,7 @@ export default function AddStudent() {
       );
 
       if (response.data.success) {
+        clearInterval(progressInterval);
         setScanProgress(100);
         setFormData((prev) => ({ ...prev, ...response.data.data.fields }));
         dispatch(
@@ -742,6 +778,7 @@ export default function AddStudent() {
         );
       }
     } catch (error) {
+      clearInterval(progressInterval);
       console.error("OCR API Error:", error);
       dispatch(
         showAlert({
@@ -755,7 +792,7 @@ export default function AddStudent() {
       setTimeout(() => {
         setScanning(false);
         setScanProgress(0);
-      }, 500);
+      }, 1000);
       if (e.target) e.target.value = null;
     }
   };
@@ -1132,6 +1169,12 @@ export default function AddStudent() {
             }
             .smart-scan-box {
               animation: border-glow 4s infinite ease-in-out;
+              background: rgba(255, 255, 255, 0.02);
+              backdrop-filter: blur(10px);
+            }
+            .btn-glow:hover {
+              box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+              filter: brightness(1.1);
             }
           `}
         </style>
@@ -1212,9 +1255,14 @@ export default function AddStudent() {
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-6"
               >
-                {/* Compact AI Smart Scan */}
-                <div className="flex justify-center px-4">
-                  <div className="w-full max-w-xl bg-card border smart-scan-box rounded-[2rem] p-6 sm:p-8 flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 sm:gap-6 relative overflow-hidden shadow-lg group">
+                {/* 3D Interactive AI Smart Scan */}
+                <div className="flex justify-center px-4 perspective-[1000px]">
+                  <motion.div
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                    style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+                    className="w-full max-w-xl bg-card border smart-scan-box rounded-[2rem] p-6 sm:p-8 flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 sm:gap-6 relative overflow-hidden shadow-lg group transition-colors hover:border-emerald-500/30"
+                  >
                     {scanning && (
                       <motion.div
                         initial={{ top: "-10%" }}
@@ -1228,11 +1276,17 @@ export default function AddStudent() {
                       />
                     )}
 
-                    <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0">
+                    <div
+                      style={{ translateZ: 30 }}
+                      className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"
+                    >
                       <Sparkles className="w-7 h-7 animate-pulse" />
                     </div>
 
-                    <div className="flex-1 space-y-1">
+                    <div
+                      style={{ translateZ: 20 }}
+                      className="flex-1 space-y-1"
+                    >
                       <h3 className="text-lg font-black tracking-tight text-emerald-500 uppercase">
                         AI Smart Scan
                       </h3>
@@ -1242,20 +1296,53 @@ export default function AddStudent() {
                       </p>
                     </div>
 
-                    <button
+                    <motion.button
+                      style={{ translateZ: 40 }}
                       type="button"
                       onClick={() => sslcFileInputRef.current?.click()}
-                      className="w-full sm:w-auto px-6 py-3 bg-foreground text-background rounded-xl font-black shadow-lg hover:scale-105 transition-all text-[10px] uppercase shrink-0"
+                      whileHover={{ scale: 1.05, translateY: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={cn(
+                        "btn-glow w-full sm:w-auto px-6 py-3 bg-foreground text-background rounded-xl font-black shadow-lg transition-all text-[10px] uppercase shrink-0 relative overflow-hidden group/btn",
+                        scanning && "text-white",
+                      )}
                     >
-                      {scanning ? `${scanProgress}%` : "Scan with AI"}
-                    </button>
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        {scanning ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            {scanProgress}%
+                          </>
+                        ) : (
+                          <>
+                            <ScanText className="w-3 h-3" />
+                            Initialize Scan
+                          </>
+                        )}
+                      </span>
+                      <div
+                        className={cn(
+                          "absolute inset-0 bg-emerald-600 transition-all duration-300",
+                          scanning
+                            ? "translate-y-0"
+                            : "translate-y-full group-hover/btn:translate-y-0",
+                        )}
+                        style={
+                          scanning
+                            ? {
+                                clipPath: `inset(${100 - scanProgress}% 0 0 0)`,
+                              }
+                            : {}
+                        }
+                      />
+                    </motion.button>
                     <input
                       type="file"
                       ref={sslcFileInputRef}
                       className="hidden"
                       onChange={handleOCR}
                     />
-                  </div>
+                  </motion.div>
                 </div>
 
                 <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-8">
