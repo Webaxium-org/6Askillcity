@@ -10,16 +10,14 @@ import { Cashfree, CFEnvironment } from "cashfree-pg";
 
 // Smart detection of Cashfree environment based on key prefix
 const isProdKey = process.env.CASHFREE_SECRET_KEY?.startsWith("cfsk_ma_prod_");
-// const cashfree = new Cashfree(
-//   isProdKey || process.env.NODE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX,
-//   process.env.CASHFREE_APP_ID,
-//   process.env.CASHFREE_SECRET_KEY
-// );
 const cashfree = new Cashfree(
-  CFEnvironment.SANDBOX,
+  isProdKey || process.env.NODE_ENV === "production"
+    ? CFEnvironment.PRODUCTION
+    : CFEnvironment.SANDBOX,
   process.env.CASHFREE_APP_ID,
   process.env.CASHFREE_SECRET_KEY,
 );
+
 cashfree.XApiVersion = "2023-08-01";
 
 // ─────────────────────────────────────────────
@@ -152,13 +150,11 @@ export const recordPayment = async (req, res, next) => {
       link: "/dashboard/payment-management",
     });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Payment submitted for verification.",
-        data: payment,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Payment submitted for verification.",
+      data: payment,
+    });
   } catch (error) {
     next(error);
   }
@@ -501,13 +497,11 @@ export const setSchedule = async (req, res, next) => {
 
     const savedSchedules = await PaymentSchedule.insertMany(newSchedules);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Payment schedule updated.",
-        data: savedSchedules,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Payment schedule updated.",
+      data: savedSchedules,
+    });
   } catch (error) {
     next(error);
   }
