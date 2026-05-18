@@ -39,12 +39,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import DocViewerModal from "../../components/common/DocViewerModal";
 import InvoiceModal from "../../components/payment/InvoiceModal";
 import { getStudentById } from "../../api/student.api";
+import { load } from '@cashfreepayments/cashfree-js';
 import {
   recordPayment,
   getStudentPayments,
   setPaymentSchedule,
   getStudentSchedules,
   deletePaymentSchedule,
+  createCashfreeOrder,
+  verifyCashfreePayment,
 } from "../../api/payment.api";
 import {
   getFollowups,
@@ -100,6 +103,9 @@ export default function StudentPaymentDetail() {
   const [scheduleItems, setScheduleItems] = useState([
     { dueDate: "", amount: "", description: "" },
   ]);
+  const [cashfree, setCashfree] = useState(null);
+  const [paymentMethodTab, setPaymentMethodTab] = useState("online");
+
 
   // Follow-up state
   const [followups, setFollowups] = useState([]);
@@ -133,7 +139,37 @@ export default function StudentPaymentDetail() {
 
   useEffect(() => {
     fetchData();
+    initializeCashfree();
+    checkPaymentStatus();
   }, [id]);
+
+  const initializeCashfree = async () => {
+    const cf = await load({
+      mode: import.meta.env.MODE === "production" ? "production" : "sandbox",
+    });
+    setCashfree(cf);
+  };
+
+  const checkPaymentStatus = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get("order_id");
+    const status = urlParams.get("payment_status");
+    
+    if (orderId && status) {
+       try {
+         const res = await verifyCashfreePayment(id, orderId);
+         if (res.success) {
+           dispatch(showAlert({ type: "success", message: "Payment verified successfully!" }));
+           fetchData();
+         } else {
+           dispatch(showAlert({ type: "error", message: "Payment verification failed" }));
+         }
+       } catch (error) {
+         dispatch(showAlert({ type: "error", message: "Failed to verify payment" }));
+       }
+       window.history.replaceState(null, "", window.location.pathname);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -235,6 +271,35 @@ export default function StudentPaymentDetail() {
       setIsProcessing(false);
     }
   };
+
+  const handlePayOnline = async (e) => {
+    e.preventDefault();
+    if (!paymentAmount || paymentAmount <= 0) return;
+
+    const totalFee = student?.programFee?.totalFee || 0;
+    const remaining = totalFee - (student.totalFeePaid || 0);
+
+    if (Number(paymentAmount) > remaining) {
+      dispatch(showAlert({ type: "error", message: `Amount exceeds remaining fee` }));
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const res = await createCashfreeOrder(id, { amount: paymentAmount, remarks: paymentRemarks });
+      if (res.success && cashfree) {
+        const checkoutOptions = {
+          paymentSessionId: res.payment_session_id,
+          redirectTarget: "_self"
+        };
+        cashfree.checkout(checkoutOptions);
+      }
+    } catch (error) {
+      dispatch(showAlert({ type: "error", message: error.response?.data?.message || "Failed to initiate online payment" }));
+      setIsProcessing(false);
+    }
+  };
+
 
   const handleAddScheduleRow = () => {
     setScheduleItems([
@@ -1715,7 +1780,26 @@ export default function StudentPaymentDetail() {
                   </div>
                 </div>
 
-                <form onSubmit={handlePayment} className="space-y-6">
+                <div className="flex bg-muted p-1 rounded-2xl mb-6">
+                  <button
+                    onClick={() => setPaymentMethodTab("online")}
+                    className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
+                      paymentMethodTab === "online" ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Pay Online
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethodTab("offline")}
+                    className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
+                      paymentMethodTab === "offline" ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Upload Receipt
+                  </button>
+                </div>
+
+                <form onSubmit={paymentMethodTab === "online" ? handlePayOnline : handlePayment} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
                       Payment Amount
@@ -1743,6 +1827,7 @@ export default function StudentPaymentDetail() {
                     </div>
                   </div>
 
+                  {paymentMethodTab === "offline" && (
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
                       Attach Receipt (Optional)
@@ -1789,6 +1874,7 @@ export default function StudentPaymentDetail() {
                       </label>
                     </div>
                   </div>
+                  )}
 
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
@@ -1821,7 +1907,7 @@ export default function StudentPaymentDetail() {
                       {isProcessing ? (
                         <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        "Confirm Payment"
+                        paymentMethodTab === "online" ? "Pay Online" : "Submit Receipt"
                       )}
                     </button>
                   </div>

@@ -9,6 +9,8 @@ import {
   getGlobalPaymentStats,
   approvePayment,
   rejectPayment,
+  createCashfreeOrder,
+  verifyCashfreePayment,
 } from "../controllers/payment.controller.js";
 import { requireAuth, isAuthorized } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
@@ -39,6 +41,18 @@ router
     upload.single("receipt"),
     recordPayment,
   );
+
+router.post(
+  "/student/:studentId/cashfree/order",
+  isAuthorized({ roles: ["partner"] }),
+  createCashfreeOrder
+);
+
+router.post(
+  "/student/:studentId/cashfree/verify",
+  isAuthorized({ roles: ["partner"] }),
+  verifyCashfreePayment
+);
 
 router
   .route("/student/:studentId/schedules")

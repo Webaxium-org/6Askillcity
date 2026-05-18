@@ -44,3 +44,14 @@ export const rejectPayment = async (id, reason) => {
   const res = await axiosInstance.post(`/payments/${id}/reject`, { reason });
   return res.data;
 };
+
+export const createCashfreeOrder = async (studentId, orderData) => {
+  const res = await axiosInstance.post(`/payments/student/${studentId}/cashfree/order`, orderData);
+  return res.data;
+};
+
+export const verifyCashfreePayment = async (studentId, orderId) => {
+  const res = await axiosInstance.post(`/payments/student/${studentId}/cashfree/verify`, { orderId });
+  return res.data;
+};
+

@@ -45,7 +45,6 @@ import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
 import notificationSound from "../../assets/sounds/notification.mp3";
 
-
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
@@ -317,7 +316,7 @@ const Sidebar = ({
                       item.id === "dashboard");
 
                   const hasUnread = notifications.some(
-                    (n) => !n.isRead && n.link === item.path
+                    (n) => !n.isRead && n.link === item.path,
                   );
 
                   return (
@@ -362,7 +361,7 @@ const Sidebar = ({
                         <item.icon
                           className={cn(
                             "shrink-0",
-                            isCollapsed ? "w-6 h-6" : "w-5 h-5"
+                            isCollapsed ? "w-6 h-6" : "w-5 h-5",
                           )}
                         />
                         {hasUnread && isCollapsed && (
@@ -487,7 +486,6 @@ export const DashboardLayout = ({ children, title }) => {
   );
   const audioRef = React.useRef(new Audio(notificationSound));
 
-
   React.useEffect(() => {
     dispatch(fetchNotifications());
   }, [dispatch]);
@@ -497,7 +495,7 @@ export const DashboardLayout = ({ children, title }) => {
 
     const handleNotification = (data) => {
       dispatch(addLiveNotification(data));
-      
+
       // Play notification sound
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
@@ -505,7 +503,6 @@ export const DashboardLayout = ({ children, title }) => {
           console.warn("Notification sound blocked:", err);
         });
       }
-
 
       dispatch(
         showAlert({
@@ -734,20 +731,6 @@ export const DashboardLayout = ({ children, title }) => {
             </div>
 
             <button
-              onClick={() => {
-                if (audioRef.current) {
-                  audioRef.current.currentTime = 0;
-                  audioRef.current.play().catch((e) => console.warn(e));
-                }
-              }}
-              className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-primary transition-all duration-200 shadow-sm"
-              title="Test Notification Sound"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
-
-            <button
-
               onClick={toggleTheme}
               className="hidden md:flex p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200 shadow-sm"
             >

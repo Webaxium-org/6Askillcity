@@ -6,6 +6,12 @@ import createError from "http-errors";
 import { v4 as uuidv4 } from "uuid";
 import mongoose from "mongoose";
 import { sendToAdmins } from "../services/notification.service.js";
+import { Cashfree, CFEnvironment } from "cashfree-pg";
+
+Cashfree.XClientId = process.env.CASHFREE_APP_ID;
+Cashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY;
+Cashfree.XEnvironment = process.env.NODE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+
 
 // ─────────────────────────────────────────────
 // Get all eligible students (Management List)
@@ -126,6 +132,123 @@ export const recordPayment = async (req, res, next) => {
     });
 
     res.status(200).json({ success: true, message: "Payment submitted for verification.", data: payment });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// Cashfree Order Creation
+// ─────────────────────────────────────────────
+export const createCashfreeOrder = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+    const { amount, remarks } = req.body;
+    const partnerId = req.user.userId;
+
+    if (!amount || amount <= 0) throw createError(400, "Invalid payment amount.");
+
+    const student = await Student.findById(studentId).populate("programFee");
+    if (!student) throw createError(404, "Student not found.");
+
+    const totalFee = student.programFee?.totalFee || 0;
+    const allPayments = await Payment.find({ student: studentId, approvalStatus: { $ne: "rejected" } });
+    const totalRecorded = allPayments.reduce((acc, p) => acc + p.amount, 0);
+    const remainingFee = totalFee - totalRecorded;
+
+    if (Number(amount) > remainingFee) {
+      throw createError(400, `Payment amount exceeds remaining fee. Maximum allowed: ₹${remainingFee.toLocaleString()}`);
+    }
+
+    const payment = new Payment({
+      student: studentId,
+      partner: partnerId,
+      amount: Number(amount),
+      method: "Online",
+      remarks: remarks || "Cashfree Payment",
+      transactionId: `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
+      invoiceId: `INV-${Date.now().toString().slice(-6)}`,
+      approvalStatus: "pending",
+    });
+    await payment.save();
+
+    const request = {
+      order_amount: amount,
+      order_currency: "INR",
+      order_id: payment._id.toString(),
+      customer_details: {
+        customer_id: studentId.toString(),
+        customer_phone: student.phone || "9999999999",
+      },
+      order_meta: {
+        return_url: `${process.env.CLIENT_URL}/dashboard/student-management/${studentId}?order_id={order_id}&payment_status={payment_status}`
+      }
+    };
+
+    Cashfree.PGCreateOrder("2023-08-01", request).then((response) => {
+      res.status(200).json({ 
+        success: true, 
+        payment_session_id: response.data.payment_session_id, 
+        order_id: response.data.order_id 
+      });
+    }).catch((error) => {
+      next(createError(500, error.response?.data?.message || "Failed to create Cashfree order"));
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// Cashfree Payment Verification
+// ─────────────────────────────────────────────
+export const verifyCashfreePayment = async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+
+    Cashfree.PGOrderFetchPayments("2023-08-01", orderId).then(async (response) => {
+      const successfulPayment = response.data.find(p => p.payment_status === "SUCCESS");
+      
+      const paymentRecord = await Payment.findById(orderId).populate("student");
+      if (!paymentRecord) throw createError(404, "Payment record not found.");
+
+      if (paymentRecord.approvalStatus === "approved") {
+         return res.status(200).json({ success: true, message: "Already approved" });
+      }
+
+      if (successfulPayment) {
+        paymentRecord.approvalStatus = "approved";
+        paymentRecord.approvedBy = req.user.userId;
+        paymentRecord.approvalDate = new Date();
+        await paymentRecord.save();
+
+        const student = await Student.findById(paymentRecord.student._id).populate("programFee");
+        if (student) {
+          student.totalFeePaid += paymentRecord.amount;
+          const totalFee = student.programFee?.totalFee || 0;
+          if (student.totalFeePaid >= totalFee) student.paymentStatus = "Paid";
+          else if (student.totalFeePaid > 0) student.paymentStatus = "Partially Paid";
+          await student.save();
+        }
+        
+        await sendToAdmins({
+          title: "Online Payment Successful",
+          message: `A payment of ₹${paymentRecord.amount.toLocaleString()} for student ${student?.name || 'unknown'} was completed via Cashfree.`,
+          type: "payment_completed",
+          relatedId: paymentRecord._id,
+          link: "/dashboard/payment-management",
+        });
+
+        res.status(200).json({ success: true, message: "Payment successful" });
+      } else {
+        paymentRecord.approvalStatus = "rejected";
+        paymentRecord.rejectionReason = "Payment failed at gateway";
+        await paymentRecord.save();
+        res.status(400).json({ success: false, message: "Payment not successful" });
+      }
+    }).catch(error => {
+      next(createError(500, error.response?.data?.message || "Failed to verify Cashfree payment"));
+    });
   } catch (error) {
     next(error);
   }
