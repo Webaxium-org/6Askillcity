@@ -232,6 +232,11 @@ export const createCashfreeOrder = async (req, res, next) => {
         });
       })
       .catch((error) => {
+        console.error("[Cashfree Error] Order creation failed:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
         next(
           createError(
             500,
@@ -319,6 +324,11 @@ export const verifyCashfreePayment = async (req, res, next) => {
         }
       })
       .catch((error) => {
+        console.error("[Cashfree Error] Payment verification failed:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
         next(
           createError(
             500,
