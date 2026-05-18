@@ -8,9 +8,14 @@ import mongoose from "mongoose";
 import { sendToAdmins } from "../services/notification.service.js";
 import { Cashfree, CFEnvironment } from "cashfree-pg";
 
-Cashfree.XClientId = process.env.CASHFREE_APP_ID;
-Cashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY;
-Cashfree.XEnvironment = process.env.NODE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+// Smart detection of Cashfree environment based on key prefix
+const isProdKey = process.env.CASHFREE_SECRET_KEY?.startsWith("cfsk_ma_prod_");
+const cashfree = new Cashfree(
+  isProdKey || process.env.NODE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX,
+  process.env.CASHFREE_APP_ID,
+  process.env.CASHFREE_SECRET_KEY
+);
+cashfree.XApiVersion = "2023-08-01";
 
 
 // ─────────────────────────────────────────────
@@ -106,6 +111,10 @@ export const recordPayment = async (req, res, next) => {
     // Handle receipt upload
     const receiptUrl = req.file ? req.file.location : undefined;
 
+    if (method?.startsWith("Offline") && !receiptUrl) {
+      throw createError(400, "Receipt file is required for offline payments.");
+    }
+
     // Create Payment record
     const payment = new Payment({
       student: studentId,
@@ -185,7 +194,7 @@ export const createCashfreeOrder = async (req, res, next) => {
       }
     };
 
-    Cashfree.PGCreateOrder("2023-08-01", request).then((response) => {
+    cashfree.PGCreateOrder(request).then((response) => {
       res.status(200).json({ 
         success: true, 
         payment_session_id: response.data.payment_session_id, 
@@ -206,7 +215,7 @@ export const verifyCashfreePayment = async (req, res, next) => {
   try {
     const { orderId } = req.body;
 
-    Cashfree.PGOrderFetchPayments("2023-08-01", orderId).then(async (response) => {
+    cashfree.PGOrderFetchPayments(orderId).then(async (response) => {
       const successfulPayment = response.data.find(p => p.payment_status === "SUCCESS");
       
       const paymentRecord = await Payment.findById(orderId).populate("student");
@@ -220,6 +229,16 @@ export const verifyCashfreePayment = async (req, res, next) => {
         paymentRecord.approvalStatus = "approved";
         paymentRecord.approvedBy = req.user.userId;
         paymentRecord.approvalDate = new Date();
+        paymentRecord.gatewayData = successfulPayment;
+        
+        // Update transaction info from gateway if available
+        if (successfulPayment.cf_payment_id) {
+          paymentRecord.transactionId = successfulPayment.cf_payment_id.toString();
+        }
+        if (successfulPayment.payment_group) {
+          paymentRecord.method = `Online - ${successfulPayment.payment_group.toUpperCase()}`;
+        }
+
         await paymentRecord.save();
 
         const student = await Student.findById(paymentRecord.student._id).populate("programFee");

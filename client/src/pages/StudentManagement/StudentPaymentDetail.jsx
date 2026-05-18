@@ -39,7 +39,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import DocViewerModal from "../../components/common/DocViewerModal";
 import InvoiceModal from "../../components/payment/InvoiceModal";
 import { getStudentById } from "../../api/student.api";
-import { load } from '@cashfreepayments/cashfree-js';
+import { load } from "@cashfreepayments/cashfree-js";
 import {
   recordPayment,
   getStudentPayments,
@@ -106,7 +106,6 @@ export default function StudentPaymentDetail() {
   const [cashfree, setCashfree] = useState(null);
   const [paymentMethodTab, setPaymentMethodTab] = useState("online");
 
-
   // Follow-up state
   const [followups, setFollowups] = useState([]);
   const [isFollowupLoading, setIsFollowupLoading] = useState(false);
@@ -154,20 +153,32 @@ export default function StudentPaymentDetail() {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("order_id");
     const status = urlParams.get("payment_status");
-    
+
     if (orderId && status) {
-       try {
-         const res = await verifyCashfreePayment(id, orderId);
-         if (res.success) {
-           dispatch(showAlert({ type: "success", message: "Payment verified successfully!" }));
-           fetchData();
-         } else {
-           dispatch(showAlert({ type: "error", message: "Payment verification failed" }));
-         }
-       } catch (error) {
-         dispatch(showAlert({ type: "error", message: "Failed to verify payment" }));
-       }
-       window.history.replaceState(null, "", window.location.pathname);
+      try {
+        const res = await verifyCashfreePayment(id, orderId);
+        if (res.success) {
+          dispatch(
+            showAlert({
+              type: "success",
+              message: "Payment verified successfully!",
+            }),
+          );
+          fetchData();
+        } else {
+          dispatch(
+            showAlert({
+              type: "error",
+              message: "Payment verification failed",
+            }),
+          );
+        }
+      } catch (error) {
+        dispatch(
+          showAlert({ type: "error", message: "Failed to verify payment" }),
+        );
+      }
+      window.history.replaceState(null, "", window.location.pathname);
     }
   };
 
@@ -221,6 +232,16 @@ export default function StudentPaymentDetail() {
   const handlePayment = async (e) => {
     e.preventDefault();
     if (!paymentAmount || paymentAmount <= 0) return;
+
+    if (!paymentReceipt) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please attach a receipt for offline payment.",
+        }),
+      );
+      return;
+    }
 
     const totalFee = student?.programFee?.totalFee || 0;
     const remaining = totalFee - (student.totalFeePaid || 0);
@@ -280,26 +301,37 @@ export default function StudentPaymentDetail() {
     const remaining = totalFee - (student.totalFeePaid || 0);
 
     if (Number(paymentAmount) > remaining) {
-      dispatch(showAlert({ type: "error", message: `Amount exceeds remaining fee` }));
+      dispatch(
+        showAlert({ type: "error", message: `Amount exceeds remaining fee` }),
+      );
       return;
     }
 
     setIsProcessing(true);
     try {
-      const res = await createCashfreeOrder(id, { amount: paymentAmount, remarks: paymentRemarks });
+      const res = await createCashfreeOrder(id, {
+        amount: paymentAmount,
+        remarks: paymentRemarks,
+      });
       if (res.success && cashfree) {
         const checkoutOptions = {
           paymentSessionId: res.payment_session_id,
-          redirectTarget: "_self"
+          redirectTarget: "_self",
         };
         cashfree.checkout(checkoutOptions);
       }
     } catch (error) {
-      dispatch(showAlert({ type: "error", message: error.response?.data?.message || "Failed to initiate online payment" }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message:
+            error.response?.data?.message ||
+            "Failed to initiate online payment",
+        }),
+      );
       setIsProcessing(false);
     }
   };
-
 
   const handleAddScheduleRow = () => {
     setScheduleItems([
@@ -1454,7 +1486,13 @@ export default function StudentPaymentDetail() {
                     </p>
                   </div>
                   <button
-                    onClick={() => setSelectedTicket({ isNew: true, studentName: student.name, prefilledCategory: "Student" })}
+                    onClick={() =>
+                      setSelectedTicket({
+                        isNew: true,
+                        studentName: student.name,
+                        prefilledCategory: "Student",
+                      })
+                    }
                     className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
                   >
                     <Plus className="w-5 h-5" />
@@ -1784,7 +1822,9 @@ export default function StudentPaymentDetail() {
                   <button
                     onClick={() => setPaymentMethodTab("online")}
                     className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
-                      paymentMethodTab === "online" ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                      paymentMethodTab === "online"
+                        ? "bg-card shadow-sm text-primary"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     Pay Online
@@ -1792,14 +1832,23 @@ export default function StudentPaymentDetail() {
                   <button
                     onClick={() => setPaymentMethodTab("offline")}
                     className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
-                      paymentMethodTab === "offline" ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                      paymentMethodTab === "offline"
+                        ? "bg-card shadow-sm text-primary"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     Upload Receipt
                   </button>
                 </div>
 
-                <form onSubmit={paymentMethodTab === "online" ? handlePayOnline : handlePayment} className="space-y-6">
+                <form
+                  onSubmit={
+                    paymentMethodTab === "online"
+                      ? handlePayOnline
+                      : handlePayment
+                  }
+                  className="space-y-6"
+                >
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
                       Payment Amount
@@ -1828,52 +1877,52 @@ export default function StudentPaymentDetail() {
                   </div>
 
                   {paymentMethodTab === "offline" && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Attach Receipt (Optional)
-                    </label>
-                    <div className="relative group">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => setPaymentReceipt(e.target.files[0])}
-                        className="hidden"
-                        id="receipt-upload"
-                      />
-                      <label
-                        htmlFor="receipt-upload"
-                        className="flex items-center gap-3 w-full p-4 rounded-[1.5rem] border border-dashed border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50 cursor-pointer transition-all"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                          <Plus className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
-                            {paymentReceipt
-                              ? paymentReceipt.name
-                              : "Choose File"}
-                          </p>
-                          <p className="text-[8px] font-bold text-muted-foreground uppercase">
-                            {paymentReceipt
-                              ? `${(paymentReceipt.size / 1024 / 1024).toFixed(2)} MB`
-                              : "JPG, PNG or PDF (Max 5MB)"}
-                          </p>
-                        </div>
-                        {paymentReceipt && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setPaymentReceipt(null);
-                            }}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
+                        Attach Receipt
                       </label>
+                      <div className="relative group">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => setPaymentReceipt(e.target.files[0])}
+                          className="hidden"
+                          id="receipt-upload"
+                        />
+                        <label
+                          htmlFor="receipt-upload"
+                          className="flex items-center gap-3 w-full p-4 rounded-[1.5rem] border border-dashed border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50 cursor-pointer transition-all"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                            <Plus className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
+                              {paymentReceipt
+                                ? paymentReceipt.name
+                                : "Choose File"}
+                            </p>
+                            <p className="text-[8px] font-bold text-muted-foreground uppercase">
+                              {paymentReceipt
+                                ? `${(paymentReceipt.size / 1024 / 1024).toFixed(2)} MB`
+                                : "JPG, PNG or PDF (Max 5MB)"}
+                            </p>
+                          </div>
+                          {paymentReceipt && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setPaymentReceipt(null);
+                              }}
+                              className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </label>
+                      </div>
                     </div>
-                  </div>
                   )}
 
                   <div className="space-y-2">
@@ -1906,8 +1955,10 @@ export default function StudentPaymentDetail() {
                     >
                       {isProcessing ? (
                         <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                      ) : paymentMethodTab === "online" ? (
+                        "Pay Online"
                       ) : (
-                        paymentMethodTab === "online" ? "Pay Online" : "Submit Receipt"
+                        "Submit Receipt"
                       )}
                     </button>
                   </div>

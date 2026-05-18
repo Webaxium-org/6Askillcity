@@ -67,6 +67,9 @@ const PaymentSchema = new mongoose.Schema(
     receipt: {
       type: String,
     },
+    gatewayData: {
+      type: mongoose.Schema.Types.Mixed,
+    },
   },
   { timestamps: true },
 );
