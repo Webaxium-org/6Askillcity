@@ -415,10 +415,84 @@ export default function PaymentManagement() {
               )}
             >
               <Filter className="w-3.5 h-3.5" />
-              Filters
+              {startDate || endDate || selectedUni !== "all" || selectedPartner !== "all"
+                ? "Active"
+                : "Filters"}
             </button>
           </div>
         </div>
+
+        {/* Active Filter Chips */}
+        <AnimatePresence>
+          {(startDate ||
+            endDate ||
+            selectedUni !== "all" ||
+            selectedPartner !== "all") && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="flex flex-wrap items-center gap-2"
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-2">
+                Active Filters:
+              </span>
+
+              {selectedUni !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-bold text-primary">
+                  University:{" "}
+                  {universities.find((u) => u._id === selectedUni)?.name}
+                  <button
+                    onClick={() => setSelectedUni("all")}
+                    className="hover:text-rose-500 animate-pulse"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {selectedPartner !== "all" && isAdmin && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-[10px] font-bold text-blue-600">
+                  Partner:{" "}
+                  {partners.find((p) => p._id === selectedPartner)?.centerName || partners.find((p) => p._id === selectedPartner)?.name}
+                  <button
+                    onClick={() => setSelectedPartner("all")}
+                    className="hover:text-rose-500 animate-pulse"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {(startDate || endDate) && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-emerald-600">
+                  Period: {startDate || "Start"} to {endDate || "End"}
+                  <button
+                    onClick={() => {
+                      setStartDate("");
+                      setEndDate("");
+                    }}
+                    className="hover:text-rose-500 animate-pulse"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                  setSelectedUni("all");
+                  setSelectedPartner("all");
+                }}
+                className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 hover:underline ml-2"
+              >
+                Clear All
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Table Area */}
         <div className="bg-card border border-border rounded-[2.5rem] shadow-sm overflow-hidden">
@@ -763,6 +837,185 @@ export default function PaymentManagement() {
           title={viewingDoc.title}
         />
       )}
+
+      {/* Filter Drawer */}
+      <AnimatePresence>
+        {showFilters && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowFilters(false)}
+              className="fixed inset-0 h-screen w-screen bg-slate-900/40 backdrop-blur-md z-[9999]"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed right-0 top-0 h-screen w-full max-w-md bg-white border-l border-border/50 z-[10000] shadow-[-20px_0_80px_rgba(0,0,0,0.15)] flex flex-col"
+            >
+              <div className="p-10 border-b border-border/10">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-2xl font-black uppercase tracking-tighter">
+                    Filters
+                  </h3>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                  Financial Data Protocol
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-10 space-y-12">
+                <div className="space-y-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        University
+                      </h4>
+                      <p className="text-[9px] font-bold text-muted-foreground">
+                        Filter by institution
+                      </p>
+                    </div>
+                  </div>
+                  <select
+                    value={selectedUni}
+                    onChange={(e) => setSelectedUni(e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-primary/30 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all appearance-none"
+                  >
+                    <option value="all">Global (All)</option>
+                    {universities.map((uni) => (
+                      <option key={uni._id} value={uni._id}>
+                        {uni.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {isAdmin && (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/5 flex items-center justify-center text-blue-600">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          Admission Point
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground">
+                          Filter by registered partner
+                        </p>
+                      </div>
+                    </div>
+                    <select
+                      value={selectedPartner}
+                      onChange={(e) => setSelectedPartner(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-blue-500/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all appearance-none"
+                    >
+                      <option value="all">Global (All Partners)</option>
+                      {partners.map((partner) => (
+                        <option key={partner._id} value={partner._id}>
+                          {partner.centerName || partner.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="space-y-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/5 flex items-center justify-center text-emerald-600">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        Transaction Period
+                      </h4>
+                      <p className="text-[9px] font-bold text-muted-foreground">
+                        Select date range
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Quick Select Buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {["today", "week", "month", "year"].map((range) => (
+                      <button
+                        key={range}
+                        onClick={() => setQuickRange(range)}
+                        className="py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-[8px] font-black uppercase tracking-widest text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all"
+                      >
+                        {range === "week"
+                          ? "This Week"
+                          : range === "month"
+                            ? "This Month"
+                            : range === "year"
+                              ? "This Year"
+                              : "Today"}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="group">
+                      <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                        From Date
+                      </label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                      />
+                    </div>
+                    <div className="group">
+                      <label className="block text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 ml-1">
+                        To Date
+                      </label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-10 border-t border-border/5 bg-slate-50/50 flex gap-4">
+                <button
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                    setSelectedUni("all");
+                    setSelectedPartner("all");
+                  }}
+                  className="flex-1 py-4 rounded-2xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
+                >
+                  Reset All
+                </button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="flex-1 py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  Close Console
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Invoice Modal */}
       {selectedInvoice && (
