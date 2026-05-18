@@ -10,13 +10,17 @@ import { Cashfree, CFEnvironment } from "cashfree-pg";
 
 // Smart detection of Cashfree environment based on key prefix
 const isProdKey = process.env.CASHFREE_SECRET_KEY?.startsWith("cfsk_ma_prod_");
+// const cashfree = new Cashfree(
+//   isProdKey || process.env.NODE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX,
+//   process.env.CASHFREE_APP_ID,
+//   process.env.CASHFREE_SECRET_KEY
+// );
 const cashfree = new Cashfree(
-  isProdKey || process.env.NODE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX,
+  CFEnvironment.SANDBOX,
   process.env.CASHFREE_APP_ID,
-  process.env.CASHFREE_SECRET_KEY
+  process.env.CASHFREE_SECRET_KEY,
 );
 cashfree.XApiVersion = "2023-08-01";
-
 
 // ─────────────────────────────────────────────
 // Get all eligible students (Management List)
@@ -24,7 +28,8 @@ cashfree.XApiVersion = "2023-08-01";
 export const getManagementStudents = async (req, res, next) => {
   try {
     const match = { applicationStatus: "Eligible", deleted: { $ne: true } };
-    if (req.user.userType === "partner") match.registeredBy = new mongoose.Types.ObjectId(req.user.userId);
+    if (req.user.userType === "partner")
+      match.registeredBy = new mongoose.Types.ObjectId(req.user.userId);
 
     const students = await Student.aggregate([
       { $match: match },
@@ -33,21 +38,21 @@ export const getManagementStudents = async (req, res, next) => {
           from: "payments",
           localField: "_id",
           foreignField: "student",
-          as: "paymentDetails"
-        }
+          as: "paymentDetails",
+        },
       },
       {
         $addFields: {
-          lastPaymentDate: { $max: "$paymentDetails.date" }
-        }
+          lastPaymentDate: { $max: "$paymentDetails.date" },
+        },
       },
       {
         $lookup: {
           from: "universities",
           localField: "university",
           foreignField: "_id",
-          as: "university"
-        }
+          as: "university",
+        },
       },
       { $unwind: "$university" },
       {
@@ -55,8 +60,8 @@ export const getManagementStudents = async (req, res, next) => {
           from: "programs",
           localField: "program",
           foreignField: "_id",
-          as: "program"
-        }
+          as: "program",
+        },
       },
       { $unwind: "$program" },
       {
@@ -64,11 +69,11 @@ export const getManagementStudents = async (req, res, next) => {
           from: "programfees",
           localField: "programFee",
           foreignField: "_id",
-          as: "programFee"
-        }
+          as: "programFee",
+        },
       },
       { $unwind: { path: "$programFee", preserveNullAndEmptyArrays: true } },
-      { $sort: { updatedAt: -1 } }
+      { $sort: { updatedAt: -1 } },
     ]);
 
     res.status(200).json({ success: true, data: students });
@@ -93,19 +98,26 @@ export const recordPayment = async (req, res, next) => {
       throw createError(403, "Admins are not allowed to record payments.");
     }
 
-    if (!amount || amount <= 0) throw createError(400, "Invalid payment amount.");
+    if (!amount || amount <= 0)
+      throw createError(400, "Invalid payment amount.");
 
     const student = await Student.findById(studentId).populate("programFee");
     if (!student) throw createError(404, "Student not found.");
 
     // Prevent overpayment (check against approved + pending payments)
     const totalFee = student.programFee?.totalFee || 0;
-    const allPayments = await Payment.find({ student: studentId, approvalStatus: { $ne: "rejected" } });
+    const allPayments = await Payment.find({
+      student: studentId,
+      approvalStatus: { $ne: "rejected" },
+    });
     const totalRecorded = allPayments.reduce((acc, p) => acc + p.amount, 0);
     const remainingFee = totalFee - totalRecorded;
 
     if (Number(amount) > remainingFee) {
-      throw createError(400, `Payment amount exceeds remaining fee. Maximum allowed: ₹${remainingFee.toLocaleString()}`);
+      throw createError(
+        400,
+        `Payment amount exceeds remaining fee. Maximum allowed: ₹${remainingFee.toLocaleString()}`,
+      );
     }
 
     // Handle receipt upload
@@ -140,7 +152,13 @@ export const recordPayment = async (req, res, next) => {
       link: "/dashboard/payment-management",
     });
 
-    res.status(200).json({ success: true, message: "Payment submitted for verification.", data: payment });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Payment submitted for verification.",
+        data: payment,
+      });
   } catch (error) {
     next(error);
   }
@@ -155,18 +173,25 @@ export const createCashfreeOrder = async (req, res, next) => {
     const { amount, remarks } = req.body;
     const partnerId = req.user.userId;
 
-    if (!amount || amount <= 0) throw createError(400, "Invalid payment amount.");
+    if (!amount || amount <= 0)
+      throw createError(400, "Invalid payment amount.");
 
     const student = await Student.findById(studentId).populate("programFee");
     if (!student) throw createError(404, "Student not found.");
 
     const totalFee = student.programFee?.totalFee || 0;
-    const allPayments = await Payment.find({ student: studentId, approvalStatus: { $ne: "rejected" } });
+    const allPayments = await Payment.find({
+      student: studentId,
+      approvalStatus: { $ne: "rejected" },
+    });
     const totalRecorded = allPayments.reduce((acc, p) => acc + p.amount, 0);
     const remainingFee = totalFee - totalRecorded;
 
     if (Number(amount) > remainingFee) {
-      throw createError(400, `Payment amount exceeds remaining fee. Maximum allowed: ₹${remainingFee.toLocaleString()}`);
+      throw createError(
+        400,
+        `Payment amount exceeds remaining fee. Maximum allowed: ₹${remainingFee.toLocaleString()}`,
+      );
     }
 
     const payment = new Payment({
@@ -190,19 +215,27 @@ export const createCashfreeOrder = async (req, res, next) => {
         customer_phone: student.phone || "9999999999",
       },
       order_meta: {
-        return_url: `${process.env.CLIENT_URL}/dashboard/student-management/${studentId}?order_id={order_id}&payment_status={payment_status}`
-      }
+        return_url: `${process.env.CLIENT_URL}/dashboard/student-management/${studentId}?order_id={order_id}&payment_status={payment_status}`,
+      },
     };
 
-    cashfree.PGCreateOrder(request).then((response) => {
-      res.status(200).json({ 
-        success: true, 
-        payment_session_id: response.data.payment_session_id, 
-        order_id: response.data.order_id 
+    cashfree
+      .PGCreateOrder(request)
+      .then((response) => {
+        res.status(200).json({
+          success: true,
+          payment_session_id: response.data.payment_session_id,
+          order_id: response.data.order_id,
+        });
+      })
+      .catch((error) => {
+        next(
+          createError(
+            500,
+            error.response?.data?.message || "Failed to create Cashfree order",
+          ),
+        );
       });
-    }).catch((error) => {
-      next(createError(500, error.response?.data?.message || "Failed to create Cashfree order"));
-    });
   } catch (error) {
     next(error);
   }
@@ -215,59 +248,82 @@ export const verifyCashfreePayment = async (req, res, next) => {
   try {
     const { orderId } = req.body;
 
-    cashfree.PGOrderFetchPayments(orderId).then(async (response) => {
-      const successfulPayment = response.data.find(p => p.payment_status === "SUCCESS");
-      
-      const paymentRecord = await Payment.findById(orderId).populate("student");
-      if (!paymentRecord) throw createError(404, "Payment record not found.");
+    cashfree
+      .PGOrderFetchPayments(orderId)
+      .then(async (response) => {
+        const successfulPayment = response.data.find(
+          (p) => p.payment_status === "SUCCESS",
+        );
 
-      if (paymentRecord.approvalStatus === "approved") {
-         return res.status(200).json({ success: true, message: "Already approved" });
-      }
+        const paymentRecord =
+          await Payment.findById(orderId).populate("student");
+        if (!paymentRecord) throw createError(404, "Payment record not found.");
 
-      if (successfulPayment) {
-        paymentRecord.approvalStatus = "approved";
-        paymentRecord.approvedBy = req.user.userId;
-        paymentRecord.approvalDate = new Date();
-        paymentRecord.gatewayData = successfulPayment;
-        
-        // Update transaction info from gateway if available
-        if (successfulPayment.cf_payment_id) {
-          paymentRecord.transactionId = successfulPayment.cf_payment_id.toString();
-        }
-        if (successfulPayment.payment_group) {
-          paymentRecord.method = `Online - ${successfulPayment.payment_group.toUpperCase()}`;
+        if (paymentRecord.approvalStatus === "approved") {
+          return res
+            .status(200)
+            .json({ success: true, message: "Already approved" });
         }
 
-        await paymentRecord.save();
+        if (successfulPayment) {
+          paymentRecord.approvalStatus = "approved";
+          paymentRecord.approvedBy = req.user.userId;
+          paymentRecord.approvalDate = new Date();
+          paymentRecord.gatewayData = successfulPayment;
 
-        const student = await Student.findById(paymentRecord.student._id).populate("programFee");
-        if (student) {
-          student.totalFeePaid += paymentRecord.amount;
-          const totalFee = student.programFee?.totalFee || 0;
-          if (student.totalFeePaid >= totalFee) student.paymentStatus = "Paid";
-          else if (student.totalFeePaid > 0) student.paymentStatus = "Partially Paid";
-          await student.save();
+          // Update transaction info from gateway if available
+          if (successfulPayment.cf_payment_id) {
+            paymentRecord.transactionId =
+              successfulPayment.cf_payment_id.toString();
+          }
+          if (successfulPayment.payment_group) {
+            paymentRecord.method = `Online - ${successfulPayment.payment_group.toUpperCase()}`;
+          }
+
+          await paymentRecord.save();
+
+          const student = await Student.findById(
+            paymentRecord.student._id,
+          ).populate("programFee");
+          if (student) {
+            student.totalFeePaid += paymentRecord.amount;
+            const totalFee = student.programFee?.totalFee || 0;
+            if (student.totalFeePaid >= totalFee)
+              student.paymentStatus = "Paid";
+            else if (student.totalFeePaid > 0)
+              student.paymentStatus = "Partially Paid";
+            await student.save();
+          }
+
+          await sendToAdmins({
+            title: "Online Payment Successful",
+            message: `A payment of ₹${paymentRecord.amount.toLocaleString()} for student ${student?.name || "unknown"} was completed via Cashfree.`,
+            type: "payment_completed",
+            relatedId: paymentRecord._id,
+            link: "/dashboard/payment-management",
+          });
+
+          res
+            .status(200)
+            .json({ success: true, message: "Payment successful" });
+        } else {
+          paymentRecord.approvalStatus = "rejected";
+          paymentRecord.rejectionReason = "Payment failed at gateway";
+          await paymentRecord.save();
+          res
+            .status(400)
+            .json({ success: false, message: "Payment not successful" });
         }
-        
-        await sendToAdmins({
-          title: "Online Payment Successful",
-          message: `A payment of ₹${paymentRecord.amount.toLocaleString()} for student ${student?.name || 'unknown'} was completed via Cashfree.`,
-          type: "payment_completed",
-          relatedId: paymentRecord._id,
-          link: "/dashboard/payment-management",
-        });
-
-        res.status(200).json({ success: true, message: "Payment successful" });
-      } else {
-        paymentRecord.approvalStatus = "rejected";
-        paymentRecord.rejectionReason = "Payment failed at gateway";
-        await paymentRecord.save();
-        res.status(400).json({ success: false, message: "Payment not successful" });
-      }
-    }).catch(error => {
-      next(createError(500, error.response?.data?.message || "Failed to verify Cashfree payment"));
-    });
+      })
+      .catch((error) => {
+        next(
+          createError(
+            500,
+            error.response?.data?.message ||
+              "Failed to verify Cashfree payment",
+          ),
+        );
+      });
   } catch (error) {
     next(error);
   }
@@ -287,7 +343,9 @@ export const approvePayment = async (req, res, next) => {
       throw createError(400, `Payment is already ${payment.approvalStatus}.`);
     }
 
-    const student = await Student.findById(payment.student._id).populate("programFee");
+    const student = await Student.findById(payment.student._id).populate(
+      "programFee",
+    );
     if (!student) throw createError(404, "Student not found.");
 
     // Update payment record
@@ -319,9 +377,14 @@ export const approvePayment = async (req, res, next) => {
         status: "Pending",
         dueDate: { $gte: startOfDay, $lte: endOfDay },
       });
-    } else if (payment.type === "Documents & Services" && payment.serviceApplication) {
+    } else if (
+      payment.type === "Documents & Services" &&
+      payment.serviceApplication
+    ) {
       // Update Service Application
-      const application = await ServiceApplication.findById(payment.serviceApplication);
+      const application = await ServiceApplication.findById(
+        payment.serviceApplication,
+      );
       if (application) {
         application.paidAmount += payment.amount;
 
@@ -382,7 +445,9 @@ export const rejectPayment = async (req, res, next) => {
     payment.rejectionReason = reason;
     await payment.save();
 
-    res.status(200).json({ success: true, message: "Payment rejected.", data: payment });
+    res
+      .status(200)
+      .json({ success: true, message: "Payment rejected.", data: payment });
   } catch (error) {
     next(error);
   }
@@ -394,7 +459,9 @@ export const rejectPayment = async (req, res, next) => {
 export const getStudentPayments = async (req, res, next) => {
   try {
     const { studentId } = req.params;
-    const payments = await Payment.find({ student: studentId }).sort({ date: -1 });
+    const payments = await Payment.find({ student: studentId }).sort({
+      date: -1,
+    });
     res.status(200).json({ success: true, data: payments });
   } catch (error) {
     next(error);
@@ -411,26 +478,36 @@ export const setSchedule = async (req, res, next) => {
     const partnerId = req.user.userId;
 
     if (req.user.userType === "admin") {
-      throw createError(403, "Admins are not allowed to set payment schedules.");
+      throw createError(
+        403,
+        "Admins are not allowed to set payment schedules.",
+      );
     }
 
-    if (!Array.isArray(schedule)) throw createError(400, "Invalid schedule data.");
+    if (!Array.isArray(schedule))
+      throw createError(400, "Invalid schedule data.");
 
     // Remove old pending schedules for this student? Or just add new ones?
     // User wants to "delete" too. Let's just replace for now or handle specific adds.
     // For simplicity, we'll replace the pending ones.
     await PaymentSchedule.deleteMany({ student: studentId, status: "Pending" });
 
-    const newSchedules = schedule.map(item => ({
+    const newSchedules = schedule.map((item) => ({
       ...item,
       student: studentId,
       partner: partnerId,
-      status: "Pending"
+      status: "Pending",
     }));
 
     const savedSchedules = await PaymentSchedule.insertMany(newSchedules);
 
-    res.status(200).json({ success: true, message: "Payment schedule updated.", data: savedSchedules });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Payment schedule updated.",
+        data: savedSchedules,
+      });
   } catch (error) {
     next(error);
   }
@@ -446,9 +523,10 @@ export const deleteSchedule = async (req, res, next) => {
 
     const schedule = await PaymentSchedule.findById(id);
     if (!schedule) throw createError(404, "Schedule not found.");
-    
+
     // Only allow deletion if pending
-    if (schedule.status !== "Pending") throw createError(400, "Cannot delete a paid or cancelled schedule.");
+    if (schedule.status !== "Pending")
+      throw createError(400, "Cannot delete a paid or cancelled schedule.");
 
     await PaymentSchedule.findByIdAndDelete(id);
     res.status(200).json({ success: true, message: "Schedule deleted." });
@@ -460,7 +538,9 @@ export const deleteSchedule = async (req, res, next) => {
 export const getStudentSchedules = async (req, res, next) => {
   try {
     const { studentId } = req.params;
-    const schedules = await PaymentSchedule.find({ student: studentId }).sort({ dueDate: 1 });
+    const schedules = await PaymentSchedule.find({ student: studentId }).sort({
+      dueDate: 1,
+    });
     res.status(200).json({ success: true, data: schedules });
   } catch (error) {
     next(error);
@@ -475,44 +555,45 @@ export const getGlobalPaymentStats = async (req, res, next) => {
     const filter = {};
     if (req.user.userType === "partner") filter.partner = req.user.userId;
 
-    const [recentPayments, upcomingSchedules, pendingPayments] = await Promise.all([
-      Payment.find({ ...filter, approvalStatus: "approved" })
-        .populate({
-          path: "student",
-          select: "name email university admissionPoint",
-          populate: { path: "university", select: "name" }
-        })
-        .populate("partner", "name")
-        .sort({ date: -1 })
-        .limit(100),
-      PaymentSchedule.find({ ...filter, status: "Pending" })
-        .populate({
-          path: "student",
-          select: "name email university admissionPoint",
-          populate: { path: "university", select: "name" }
-        })
-        .populate("partner", "name")
-        .sort({ dueDate: 1 })
-        .limit(100),
-      req.user.userType === "admin" 
-        ? Payment.find({ approvalStatus: "pending" })
-            .populate({
-              path: "student",
-              select: "name email university admissionPoint",
-              populate: { path: "university", select: "name" }
-            })
-            .populate("partner", "name centerName centerId")
-            .sort({ createdAt: -1 })
-        : []
-    ]);
+    const [recentPayments, upcomingSchedules, pendingPayments] =
+      await Promise.all([
+        Payment.find({ ...filter, approvalStatus: "approved" })
+          .populate({
+            path: "student",
+            select: "name email university admissionPoint",
+            populate: { path: "university", select: "name" },
+          })
+          .populate("partner", "name")
+          .sort({ date: -1 })
+          .limit(100),
+        PaymentSchedule.find({ ...filter, status: "Pending" })
+          .populate({
+            path: "student",
+            select: "name email university admissionPoint",
+            populate: { path: "university", select: "name" },
+          })
+          .populate("partner", "name")
+          .sort({ dueDate: 1 })
+          .limit(100),
+        req.user.userType === "admin"
+          ? Payment.find({ approvalStatus: "pending" })
+              .populate({
+                path: "student",
+                select: "name email university admissionPoint",
+                populate: { path: "university", select: "name" },
+              })
+              .populate("partner", "name centerName centerId")
+              .sort({ createdAt: -1 })
+          : [],
+      ]);
 
     res.status(200).json({
       success: true,
       data: {
         recentPayments,
         upcomingSchedules,
-        pendingPayments
-      }
+        pendingPayments,
+      },
     });
   } catch (error) {
     next(error);
