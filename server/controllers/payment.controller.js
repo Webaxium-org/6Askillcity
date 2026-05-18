@@ -9,13 +9,20 @@ import { sendToAdmins } from "../services/notification.service.js";
 import { Cashfree, CFEnvironment } from "cashfree-pg";
 
 // Smart detection of Cashfree environment based on key prefix
-const isProdKey = process.env.CASHFREE_SECRET_KEY?.startsWith("cfsk_ma_prod_");
+const cleanAppId = process.env.CASHFREE_APP_ID?.trim().replace(/^["']|["']$/g, "");
+const cleanSecretKey = process.env.CASHFREE_SECRET_KEY?.trim().replace(/^["']|["']$/g, "");
+
+const isProdKey = cleanSecretKey?.startsWith("cfsk_ma_prod_");
+const cashfreeEnvironment = isProdKey ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+
+console.log(`[Cashfree] Auto-detected environment: ${isProdKey ? "PRODUCTION" : "SANDBOX"}`);
+console.log(`[Cashfree] App ID: ${cleanAppId ? `${cleanAppId.slice(0, 8)}... (Length: ${cleanAppId.length})` : "MISSING"}`);
+console.log(`[Cashfree] Secret Key: ${cleanSecretKey ? `${cleanSecretKey.slice(0, 12)}... (Length: ${cleanSecretKey.length})` : "MISSING"}`);
+
 const cashfree = new Cashfree(
-  isProdKey || process.env.NODE_ENV === "production"
-    ? CFEnvironment.PRODUCTION
-    : CFEnvironment.SANDBOX,
-  process.env.CASHFREE_APP_ID,
-  process.env.CASHFREE_SECRET_KEY,
+  cashfreeEnvironment,
+  cleanAppId,
+  cleanSecretKey,
 );
 
 cashfree.XApiVersion = "2023-08-01";
