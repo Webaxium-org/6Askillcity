@@ -70,8 +70,20 @@ export default function PartnerDashboard() {
   const revenueData = stats?.revenueChartData || [];
 
   // Calculate current month's progress
-  const currentMonthEnrollment =
-    enrollmentData.length > 0
+  const currentMonthLabel = (() => {
+    const d = new Date();
+    const month = d.toLocaleString("en-US", { month: "short" });
+    const year = d.getFullYear().toString().slice(-2);
+    return `${month} ${year}`;
+  })();
+
+  const currentMonthData = enrollmentData.find(
+    (item) => item.name === currentMonthLabel
+  );
+
+  const currentMonthEnrollment = currentMonthData
+    ? currentMonthData.students
+    : enrollmentData.length > 0
       ? enrollmentData[enrollmentData.length - 1].students
       : 0;
   const targetProgress = Math.min(
