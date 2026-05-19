@@ -47,6 +47,23 @@ import { handleFormError } from "../../utils/handleFormError";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../../lib/utils";
 
+const PREDEFINED_CHECKLISTS = [
+  "Secondary Education Certificate",
+  "Senior Secondary Education Certificate",
+  "Under Graduate Degree Grade Card from the previous University for proving Credit Equivalency",
+  "Under Graduate certificates",
+  "Post Graduate Degree certificates from the previous University for proving Credit achievements",
+  "Aadhaar Card",
+  "Passport size photo",
+  "High School",
+  "Graduation"
+];
+
+const PROGRAM_TYPES = [
+  { value: "degree", label: "Bachelors, Masters, Diploma & PG diploma courses" },
+  { value: "skill", label: "Skill courses / certificate courses" }
+];
+
 const tabs = [
   { id: "universities", label: "Universities", icon: Building2 },
   { id: "programs", label: "Programs", icon: GraduationCap },
@@ -102,6 +119,7 @@ export default function UniversityManagement() {
   const [editingUniversity, setEditingUniversity] = useState(null);
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState(null);
+  const [selectedChecklists, setSelectedChecklists] = useState([]);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
@@ -191,6 +209,7 @@ export default function UniversityManagement() {
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
     data.isActive = formData.get("isActive") === "on";
+    data.eligibilityChecklist = selectedChecklists;
     try {
       let res;
       if (editingProgram) {
@@ -467,6 +486,7 @@ export default function UniversityManagement() {
               <button
                 onClick={() => {
                   setEditingProgram(null);
+                  setSelectedChecklists([]);
                   setIsProgramModalOpen(true);
                 }}
                 className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10"
@@ -656,16 +676,22 @@ export default function UniversityManagement() {
                 </>
               )}
 
-              {activeTab === "programs" && (
+               {activeTab === "programs" && (
                 <div className="bg-card border border-border rounded-2xl shadow-sm overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[700px]">
+                  <table className="w-full text-left border-collapse min-w-[900px]">
                     <thead>
                       <tr className="bg-muted/50 border-b border-border">
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           Program Name
                         </th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Course Type
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           University
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Eligibility Checklist
                         </th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
                           Actions
@@ -676,7 +702,7 @@ export default function UniversityManagement() {
                       {filteredPrograms.length === 0 ? (
                         <tr>
                           <td
-                            colSpan="3"
+                            colSpan="5"
                             className="px-6 py-20 text-center text-muted-foreground"
                           >
                             No programs found.
@@ -698,7 +724,35 @@ export default function UniversityManagement() {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm font-medium">
+                              {prog.programType === "skill" ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 border border-purple-500/20">
+                                  Skill Course
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                                  Degree / PG
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium">
                               {prog.university?.name || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 max-w-xs">
+                              {prog.eligibilityChecklist && prog.eligibilityChecklist.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-thin">
+                                  {prog.eligibilityChecklist.map((item, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground border border-border"
+                                      title={item}
+                                    >
+                                      {item.length > 25 ? `${item.substring(0, 25)}...` : item}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground italic">None defined</span>
+                              )}
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-2">
@@ -715,6 +769,7 @@ export default function UniversityManagement() {
                                 <button
                                   onClick={() => {
                                     setEditingProgram(prog);
+                                    setSelectedChecklists(prog.eligibilityChecklist || []);
                                     setIsProgramModalOpen(true);
                                   }}
                                   className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
@@ -965,7 +1020,7 @@ export default function UniversityManagement() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
+                className="bg-card w-full max-w-lg p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
               >
                 <h3 className="text-xl font-bold mb-4">
                   {editingProgram ? "Edit" : "Add"} Program
@@ -1000,6 +1055,53 @@ export default function UniversityManagement() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      Course Type
+                    </label>
+                    <select
+                      name="programType"
+                      defaultValue={editingProgram?.programType || "degree"}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                    >
+                      {PROGRAM_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block">
+                      Eligibility Checklist (Select Multiple)
+                    </label>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto p-3 border border-input rounded-xl bg-background/50 scrollbar-thin">
+                      {PREDEFINED_CHECKLISTS.map((item, index) => {
+                        const isChecked = selectedChecklists.includes(item);
+                        return (
+                          <label
+                            key={index}
+                            className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors text-xs font-medium text-foreground leading-normal"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedChecklists([...selectedChecklists, item]);
+                                } else {
+                                  setSelectedChecklists(selectedChecklists.filter((x) => x !== item));
+                                }
+                              }}
+                              className="mt-0.5 w-3.5 h-3.5 rounded text-primary border-input focus:ring-primary focus:ring-1 cursor-pointer"
+                            />
+                            <span>{item}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 pt-2">

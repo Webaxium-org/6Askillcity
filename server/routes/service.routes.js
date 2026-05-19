@@ -8,7 +8,9 @@ import {
   getServiceApplications,
   updateApplicationStatus,
   getServiceDashboardStats,
-  recordServicePayment
+  recordServicePayment,
+  createServiceCashfreeOrder,
+  verifyServiceCashfreePayment
 } from "../controllers/service.controller.js";
 import { requireAuth, isAuthorized } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
@@ -33,5 +35,7 @@ router.post("/apply", requireAuth, staffOnly, applyForService);
 router.get("/applications", requireAuth, staffOnly, getServiceApplications);
 router.put("/applications/:id/status", requireAuth, staffOnly, updateApplicationStatus);
 router.put("/applications/:id/pay", requireAuth, partnerOnly, upload.single("receipt"), recordServicePayment);
+router.post("/applications/:id/cashfree/order", requireAuth, partnerOnly, createServiceCashfreeOrder);
+router.post("/applications/cashfree/verify", requireAuth, partnerOnly, verifyServiceCashfreePayment);
 
 export default router;

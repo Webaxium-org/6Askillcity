@@ -105,6 +105,9 @@ export default function StudentPaymentDetail() {
   ]);
   const [cashfree, setCashfree] = useState(null);
   const [paymentMethodTab, setPaymentMethodTab] = useState("online");
+  const [offlinePaymentMethod, setOfflinePaymentMethod] =
+    useState("Offline / Cash");
+  const [offlineTransactionId, setOfflineTransactionId] = useState("");
 
   // Follow-up state
   const [followups, setFollowups] = useState([]);
@@ -233,6 +236,26 @@ export default function StudentPaymentDetail() {
     e.preventDefault();
     if (!paymentAmount || paymentAmount <= 0) return;
 
+    if (!offlinePaymentMethod) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please specify the payment method.",
+        }),
+      );
+      return;
+    }
+
+    if (!offlineTransactionId) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please specify the Transaction ID.",
+        }),
+      );
+      return;
+    }
+
     if (!paymentReceipt) {
       dispatch(
         showAlert({
@@ -261,7 +284,8 @@ export default function StudentPaymentDetail() {
       const formData = new FormData();
       formData.append("amount", paymentAmount);
       formData.append("remarks", paymentRemarks);
-      formData.append("method", "Offline (Direct)");
+      formData.append("method", offlinePaymentMethod);
+      formData.append("transactionId", offlineTransactionId);
       if (paymentReceipt) {
         formData.append("receipt", paymentReceipt);
       }
@@ -280,6 +304,8 @@ export default function StudentPaymentDetail() {
         setPaymentAmount("");
         setPaymentRemarks("");
         setPaymentReceipt(null);
+        setOfflinePaymentMethod("Offline / Cash");
+        setOfflineTransactionId("");
       }
     } catch (error) {
       dispatch(
@@ -1877,52 +1903,94 @@ export default function StudentPaymentDetail() {
                   </div>
 
                   {paymentMethodTab === "offline" && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
-                        Attach Receipt
-                      </label>
-                      <div className="relative group">
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setPaymentReceipt(e.target.files[0])}
-                          className="hidden"
-                          id="receipt-upload"
-                        />
-                        <label
-                          htmlFor="receipt-upload"
-                          className="flex items-center gap-3 w-full p-4 rounded-[1.5rem] border border-dashed border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50 cursor-pointer transition-all"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                            <Plus className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
-                              {paymentReceipt
-                                ? paymentReceipt.name
-                                : "Choose File"}
-                            </p>
-                            <p className="text-[8px] font-bold text-muted-foreground uppercase">
-                              {paymentReceipt
-                                ? `${(paymentReceipt.size / 1024 / 1024).toFixed(2)} MB`
-                                : "JPG, PNG or PDF (Max 5MB)"}
-                            </p>
-                          </div>
-                          {paymentReceipt && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setPaymentReceipt(null);
-                              }}
-                              className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </label>
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Payment Method
+                          </label>
+                          <select
+                            required
+                            value={offlinePaymentMethod}
+                            onChange={(e) =>
+                              setOfflinePaymentMethod(e.target.value)
+                            }
+                            className="w-full px-4 py-4 rounded-[1.5rem] border border-border bg-muted/50 focus:border-primary outline-none transition-all font-bold appearance-none text-sm"
+                          >
+                            <option value="Offline / Cash">
+                              Offline / Cash
+                            </option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Google Pay">Google Pay</option>
+                            <option value="PhonePe">PhonePe</option>
+                            <option value="UPI">Other UPI</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Transaction ID
+                          </label>
+                          <input
+                            required
+                            value={offlineTransactionId}
+                            onChange={(e) =>
+                              setOfflineTransactionId(e.target.value)
+                            }
+                            placeholder="e.g., T230415..."
+                            className="w-full px-4 py-4 rounded-[1.5rem] border border-border bg-muted/50 focus:border-primary outline-none transition-all font-bold text-sm"
+                          />
+                        </div>
                       </div>
-                    </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Attach Receipt (Required)
+                        </label>
+                        <div className="relative group">
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) =>
+                              setPaymentReceipt(e.target.files[0])
+                            }
+                            className="hidden"
+                            id="receipt-upload"
+                          />
+                          <label
+                            htmlFor="receipt-upload"
+                            className="flex items-center gap-3 w-full p-4 rounded-[1.5rem] border border-dashed border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50 cursor-pointer transition-all"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                              <Plus className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
+                                {paymentReceipt
+                                  ? paymentReceipt.name
+                                  : "Choose File"}
+                              </p>
+                              <p className="text-[8px] font-bold text-muted-foreground uppercase">
+                                {paymentReceipt
+                                  ? `${(paymentReceipt.size / 1024 / 1024).toFixed(2)} MB`
+                                  : "JPG, PNG or PDF (Max 5MB)"}
+                              </p>
+                            </div>
+                            {paymentReceipt && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPaymentReceipt(null);
+                                }}
+                                className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </label>
+                        </div>
+                      </div>
+                    </>
                   )}
 
                   <div className="space-y-2">

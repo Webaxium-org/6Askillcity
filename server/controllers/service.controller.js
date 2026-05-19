@@ -6,6 +6,26 @@ import AdmissionPoint from "../models/admissionPoint.js";
 import Payment from "../models/payment.js";
 import createError from "http-errors";
 import { v4 as uuidv4 } from "uuid";
+import { Cashfree, CFEnvironment } from "cashfree-pg";
+
+// Smart detection of Cashfree environment based on key prefix
+const cleanAppId = process.env.CASHFREE_APP_ID?.trim().replace(
+  /^["']|["']$/g,
+  "",
+);
+const cleanSecretKey = process.env.CASHFREE_SECRET_KEY?.trim().replace(
+  /^["']|["']$/g,
+  "",
+);
+
+const isProdKey = cleanSecretKey?.startsWith("cfsk_ma_prod_");
+const cashfreeEnvironment = isProdKey
+  ? CFEnvironment.PRODUCTION
+  : CFEnvironment.SANDBOX;
+
+const cashfree = new Cashfree(cashfreeEnvironment, cleanAppId, cleanSecretKey);
+
+cashfree.XApiVersion = "2023-08-01";
 
 // ─────────────────────────────────────────────
 // Service Definitions
@@ -263,13 +283,25 @@ export const recordServicePayment = async (req, res, next) => {
     // Handle receipt upload
     const receiptUrl = req.file ? req.file.location : undefined;
 
+    if (!receiptUrl) {
+      return next(createError(400, "Receipt file is required for offline payments."));
+    }
+
+    if (!method) {
+      return next(createError(400, "Payment method is required."));
+    }
+
+    if (!transactionId) {
+      return next(createError(400, "Transaction ID is required."));
+    }
+
     // Create Payment record
     const payment = new Payment({
       student: application.student._id,
       partner: partnerId,
       amount: payAmount,
-      method: method || "Offline",
-      transactionId: transactionId || `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
+      method: method,
+      transactionId: transactionId,
       invoiceId: `INV-${Date.now().toString().slice(-6)}`,
       remarks: remarks || `Payment for ${application.subCategory || "Service"}`,
       type: "Documents & Services",
@@ -333,6 +365,194 @@ export const getServiceDashboardStats = async (req, res, next) => {
         recentApplications
       }
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// Cashfree Order Creation for Services
+// ─────────────────────────────────────────────
+export const createServiceCashfreeOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params; // Application ID
+    const { amount, remarks } = req.body;
+    const partnerId = req.user.userId;
+
+    if (!amount || amount <= 0)
+      throw createError(400, "Invalid payment amount.");
+
+    const application = await ServiceApplication.findById(id).populate("student");
+    if (!application) throw createError(404, "Application not found.");
+
+    const remaining = application.feeAmount - application.paidAmount;
+    if (Number(amount) > remaining) {
+      throw createError(
+        400,
+        `Payment amount exceeds remaining balance. Maximum allowed: ₹${remaining.toLocaleString()}`,
+      );
+    }
+
+    const payment = new Payment({
+      student: application.student._id,
+      partner: partnerId,
+      amount: Number(amount),
+      method: "Online",
+      remarks: remarks || `Payment for ${application.subCategory || "Service"}`,
+      type: "Documents & Services",
+      serviceApplication: application._id,
+      transactionId: `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
+      invoiceId: `INV-${Date.now().toString().slice(-6)}`,
+      approvalStatus: "pending",
+    });
+    await payment.save();
+
+    const request = {
+      order_amount: amount,
+      order_currency: "INR",
+      order_id: payment._id.toString(),
+      customer_details: {
+        customer_id: application.student._id.toString(),
+        customer_phone: application.student.phone || "9999999999",
+      },
+      order_meta: {
+        return_url: `${process.env.CLIENT_URL}/dashboard/documents-services?order_id={order_id}&payment_status={payment_status}`,
+      },
+    };
+
+    cashfree
+      .PGCreateOrder(request)
+      .then((response) => {
+        res.status(200).json({
+          success: true,
+          payment_session_id: response.data.payment_session_id,
+          order_id: response.data.order_id,
+        });
+      })
+      .catch((error) => {
+        console.error("[Cashfree Error] Service order creation failed:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        next(
+          createError(
+            500,
+            error.response?.data?.message || "Failed to create Cashfree order",
+          ),
+        );
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// Cashfree Payment Verification for Services
+// ─────────────────────────────────────────────
+export const verifyServiceCashfreePayment = async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+
+    cashfree
+      .PGOrderFetchPayments(orderId)
+      .then(async (response) => {
+        const successfulPayment = response.data.find(
+          (p) => p.payment_status === "SUCCESS",
+        );
+
+        const paymentRecord =
+          await Payment.findById(orderId).populate("student");
+        if (!paymentRecord) throw createError(404, "Payment record not found.");
+
+        if (paymentRecord.approvalStatus === "approved") {
+          return res
+            .status(200)
+            .json({ success: true, message: "Already approved" });
+        }
+
+        if (successfulPayment) {
+          paymentRecord.approvalStatus = "approved";
+          paymentRecord.approvedBy = req.user.userId;
+          paymentRecord.approvalDate = new Date();
+          paymentRecord.gatewayData = successfulPayment;
+
+          // Update transaction info from gateway if available
+          if (successfulPayment.cf_payment_id) {
+            paymentRecord.transactionId =
+              successfulPayment.cf_payment_id.toString();
+          }
+          if (successfulPayment.payment_group) {
+            paymentRecord.method = `Online - ${successfulPayment.payment_group.toUpperCase()}`;
+          }
+
+          await paymentRecord.save();
+
+          // Update Service Application
+          const application = await ServiceApplication.findById(
+            paymentRecord.serviceApplication,
+          );
+          if (application) {
+            application.paidAmount += paymentRecord.amount;
+
+            if (application.paidAmount >= application.feeAmount) {
+              application.paymentStatus = "Paid";
+              // Only advance status if full payment is done
+              if (application.status === "Waiting for Payment") {
+                application.status = "Pending Applications";
+                application.pendingDate = new Date();
+                application.history.push({
+                  status: "Pending Applications",
+                  updatedBy: req.user.userId,
+                  remarks: "Full payment confirmed via online gateway.",
+                });
+              }
+            } else {
+              application.paymentStatus = "Partially Paid";
+              application.history.push({
+                status: application.status,
+                updatedBy: req.user.userId,
+                remarks: `Partial payment of ₹${paymentRecord.amount} completed via online gateway.`,
+              });
+            }
+            await application.save();
+          }
+
+          const { sendToAdmins } = await import("../services/notification.service.js");
+          await sendToAdmins({
+            title: "Online Service Payment Successful",
+            message: `A payment of ₹${paymentRecord.amount.toLocaleString()} for ${application?.subCategory || "Service"} (Student: ${paymentRecord.student.name}) was completed via Cashfree.`,
+            type: "payment_completed",
+            relatedId: paymentRecord._id,
+            link: "/dashboard/payment-management",
+          });
+
+          res
+            .status(200)
+            .json({ success: true, message: "Payment successful" });
+        } else {
+          paymentRecord.approvalStatus = "rejected";
+          paymentRecord.rejectionReason = "Payment failed at gateway";
+          await paymentRecord.save();
+          res
+            .status(400)
+            .json({ success: false, message: "Payment not successful" });
+        }
+      })
+      .catch((error) => {
+        console.error("[Cashfree Error] Service payment verification failed:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        next(
+          createError(
+            500,
+            error.response?.data?.message ||
+              "Failed to verify Cashfree payment",
+          ),
+        );
+      });
   } catch (error) {
     next(error);
   }

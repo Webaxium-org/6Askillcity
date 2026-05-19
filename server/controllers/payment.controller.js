@@ -9,21 +9,25 @@ import { sendToAdmins } from "../services/notification.service.js";
 import { Cashfree, CFEnvironment } from "cashfree-pg";
 
 // Smart detection of Cashfree environment based on key prefix
-const cleanAppId = process.env.CASHFREE_APP_ID?.trim().replace(/^["']|["']$/g, "");
-const cleanSecretKey = process.env.CASHFREE_SECRET_KEY?.trim().replace(/^["']|["']$/g, "");
+const cleanAppId = process.env.CASHFREE_APP_ID?.trim().replace(
+  /^["']|["']$/g,
+  "",
+);
+const cleanSecretKey = process.env.CASHFREE_SECRET_KEY?.trim().replace(
+  /^["']|["']$/g,
+  "",
+);
 
 const isProdKey = cleanSecretKey?.startsWith("cfsk_ma_prod_");
-const cashfreeEnvironment = isProdKey ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+const cashfreeEnvironment = isProdKey
+  ? CFEnvironment.PRODUCTION
+  : CFEnvironment.SANDBOX;
 
-console.log(`[Cashfree] Auto-detected environment: ${isProdKey ? "PRODUCTION" : "SANDBOX"}`);
-console.log(`[Cashfree] App ID: ${cleanAppId ? `${cleanAppId.slice(0, 8)}... (Length: ${cleanAppId.length})` : "MISSING"}`);
-console.log(`[Cashfree] Secret Key: ${cleanSecretKey ? `${cleanSecretKey.slice(0, 12)}... (Length: ${cleanSecretKey.length})` : "MISSING"}`);
+// console.log(`[Cashfree] Auto-detected environment: ${isProdKey ? "PRODUCTION" : "SANDBOX"}`);
+// console.log(`[Cashfree] App ID: ${cleanAppId ? `${cleanAppId.slice(0, 8)}... (Length: ${cleanAppId.length})` : "MISSING"}`);
+// console.log(`[Cashfree] Secret Key: ${cleanSecretKey ? `${cleanSecretKey.slice(0, 12)}... (Length: ${cleanSecretKey.length})` : "MISSING"}`);
 
-const cashfree = new Cashfree(
-  cashfreeEnvironment,
-  cleanAppId,
-  cleanSecretKey,
-);
+const cashfree = new Cashfree(cashfreeEnvironment, cleanAppId, cleanSecretKey);
 
 cashfree.XApiVersion = "2023-08-01";
 
@@ -96,7 +100,7 @@ export const getManagementStudents = async (req, res, next) => {
 export const recordPayment = async (req, res, next) => {
   try {
     const { studentId } = req.params;
-    const { amount, method, remarks } = req.body;
+    const { amount, method, transactionId, remarks } = req.body;
     const partnerId = req.user.userId;
 
     if (req.user.userType === "admin") {
@@ -128,8 +132,16 @@ export const recordPayment = async (req, res, next) => {
     // Handle receipt upload
     const receiptUrl = req.file ? req.file.location : undefined;
 
-    if (method?.startsWith("Offline") && !receiptUrl) {
+    if (!receiptUrl) {
       throw createError(400, "Receipt file is required for offline payments.");
+    }
+
+    if (!method) {
+      throw createError(400, "Payment method is required.");
+    }
+
+    if (!transactionId) {
+      throw createError(400, "Transaction ID is required.");
     }
 
     // Create Payment record
@@ -137,9 +149,9 @@ export const recordPayment = async (req, res, next) => {
       student: studentId,
       partner: partnerId,
       amount: Number(amount),
-      method: method || "Offline",
+      method: method,
       remarks: remarks || "Direct Payment",
-      transactionId: `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
+      transactionId: transactionId,
       invoiceId: `INV-${Date.now().toString().slice(-6)}`,
       receipt: receiptUrl,
       approvalStatus: "pending",

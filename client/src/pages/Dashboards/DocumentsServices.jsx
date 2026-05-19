@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
+import { load } from "@cashfreepayments/cashfree-js";
 import {
   Layers,
   Search,
@@ -99,6 +100,53 @@ export default function DocumentsServices() {
   const [showEditModal, setShowEditModal] = useState(null); // service object
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(null); // application object
+
+  const [cashfree, setCashfree] = useState(null);
+
+  useEffect(() => {
+    const initializeCashfree = async () => {
+      const cf = await load({
+        mode: import.meta.env.MODE === "production" ? "production" : "sandbox",
+      });
+      setCashfree(cf);
+    };
+    initializeCashfree();
+  }, []);
+
+  useEffect(() => {
+    const orderId = searchParams.get("order_id");
+    const status = searchParams.get("payment_status");
+
+    if (orderId && status) {
+      const verifyPayment = async () => {
+        try {
+          const res = await serviceApi.verifyServiceCashfreePayment(orderId);
+          if (res.success) {
+            dispatch(
+              showAlert({
+                type: "success",
+                message: "Service payment verified successfully!",
+              }),
+            );
+            fetchData();
+          } else {
+            dispatch(
+              showAlert({
+                type: "error",
+                message: "Service payment verification failed",
+              }),
+            );
+          }
+        } catch (error) {
+          dispatch(
+            showAlert({ type: "error", message: "Failed to verify payment" }),
+          );
+        }
+      };
+      verifyPayment();
+      navigate(window.location.pathname, { replace: true });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchData();
@@ -932,6 +980,7 @@ export default function DocumentsServices() {
             setShowStatusModal(null);
             fetchData();
           }} 
+          cashfree={cashfree}
         />
       </Modal>
 
@@ -1217,7 +1266,7 @@ const ApplyServiceForm = ({ services, students, onSuccess }) => {
   );
 };
 
-const UpdateStatusForm = ({ application, onSuccess }) => {
+const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
   const [formData, setFormData] = useState({
     status: application?.status || "",
     remarks: ""
@@ -1256,7 +1305,7 @@ const UpdateStatusForm = ({ application, onSuccess }) => {
           <AlertCircle size={18} />
           Payment Required: You must record the service fee before processing this application.
         </div>
-        <RecordPaymentForm application={application} onSuccess={onSuccess} />
+        <RecordPaymentForm application={application} onSuccess={onSuccess} cashfree={cashfree} />
       </div>
     );
   }
@@ -1474,20 +1523,39 @@ const EditServiceForm = ({ service, onSuccess }) => {
   );
 };
 
-const RecordPaymentForm = ({ application, onSuccess }) => {
+const RecordPaymentForm = ({ application, onSuccess, cashfree }) => {
   const remainingBalance = application.feeAmount - (application.paidAmount || 0);
   
+  const [paymentMethodTab, setPaymentMethodTab] = useState("online");
   const [formData, setFormData] = useState({
     amount: remainingBalance,
-    method: "Offline",
+    method: "Offline / Cash",
     transactionId: "",
     remarks: ""
   });
   const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
-  const handleSubmit = async (e) => {
+  const handlePayment = async (e) => {
     e.preventDefault();
+    if (!formData.method) {
+      dispatch(showAlert({ type: "error", message: "Please specify the payment method." }));
+      return;
+    }
+    if (!formData.transactionId) {
+      dispatch(showAlert({ type: "error", message: "Please specify the Transaction ID." }));
+      return;
+    }
+    if (!receipt) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please attach a receipt for offline payment.",
+        })
+      );
+      return;
+    }
     setLoading(true);
     try {
       const data = new FormData();
@@ -1500,16 +1568,56 @@ const RecordPaymentForm = ({ application, onSuccess }) => {
       }
 
       const res = await serviceApi.recordServicePayment(application._id, data);
-      if (res.success) onSuccess();
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: "Payment submitted for verification!" }));
+        onSuccess();
+      }
     } catch (error) {
-      console.error(error);
+      dispatch(showAlert({ type: "error", message: error.response?.data?.message || "Payment recording failed" }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayOnline = async (e) => {
+    e.preventDefault();
+    if (!formData.amount || formData.amount <= 0) return;
+
+    if (Number(formData.amount) > remainingBalance) {
+      dispatch(showAlert({ type: "error", message: "Amount exceeds remaining balance" }));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await serviceApi.createServiceServiceCashfreeOrder ? await serviceApi.createServiceServiceCashfreeOrder(application._id, {
+        amount: formData.amount,
+        remarks: formData.remarks,
+      }) : await serviceApi.createServiceCashfreeOrder(application._id, {
+        amount: formData.amount,
+        remarks: formData.remarks,
+      });
+      if (res.success && cashfree) {
+        const checkoutOptions = {
+          paymentSessionId: res.payment_session_id,
+          redirectTarget: "_self",
+        };
+        cashfree.checkout(checkoutOptions);
+      }
+    } catch (error) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: error.response?.data?.message || "Failed to initiate online payment",
+        })
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={paymentMethodTab === "online" ? handlePayOnline : handlePayment} className="space-y-6">
       <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 mb-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -1531,6 +1639,33 @@ const RecordPaymentForm = ({ application, onSuccess }) => {
         </div>
       </div>
 
+      <div className="flex bg-muted p-1 rounded-2xl mb-6">
+        <button
+          type="button"
+          onClick={() => setPaymentMethodTab("online")}
+          className={cn(
+            "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+            paymentMethodTab === "online"
+              ? "bg-card shadow-sm text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Pay Online
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentMethodTab("offline")}
+          className={cn(
+            "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+            paymentMethodTab === "offline"
+              ? "bg-card shadow-sm text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Upload Receipt
+        </button>
+      </div>
+
       <div className="space-y-4">
         <div className="space-y-1.5">
           <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Amount to Pay (₹)</label>
@@ -1540,69 +1675,81 @@ const RecordPaymentForm = ({ application, onSuccess }) => {
             max={remainingBalance}
             min={1}
             value={formData.amount}
-            onChange={e => setFormData({...formData, amount: e.target.value})}
+            onChange={e => {
+              const val = e.target.value;
+              if (Number(val) > remainingBalance) {
+                setFormData({...formData, amount: remainingBalance.toString()});
+              } else {
+                setFormData({...formData, amount: val});
+              }
+            }}
             className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-black text-lg text-primary"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Method</label>
-            <select 
-              required
-              value={formData.method}
-              onChange={e => setFormData({...formData, method: e.target.value})}
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
-            >
-              <option value="Offline">Offline / Cash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Google Pay">Google Pay</option>
-              <option value="PhonePe">PhonePe</option>
-              <option value="UPI">Other UPI</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Transaction ID (Optional)</label>
-            <input 
-              value={formData.transactionId}
-              onChange={e => setFormData({...formData, transactionId: e.target.value})}
-              placeholder="e.g., T230415..."
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
-            />
-          </div>
-        </div>
-
-        {/* Receipt Upload */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Receipt (Optional)</label>
-          <div className="relative">
-            <input 
-              type="file"
-              id="service-receipt"
-              className="hidden"
-              onChange={(e) => setReceipt(e.target.files[0])}
-              accept="image/*,.pdf"
-            />
-            <label 
-              htmlFor="service-receipt"
-              className={cn(
-                "w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-dashed cursor-pointer transition-all",
-                receipt ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <Upload size={18} className={receipt ? "text-emerald-500" : "text-muted-foreground"} />
-                <span className="text-xs font-bold truncate max-w-[200px]">
-                  {receipt ? receipt.name : "Attach proof of payment..."}
-                </span>
+        {paymentMethodTab === "offline" ? (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Method</label>
+                <select 
+                  required
+                  value={formData.method}
+                  onChange={e => setFormData({...formData, method: e.target.value})}
+                  className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
+                >
+                  <option value="Offline / Cash">Offline / Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Google Pay">Google Pay</option>
+                  <option value="PhonePe">PhonePe</option>
+                  <option value="UPI">Other UPI</option>
+                </select>
               </div>
-              {receipt && (
-                <CheckCircle2 size={16} className="text-emerald-500" />
-              )}
-            </label>
-          </div>
-          <p className="text-[9px] font-medium text-muted-foreground ml-1 italic">JPG, PNG or PDF. Max 5MB.</p>
-        </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Transaction ID (Required)</label>
+                <input 
+                  required
+                  value={formData.transactionId}
+                  onChange={e => setFormData({...formData, transactionId: e.target.value})}
+                  placeholder="e.g., T230415..."
+                  className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
+                />
+              </div>
+            </div>
+
+            {/* Receipt Upload */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Receipt (Required)</label>
+              <div className="relative">
+                <input 
+                  type="file"
+                  id="service-receipt"
+                  className="hidden"
+                  onChange={(e) => setReceipt(e.target.files[0])}
+                  accept="image/*,.pdf"
+                />
+                <label 
+                  htmlFor="service-receipt"
+                  className={cn(
+                    "w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-dashed cursor-pointer transition-all",
+                    receipt ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Upload size={18} className={receipt ? "text-emerald-500" : "text-muted-foreground"} />
+                    <span className="text-xs font-bold truncate max-w-[200px]">
+                      {receipt ? receipt.name : "Attach proof of payment..."}
+                    </span>
+                  </div>
+                  {receipt && (
+                    <CheckCircle2 size={16} className="text-emerald-500" />
+                  )}
+                </label>
+              </div>
+              <p className="text-[9px] font-medium text-muted-foreground ml-1 italic">JPG, PNG or PDF. Max 5MB.</p>
+            </div>
+          </>
+        ) : null}
 
         <div className="space-y-1.5">
           <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Remarks</label>
@@ -1620,7 +1767,15 @@ const RecordPaymentForm = ({ application, onSuccess }) => {
         disabled={loading || formData.amount > remainingBalance}
         className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
       >
-        {loading ? "Recording..." : formData.amount < remainingBalance ? "Record Partial Payment" : "Record Full Payment & Process"}
+        {loading ? (
+          <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+        ) : paymentMethodTab === "online" ? (
+          "Pay Online"
+        ) : formData.amount < remainingBalance ? (
+          "Record Partial Payment"
+        ) : (
+          "Record Full Payment & Process"
+        )}
       </button>
     </form>
   );

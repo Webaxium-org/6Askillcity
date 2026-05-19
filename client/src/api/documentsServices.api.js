@@ -44,3 +44,13 @@ export const recordServicePayment = async (id, data) => {
   const response = await axiosInstance.put(`/services/applications/${id}/pay`, data);
   return response.data;
 };
+
+export const createServiceCashfreeOrder = async (id, data) => {
+  const response = await axiosInstance.post(`/services/applications/${id}/cashfree/order`, data);
+  return response.data;
+};
+
+export const verifyServiceCashfreePayment = async (orderId) => {
+  const response = await axiosInstance.post("/services/applications/cashfree/verify", { orderId });
+  return response.data;
+};
