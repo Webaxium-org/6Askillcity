@@ -32,6 +32,10 @@ import IncreasedAdmission from "../../assets/empower.webp";
 import Holistic from "../../assets/Holistic.webp";
 import PartnershipIllustration from "../../assets/partnership_illustration.png";
 import GlobalUniversityLogo from "../../assets/global_university_logo.png";
+import TguImg1 from "../../assets/tgu/tgu-img-1.jpeg";
+import TguImg2 from "../../assets/tgu/tgu-img-2.jpg";
+import TguImg3 from "../../assets/tgu/tgu-img-3.jpeg";
+import TguWebp from "../../assets/tgu/tgu.webp";
 
 /**
  * UTILITIES
@@ -715,7 +719,8 @@ export default function App() {
                   {
                     title: "The Global University",
                     loc: "Arunachal Pradesh",
-                    color: "bg-white border-2 border-blue-500/20 shadow-xl shadow-blue-500/10",
+                    color:
+                      "bg-white border-2 border-blue-500/20 shadow-xl shadow-blue-500/10",
                     icon: (
                       <img
                         src={GlobalUniversityLogo}
@@ -728,6 +733,7 @@ export default function App() {
                       { label: "Recognition", value: "Prominent Institution" },
                       { label: "Focus", value: "Innovation & Impact" },
                     ],
+                    images: [TguWebp, TguImg2, TguImg1, TguImg3],
                   },
                 ].map((uni, i) => (
                   <motion.div
@@ -770,6 +776,46 @@ export default function App() {
                         <CardDescription className="text-[15px] text-muted-foreground leading-relaxed">
                           {uni.desc}
                         </CardDescription>
+                        {uni.images && (
+                          <div className="grid grid-cols-4 grid-rows-2 gap-2 mt-6 h-40">
+                            {/* Large Image (Left, 2x2) */}
+                            <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden group shadow-md border border-border/50">
+                              <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent group-hover:opacity-0 transition-opacity duration-500 z-10 pointer-events-none" />
+                              <img
+                                src={uni.images[0]}
+                                alt="Campus View 1"
+                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                              />
+                            </div>
+                            {/* Medium Wide Image (Top Right, 2x1) */}
+                            <div className="col-span-2 row-span-1 relative rounded-xl overflow-hidden group shadow-sm border border-border/50">
+                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                              <img
+                                src={uni.images[1]}
+                                alt="Campus View 2"
+                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                              />
+                            </div>
+                            {/* Small Image (Bottom Right 1, 1x1) */}
+                            <div className="col-span-1 row-span-1 relative rounded-xl overflow-hidden group shadow-sm border border-border/50">
+                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                              <img
+                                src={uni.images[2]}
+                                alt="Campus View 3"
+                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                              />
+                            </div>
+                            {/* Small Image (Bottom Right 2, 1x1) */}
+                            <div className="col-span-1 row-span-1 relative rounded-xl overflow-hidden group shadow-sm border border-border/50">
+                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                              <img
+                                src={uni.images[3]}
+                                alt="Campus View 4"
+                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                       <CardFooter className="border-t border-border pt-6 pb-8 px-8 bg-muted relative z-10 mt-6">
                         <div className="flex items-center gap-12 w-full">
