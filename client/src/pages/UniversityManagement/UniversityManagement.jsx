@@ -56,14 +56,14 @@ const PREDEFINED_CHECKLISTS = [
   "Aadhaar Card",
   "Passport size photo",
   "High School",
-  "Graduation"
+  "Graduation",
 ];
 
 const PROGRAM_TYPES = [
   { value: "Bachelors Degree", label: "Bachelors Degree" },
   { value: "Masters Degree", label: "Masters Degree" },
   { value: "Skill Programs", label: "Skill Programs" },
-  { value: "Skill Test", label: "Skill Test" }
+  { value: "Skill Test", label: "Skill Test" },
 ];
 
 const tabs = [
@@ -327,7 +327,9 @@ export default function UniversityManagement() {
 
     const matchesDate =
       (!startDate || new Date(u.createdAt) >= new Date(startDate)) &&
-      (!endDate || new Date(u.createdAt) <= new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+      (!endDate ||
+        new Date(u.createdAt) <=
+          new Date(new Date(endDate).setHours(23, 59, 59, 999)));
 
     return matchesSearch && matchesStatus && matchesDate;
   });
@@ -342,7 +344,9 @@ export default function UniversityManagement() {
 
     const matchesDate =
       (!startDate || new Date(p.createdAt) >= new Date(startDate)) &&
-      (!endDate || new Date(p.createdAt) <= new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+      (!endDate ||
+        new Date(p.createdAt) <=
+          new Date(new Date(endDate).setHours(23, 59, 59, 999)));
 
     return matchesSearch && matchesStatus && matchesDate;
   });
@@ -360,7 +364,9 @@ export default function UniversityManagement() {
 
     const matchesDate =
       (!startDate || new Date(b.createdAt) >= new Date(startDate)) &&
-      (!endDate || new Date(b.createdAt) <= new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+      (!endDate ||
+        new Date(b.createdAt) <=
+          new Date(new Date(endDate).setHours(23, 59, 59, 999)));
 
     return matchesSearch && matchesStatus && matchesDate;
   });
@@ -383,7 +389,8 @@ export default function UniversityManagement() {
 
               {filterStatus !== "all" && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-bold text-primary">
-                  Status: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
+                  Status:{" "}
+                  {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
                   <button
                     onClick={() => setFilterStatus("all")}
                     className="hover:text-rose-500"
@@ -441,7 +448,9 @@ export default function UniversityManagement() {
                 onClick={() => setViewMode("grid")}
                 className={cn(
                   "p-2 rounded-lg transition-all",
-                  viewMode === "grid" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:bg-card/50"
+                  viewMode === "grid"
+                    ? "bg-card text-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-card/50",
                 )}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -450,7 +459,9 @@ export default function UniversityManagement() {
                 onClick={() => setViewMode("list")}
                 className={cn(
                   "p-2 rounded-lg transition-all",
-                  viewMode === "list" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:bg-card/50"
+                  viewMode === "list"
+                    ? "bg-card text-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-card/50",
                 )}
               >
                 <List className="w-4 h-4" />
@@ -463,7 +474,7 @@ export default function UniversityManagement() {
                 "flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border",
                 showFilters || filterStatus !== "all" || startDate || endDate
                   ? "bg-primary text-white border-primary"
-                  : "bg-card border-border hover:bg-muted"
+                  : "bg-card border-border hover:bg-muted",
               )}
             >
               <Filter className="w-4 h-4" />
@@ -527,7 +538,9 @@ export default function UniversityManagement() {
                 <tab.icon
                   className={cn(
                     "w-4 h-4 transition-colors",
-                    activeTab === tab.id ? "text-white" : "text-muted-foreground group-hover:text-primary"
+                    activeTab === tab.id
+                      ? "text-white"
+                      : "text-muted-foreground group-hover:text-primary",
                   )}
                 />
                 {tab.label}
@@ -632,7 +645,9 @@ export default function UniversityManagement() {
                               key={uni._id}
                               className="hover:bg-muted/30 transition-colors group"
                             >
-                              <td className="px-6 py-4 font-bold">{uni.name}</td>
+                              <td className="px-6 py-4 font-bold">
+                                {uni.name}
+                              </td>
                               <td className="px-6 py-4 text-sm text-muted-foreground">
                                 {uni.location}
                               </td>
@@ -678,7 +693,7 @@ export default function UniversityManagement() {
                 </>
               )}
 
-               {activeTab === "programs" && (
+              {activeTab === "programs" && (
                 <div className="bg-card border border-border rounded-2xl shadow-sm overflow-x-auto">
                   <table className="w-full text-left border-collapse min-w-[900px]">
                     <thead>
@@ -730,7 +745,8 @@ export default function UniversityManagement() {
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                                   Masters Degree
                                 </span>
-                              ) : prog.programType === "Skill Programs" || prog.programType === "skill" ? (
+                              ) : prog.programType === "Skill Programs" ||
+                                prog.programType === "skill" ? (
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 border border-purple-500/20">
                                   Skill Programs
                                 </span>
@@ -748,20 +764,27 @@ export default function UniversityManagement() {
                               {prog.university?.name || "N/A"}
                             </td>
                             <td className="px-6 py-4 max-w-xs">
-                              {prog.eligibilityChecklist && prog.eligibilityChecklist.length > 0 ? (
+                              {prog.eligibilityChecklist &&
+                              prog.eligibilityChecklist.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-thin">
-                                  {prog.eligibilityChecklist.map((item, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="px-2 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground border border-border"
-                                      title={item}
-                                    >
-                                      {item.length > 25 ? `${item.substring(0, 25)}...` : item}
-                                    </span>
-                                  ))}
+                                  {prog.eligibilityChecklist.map(
+                                    (item, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground border border-border"
+                                        title={item}
+                                      >
+                                        {item.length > 25
+                                          ? `${item.substring(0, 25)}...`
+                                          : item}
+                                      </span>
+                                    ),
+                                  )}
                                 </div>
                               ) : (
-                                <span className="text-xs text-muted-foreground italic">None defined</span>
+                                <span className="text-xs text-muted-foreground italic">
+                                  None defined
+                                </span>
                               )}
                             </td>
                             <td className="px-6 py-4">
@@ -779,7 +802,9 @@ export default function UniversityManagement() {
                                 <button
                                   onClick={() => {
                                     setEditingProgram(prog);
-                                    setSelectedChecklists(prog.eligibilityChecklist || []);
+                                    setSelectedChecklists(
+                                      prog.eligibilityChecklist || [],
+                                    );
                                     setIsProgramModalOpen(true);
                                   }}
                                   className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
@@ -807,9 +832,6 @@ export default function UniversityManagement() {
                         </th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           Program
-                        </th>
-                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                          Type
                         </th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           Duration
@@ -848,21 +870,22 @@ export default function UniversityManagement() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="text-sm font-medium">{branch.program?.name || "N/A"}</div>
+                              <div className="text-sm font-medium">
+                                {branch.program?.name || "N/A"}
+                              </div>
                               {branch.program?.university?.name && (
                                 <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">
                                   {branch.program?.university?.name}
                                 </div>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm font-bold text-primary">
-                              {branch.type || "N/A"}
-                            </td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
                               {branch.duration}
                             </td>
                             <td className="px-6 py-4 text-sm font-black text-foreground">
-                              {branch.currentFee ? `₹${branch.currentFee.totalFee.toLocaleString()}` : "N/A"}
+                              {branch.currentFee
+                                ? `₹${branch.currentFee.totalFee.toLocaleString()}`
+                                : "N/A"}
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-2">
@@ -1072,7 +1095,9 @@ export default function UniversityManagement() {
                     </label>
                     <select
                       name="programType"
-                      defaultValue={editingProgram?.programType || "Bachelors Degree"}
+                      defaultValue={
+                        editingProgram?.programType || "Bachelors Degree"
+                      }
                       required
                       className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
                     >
@@ -1100,9 +1125,16 @@ export default function UniversityManagement() {
                               checked={isChecked}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedChecklists([...selectedChecklists, item]);
+                                  setSelectedChecklists([
+                                    ...selectedChecklists,
+                                    item,
+                                  ]);
                                 } else {
-                                  setSelectedChecklists(selectedChecklists.filter((x) => x !== item));
+                                  setSelectedChecklists(
+                                    selectedChecklists.filter(
+                                      (x) => x !== item,
+                                    ),
+                                  );
                                 }
                               }}
                               className="mt-0.5 w-3.5 h-3.5 rounded text-primary border-input focus:ring-primary focus:ring-1 cursor-pointer"
@@ -1555,7 +1587,7 @@ export default function UniversityManagement() {
                             "flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
                             filterStatus === status
                               ? "bg-card text-primary shadow-sm border border-border/50"
-                              : "text-muted-foreground hover:text-foreground"
+                              : "text-muted-foreground hover:text-foreground",
                           )}
                         >
                           {status}
