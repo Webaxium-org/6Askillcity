@@ -19,7 +19,6 @@ const BranchSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: ["CT", "Vocational", "Skilled"],
-      required: [true, "Type is required"],
     },
     isActive: {
       type: Boolean,

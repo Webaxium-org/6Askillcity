@@ -60,8 +60,10 @@ const PREDEFINED_CHECKLISTS = [
 ];
 
 const PROGRAM_TYPES = [
-  { value: "degree", label: "Bachelors, Masters, Diploma & PG diploma courses" },
-  { value: "skill", label: "Skill courses / certificate courses" }
+  { value: "Bachelors Degree", label: "Bachelors Degree" },
+  { value: "Masters Degree", label: "Masters Degree" },
+  { value: "Skill Programs", label: "Skill Programs" },
+  { value: "Skill Test", label: "Skill Test" }
 ];
 
 const tabs = [
@@ -724,13 +726,21 @@ export default function UniversityManagement() {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm font-medium">
-                              {prog.programType === "skill" ? (
+                              {prog.programType === "Masters Degree" ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                  Masters Degree
+                                </span>
+                              ) : prog.programType === "Skill Programs" || prog.programType === "skill" ? (
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 border border-purple-500/20">
-                                  Skill Course
+                                  Skill Programs
+                                </span>
+                              ) : prog.programType === "Skill Test" ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                  Skill Test
                                 </span>
                               ) : (
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                                  Degree / PG
+                                  Bachelors Degree
                                 </span>
                               )}
                             </td>
@@ -1062,7 +1072,7 @@ export default function UniversityManagement() {
                     </label>
                     <select
                       name="programType"
-                      defaultValue={editingProgram?.programType || "degree"}
+                      defaultValue={editingProgram?.programType || "Bachelors Degree"}
                       required
                       className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
                     >
@@ -1186,35 +1196,17 @@ export default function UniversityManagement() {
                       ))}
                     </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
-                        Type
-                      </label>
-                      <select
-                        name="type"
-                        defaultValue={editingBranch?.type || ""}
-                        required
-                        className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
-                      >
-                        <option value="">Select Type</option>
-                        <option value="CT">CT</option>
-                        <option value="Vocational">Vocational</option>
-                        <option value="Skilled">Skilled</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
-                        Duration
-                      </label>
-                      <input
-                        name="duration"
-                        defaultValue={editingBranch?.duration}
-                        required
-                        className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
-                        placeholder="e.g. 4 Years"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      Duration
+                    </label>
+                    <input
+                      name="duration"
+                      defaultValue={editingBranch?.duration}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                      placeholder="e.g. 4 Years"
+                    />
                   </div>
 
                   {!editingBranch && (

@@ -18,16 +18,21 @@ const ProgramSchema = new mongoose.Schema(
     },
     programType: {
       type: String,
-      enum: ["degree", "skill"],
+      enum: [
+        "Bachelors Degree",
+        "Masters Degree",
+        "Skill Programs",
+        "Skill Test",
+      ],
       required: [true, "Program type is required"],
-      default: "degree",
+      default: "Bachelors Degree",
     },
     eligibilityChecklist: {
       type: [String],
       default: [],
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Program", ProgramSchema);
