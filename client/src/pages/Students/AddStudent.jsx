@@ -361,7 +361,7 @@ const PhoneInputField = ({
 );
 
 const STEPS = [
-  { id: "personal", title: "Identity", icon: User },
+  { id: "personal", title: "Personal", icon: User },
   { id: "family", title: "Family", icon: Users },
   { id: "academic", title: "Academic", icon: GraduationCap },
   { id: "enrollment", title: "Finalize", icon: ShieldCheck },
@@ -554,11 +554,11 @@ export default function AddStudent() {
 
           // Determine current step from enrollmentStatus
           const stepIndex = [
-            "Identity",
+            "Personal",
             "Family",
             "Academic",
             "Completed",
-          ].indexOf(s.enrollmentStatus || "Identity");
+          ].indexOf(s.enrollmentStatus || "Personal");
           if (stepIndex !== -1) {
             setCurrentStep(stepIndex);
           }
@@ -1091,7 +1091,7 @@ export default function AddStudent() {
     }
 
     // Determine new enrollment status based on current step
-    const enrollmentStatuses = ["Identity", "Family", "Academic", "Completed"];
+    const enrollmentStatuses = ["Personal", "Family", "Academic", "Completed"];
     const newEnrollmentStatus =
       enrollmentStatuses[currentStep + 1] || "Completed";
 
@@ -1373,7 +1373,7 @@ export default function AddStudent() {
 
                 <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-8">
                   <h3 className="text-lg font-black flex items-center gap-3">
-                    <User className="text-primary w-5 h-5" /> Profile Identity
+                    <User className="text-primary w-5 h-5" /> Personal Details
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <InputField
