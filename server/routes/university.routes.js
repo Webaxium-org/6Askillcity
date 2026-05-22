@@ -12,8 +12,12 @@ import {
   getBranches,
   createBranch,
   updateBranch,
+  importUniversityData,
 } from "../controllers/university.controller.js";
 import { requireAuth, isAuthorized } from "../middleware/auth.js";
+import multer from "multer";
+
+const localUpload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
@@ -25,6 +29,8 @@ router.use(requireAuth);
 router.route("/universities")
   .get(getUniversities)
   .post(isAuthorized({ roles: ["admin", "manager"] }), createUniversity);
+
+router.post("/universities/import", isAuthorized({ roles: ["admin", "manager"] }), localUpload.single("file"), importUniversityData);
 
 router.route("/universities/:id")
   .put(isAuthorized({ roles: ["admin", "manager"] }), updateUniversity);

@@ -108,6 +108,8 @@ const StudentSchema = new mongoose.Schema(
       completionYear: { type: String },
       board: { type: String },
       percentage: { type: String },
+      totalMarks: { type: Number },
+      obtainedMarks: { type: Number },
     },
 
     // Bachelors Details
@@ -182,6 +184,20 @@ const StudentSchema = new mongoose.Schema(
       enum: ["Pending", "Completed", "Rejected"],
       default: "Pending",
     },
+    videoKycFile: {
+      path: String,
+      status: {
+        type: String,
+        enum: ["Pending", "Verified", "Rejected"],
+        default: "Pending",
+      },
+      uploadedAt: Date,
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: "videoKycFile.onModel",
+      },
+      onModel: { type: String, enum: ["User", "AdmissionPoint"] },
+    },
     migrationCertificate: {
       path: String,
       status: {
@@ -215,6 +231,9 @@ const StudentSchema = new mongoose.Schema(
       enum: ["Employed", "Unemployed", "Self-Employed", "Student"],
       default: "Unemployed",
     },
+    company: String,
+    designation: String,
+    employmentDescription: String,
 
     // Uploaded Artifacts (Legacy/General)
     idProof: {

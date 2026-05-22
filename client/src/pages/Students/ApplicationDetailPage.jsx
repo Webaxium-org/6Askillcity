@@ -64,7 +64,7 @@ const STATUS_CONFIG = {
   "Pending Eligibility": {
     color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
     icon: Clock,
-    label: "Pending Review",
+    label: "REVIEW IN PROGRESS",
   },
   Eligible: {
     color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",

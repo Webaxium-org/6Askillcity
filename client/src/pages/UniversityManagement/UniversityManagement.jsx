@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import {
   Building2,
@@ -25,6 +25,8 @@ import {
   Clock,
   Sparkles,
   Calendar,
+  Upload,
+  FileSpreadsheet,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -40,6 +42,7 @@ import {
   getProgramFees,
   updateProgramFee,
   getActivityLogs,
+  importUniversityExcel,
 } from "../../api/university.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -86,6 +89,45 @@ export default function UniversityManagement() {
   const [filterStatus, setFilterStatus] = useState("all"); // all, active, inactive
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // Excel Import State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importUniversityId, setImportUniversityId] = useState("");
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+
+  // Pagination state
+  const PAGE_SIZE = 10;
+  const [uniPage, setUniPage] = useState(1);
+  const [progPage, setProgPage] = useState(1);
+  const [branchPage, setBranchPage] = useState(1);
+
+  const handleImportExcel = async (e) => {
+    e.preventDefault();
+    if (!importUniversityId) {
+      dispatch(showAlert({ type: "error", message: "Please select a university." }));
+      return;
+    }
+    if (!importFile) {
+      dispatch(showAlert({ type: "error", message: "Please select an Excel file." }));
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await importUniversityExcel(importUniversityId, importFile);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: res.message || "Data imported successfully!" }));
+        setIsImportModalOpen(false);
+        setImportUniversityId("");
+        setImportFile(null);
+        fetchData();
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const setQuickRange = (range) => {
     const today = new Date();
@@ -146,6 +188,13 @@ export default function UniversityManagement() {
   useEffect(() => {
     fetchData();
   }, [activeTab]);
+
+  // Reset pages when filters/search/tab changes
+  useEffect(() => {
+    setUniPage(1);
+    setProgPage(1);
+    setBranchPage(1);
+  }, [activeTab, searchTerm, filterStatus, startDate, endDate]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -371,6 +420,70 @@ export default function UniversityManagement() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  // Pagination derived slices
+  const uniTotalPages = Math.max(1, Math.ceil(filteredUniversities.length / PAGE_SIZE));
+  const pagedUniversities = filteredUniversities.slice((uniPage - 1) * PAGE_SIZE, uniPage * PAGE_SIZE);
+
+  const progTotalPages = Math.max(1, Math.ceil(filteredPrograms.length / PAGE_SIZE));
+  const pagedPrograms = filteredPrograms.slice((progPage - 1) * PAGE_SIZE, progPage * PAGE_SIZE);
+
+  const branchTotalPages = Math.max(1, Math.ceil(filteredBranches.length / PAGE_SIZE));
+  const pagedBranches = filteredBranches.slice((branchPage - 1) * PAGE_SIZE, branchPage * PAGE_SIZE);
+
+  // Reusable pagination bar renderer
+  const PaginationBar = ({ page, totalPages, total, onPage }) => {
+    if (totalPages <= 1) return null;
+    const pages = [];
+    const delta = 2;
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= page - delta && i <= page + delta)) {
+        pages.push(i);
+      } else if (pages[pages.length - 1] !== "...") {
+        pages.push("...");
+      }
+    }
+    return (
+      <div className="flex items-center justify-between px-2 py-4 border-t border-border/40">
+        <span className="text-xs text-muted-foreground font-medium">
+          Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onPage(page - 1)}
+            disabled={page === 1}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            ← Prev
+          </button>
+          {pages.map((p, idx) =>
+            p === "..." ? (
+              <span key={`ellipsis-${idx}`} className="px-2 text-xs text-muted-foreground">…</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onPage(p)}
+                className={`w-8 h-8 rounded-xl text-xs font-black transition-all border ${
+                  p === page
+                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    : "bg-card border-border hover:bg-muted text-foreground"
+                }`}
+              >
+                {p}
+              </button>
+            )
+          )}
+          <button
+            onClick={() => onPage(page + 1)}
+            disabled={page === totalPages}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout title="University Management">
       <div className="space-y-6">
@@ -483,6 +596,18 @@ export default function UniversityManagement() {
                 : "Advanced"}
             </button>
 
+            {/* Excel Import Button */}
+            <button
+              onClick={() => {
+                setImportUniversityId("");
+                setImportFile(null);
+                setIsImportModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-emerald-600"
+            >
+              <Upload className="w-4 h-4" /> Import Excel
+            </button>
+
             {/* Action Buttons */}
             {activeTab === "universities" && (
               <button
@@ -575,120 +700,126 @@ export default function UniversityManagement() {
                       No universities found matching your search.
                     </div>
                   ) : viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {filteredUniversities.map((uni) => (
-                        <div
-                          key={uni._id}
-                          className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-all group"
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                              <Building2 className="w-6 h-6 text-primary" />
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {pagedUniversities.map((uni) => (
+                          <div
+                            key={uni._id}
+                            className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-all group"
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                                <Building2 className="w-6 h-6 text-primary" />
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setEditingUniversity(uni);
+                                  setIsUniversityModalOpen(true);
+                                }}
+                                className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => {
-                                setEditingUniversity(uni);
-                                setIsUniversityModalOpen(true);
-                              }}
-                              className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <h3 className="font-bold text-lg mb-1">{uni.name}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {uni.location}
-                          </div>
-                          <div className="pt-4 border-t border-border flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-                              <span
-                                className={`w-2 h-2 rounded-full ${uni.isActive ? "bg-emerald-500" : "bg-red-500"}`}
-                              />
-                              {uni.isActive ? "Active" : "Inactive"}
+                            <h3 className="font-bold text-lg mb-1">{uni.name}</h3>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {uni.location}
                             </div>
-                            <button
-                              onClick={() => {
-                                setActiveTab("programs");
-                                setSearchTerm(uni.name);
-                              }}
-                              className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
-                            >
-                              View Programs <ChevronRight className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-x-auto">
-                      <table className="w-full text-left border-collapse min-w-[700px]">
-                        <thead>
-                          <tr className="bg-muted/50 border-b border-border">
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                              University Name
-                            </th>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                              Location
-                            </th>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                              Status
-                            </th>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {filteredUniversities.map((uni) => (
-                            <tr
-                              key={uni._id}
-                              className="hover:bg-muted/30 transition-colors group"
-                            >
-                              <td className="px-6 py-4 font-bold">
-                                {uni.name}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-muted-foreground">
-                                {uni.location}
-                              </td>
-                              <td className="px-6 py-4">
+                            <div className="pt-4 border-t border-border flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
                                 <span
-                                  className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
-                                    uni.isActive
-                                      ? "bg-emerald-500/10 text-emerald-600"
-                                      : "bg-red-500/10 text-red-600"
-                                  }`}
-                                >
-                                  {uni.isActive ? "Active" : "Inactive"}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => {
-                                      setActiveTab("programs");
-                                      setSearchTerm(uni.name);
-                                    }}
-                                    className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
-                                  >
-                                    <ChevronRight className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setEditingUniversity(uni);
-                                      setIsUniversityModalOpen(true);
-                                    }}
-                                    className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </td>
+                                  className={`w-2 h-2 rounded-full ${uni.isActive ? "bg-emerald-500" : "bg-red-500"}`}
+                                />
+                                {uni.isActive ? "Active" : "Inactive"}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setActiveTab("programs");
+                                  setSearchTerm(uni.name);
+                                }}
+                                className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                              >
+                                View Programs <ChevronRight className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <PaginationBar page={uniPage} totalPages={uniTotalPages} total={filteredUniversities.length} onPage={setUniPage} />
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[700px]">
+                          <thead>
+                            <tr className="bg-muted/50 border-b border-border">
+                              <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                University Name
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                Location
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
+                                Actions
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {pagedUniversities.map((uni) => (
+                              <tr
+                                key={uni._id}
+                                className="hover:bg-muted/30 transition-colors group"
+                              >
+                                <td className="px-6 py-4 font-bold">
+                                  {uni.name}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-muted-foreground">
+                                  {uni.location}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span
+                                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                                      uni.isActive
+                                        ? "bg-emerald-500/10 text-emerald-600"
+                                        : "bg-red-500/10 text-red-600"
+                                    }`}
+                                  >
+                                    {uni.isActive ? "Active" : "Inactive"}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setActiveTab("programs");
+                                        setSearchTerm(uni.name);
+                                      }}
+                                      className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
+                                    >
+                                      <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingUniversity(uni);
+                                        setIsUniversityModalOpen(true);
+                                      }}
+                                      className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <PaginationBar page={uniPage} totalPages={uniTotalPages} total={filteredUniversities.length} onPage={setUniPage} />
+                      </div>
+                    </>
                   )}
                 </>
               )}
@@ -726,7 +857,7 @@ export default function UniversityManagement() {
                           </td>
                         </tr>
                       ) : (
-                        filteredPrograms.map((prog) => (
+                        pagedPrograms.map((prog) => (
                           <tr
                             key={prog._id}
                             className="hover:bg-muted/30 transition-colors group"
@@ -819,6 +950,7 @@ export default function UniversityManagement() {
                       )}
                     </tbody>
                   </table>
+                  <PaginationBar page={progPage} totalPages={progTotalPages} total={filteredPrograms.length} onPage={setProgPage} />
                 </div>
               )}
 
@@ -855,7 +987,7 @@ export default function UniversityManagement() {
                           </td>
                         </tr>
                       ) : (
-                        filteredBranches.map((branch) => (
+                        pagedBranches.map((branch) => (
                           <tr
                             key={branch._id}
                             className="hover:bg-muted/30 transition-colors group"
@@ -913,8 +1045,10 @@ export default function UniversityManagement() {
                       )}
                     </tbody>
                   </table>
+                  <PaginationBar page={branchPage} totalPages={branchTotalPages} total={filteredBranches.length} onPage={setBranchPage} />
                 </div>
               )}
+
 
               {activeTab === "history" && (
                 <div className="space-y-4">
@@ -1673,6 +1807,117 @@ export default function UniversityManagement() {
                 </div>
               </motion.div>
             </>
+          )}
+        </AnimatePresence>
+
+        {/* Excel Import Modal */}
+        <AnimatePresence>
+          {isImportModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-card w-full max-w-md p-6 rounded-[2.5rem] shadow-2xl border border-border overflow-hidden"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-black flex items-center gap-2">
+                      <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                      Import Courses & Branches
+                    </h3>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                      Excel Bulk Import Protocol
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsImportModalOpen(false)}
+                    className="p-1.5 hover:bg-muted rounded-xl transition-all border border-border/40"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleImportExcel} className="space-y-6">
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">
+                      Target University
+                    </label>
+                    <select
+                      value={importUniversityId}
+                      onChange={(e) => setImportUniversityId(e.target.value)}
+                      required
+                      className="w-full px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-xs font-bold"
+                    >
+                      <option value="">Select Target University</option>
+                      {universities.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">
+                      Upload Excel File (.xlsx, .xls)
+                    </label>
+                    <div className="border border-dashed border-border hover:border-emerald-500/40 rounded-2xl p-6 bg-slate-50 hover:bg-slate-100/50 transition-all text-center cursor-pointer relative group">
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        required
+                        onChange={(e) => setImportFile(e.target.files[0])}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <div className="space-y-2">
+                        <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto text-emerald-600 group-hover:scale-105 transition-all">
+                          <Upload className="w-5 h-5" />
+                        </div>
+                        {importFile ? (
+                          <div className="text-xs font-black text-slate-800 break-all">
+                            {importFile.name}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-xs font-black text-slate-800">
+                              Click or Drag Excel here
+                            </div>
+                            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                              Maximum file size 5MB
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsImportModalOpen(false)}
+                      className="flex-1 py-4 rounded-2xl border border-border hover:bg-muted font-bold text-xs uppercase tracking-widest transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={importing}
+                      className="flex-1 py-4 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/10 flex items-center justify-center gap-2"
+                    >
+                      {importing ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        "Execute Import"
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>

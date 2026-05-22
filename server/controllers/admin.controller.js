@@ -43,7 +43,7 @@ export const getAdminStats = async (req, res, next) => {
       Student.countDocuments({ applicationStatus: "Pending Eligibility" }),
       AdmissionPoint.countDocuments({ status: "pending" }),
       Ticket.countDocuments({
-        status: { $in: ["Open", "In Progress", "Postponed"] },
+        status: { $in: ["Received", "On Progress", "Postponed"] },
       }),
       Student.countDocuments({ applicationStatus: "Rejected" }),
       Student.countDocuments({
@@ -215,7 +215,7 @@ export const getAdminStats = async (req, res, next) => {
       Ticket.countDocuments({
         createdAt: { $gte: moment().startOf("day").toDate() },
       }),
-      Ticket.countDocuments({ status: "Open" }),
+      Ticket.countDocuments({ status: "Received" }),
       Ticket.countDocuments({ status: "Postponed" }),
       Ticket.countDocuments({ status: "Closed" }),
     ]);

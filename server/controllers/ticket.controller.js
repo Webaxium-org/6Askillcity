@@ -58,6 +58,16 @@ export const getTickets = async (req, res, next) => {
       filter.category = req.query.category;
     }
 
+    if (req.query.partner && req.query.partner !== "All") {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { creatorId: req.query.partner, creatorModel: "AdmissionPoint" },
+          { assignedToPartner: req.query.partner },
+        ],
+      });
+    }
+
     if (req.query.startDate && req.query.endDate) {
       let dateField = "createdAt";
       if (req.query.status === "Postponed") {
@@ -122,6 +132,11 @@ export const getTicketMetrics = async (req, res, next) => {
       filter.$or = [
         { creatorId: req.user.userId, creatorModel: "AdmissionPoint" },
         { assignedToPartner: req.user.userId },
+      ];
+    } else if (req.query.partner && req.query.partner !== "All") {
+      filter.$or = [
+        { creatorId: req.query.partner, creatorModel: "AdmissionPoint" },
+        { assignedToPartner: req.query.partner },
       ];
     }
 

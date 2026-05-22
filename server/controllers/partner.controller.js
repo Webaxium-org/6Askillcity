@@ -31,7 +31,7 @@ export const getPartnerDashboardStats = async (req, res, next) => {
             { creatorId: partnerObjectId, creatorModel: "AdmissionPoint" },
             { assignedToPartner: partnerObjectId },
           ],
-          status: { $in: ["Open", "In Progress", "Postponed"] },
+          status: { $in: ["Received", "On Progress", "Postponed"] },
         }),
         Payment.aggregate([
           { $match: { partner: partnerObjectId, approvalStatus: "approved" } },

@@ -755,8 +755,13 @@ export default function StudentPaymentDetail() {
                         </div>
                         {isPartner && activePaymentSubTab === "schedule" && (
                           <button
+                            disabled={remaining <= 0 || student.paymentStatus === "Paid"}
                             onClick={() => setShowScheduleModal(true)}
-                            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-4 py-2 rounded-xl transition-all border border-primary/20"
+                            className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border ${
+                              remaining <= 0 || student.paymentStatus === "Paid"
+                                ? "text-muted-foreground border-border opacity-50 cursor-not-allowed"
+                                : "text-primary hover:bg-primary/10 border-primary/20"
+                            }`}
                           >
                             <Plus className="w-4 h-4" />
                             Modify Plan
@@ -1550,7 +1555,7 @@ export default function StudentPaymentDetail() {
                         <div className="flex justify-between items-start mb-4">
                           <span
                             className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
-                              ticket.status === "Open"
+                              ticket.status === "Received"
                                 ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
                                 : ticket.status === "Closed"
                                   ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"

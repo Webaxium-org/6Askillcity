@@ -16,7 +16,7 @@ export const initTicketCron = () => {
       if (ticketsToReopen.length === 0) return;
 
       for (const ticket of ticketsToReopen) {
-        ticket.status = "Open";
+        ticket.status = "Received";
         ticket.postponedUntil = null;
         await ticket.save();
 
@@ -28,7 +28,7 @@ export const initTicketCron = () => {
             {
               type: "ticket_reopened",
               title: "Ticket Reopened",
-              message: `Your postponed ticket "${ticket.title}" is now Open.`,
+              message: `Your postponed ticket "${ticket.title}" is now Received.`,
               ticketId: ticket._id,
             }
           );
@@ -40,7 +40,7 @@ export const initTicketCron = () => {
               {
                 type: "ticket_reopened",
                 title: "Ticket Reopened",
-                message: `Ticket "${ticket.title}" assigned to you is now Open.`,
+                message: `Ticket "${ticket.title}" assigned to you is now Received.`,
                 ticketId: ticket._id,
               }
             );

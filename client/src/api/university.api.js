@@ -63,3 +63,15 @@ export const getActivityLogs = async () => {
   const response = await axiosInstance.get("/university-management/activity-logs");
   return response.data;
 };
+
+export const importUniversityExcel = async (universityId, file) => {
+  const formData = new FormData();
+  formData.append("universityId", universityId);
+  formData.append("file", file);
+  const response = await axiosInstance.post("/university-management/universities/import", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};

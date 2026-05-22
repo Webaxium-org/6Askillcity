@@ -13,6 +13,7 @@ import { cn } from "../../components/dashboard/StatCard";
 import { FollowupTimeline } from "../../components/students/FollowupTimeline";
 import { ReviewModal } from "../../components/students/ReviewModal";
 import {
+  Eye,
   MapPin,
   BookOpen,
   CalendarDays,
@@ -570,19 +571,14 @@ export default function EligibilityQueuePage() {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
-                              onClick={() => setRejectTarget(app)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 text-xs font-medium transition-all"
-                            >
-                              <XCircle className="w-3.5 h-3.5" /> Reject
-                            </button>
-                            <button
                               onClick={() => {
                                 setSelectedApp(app);
                                 setIsReviewModalOpen(true);
                               }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium transition-all shadow-sm"
+                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
+                              title="View Details"
                             >
-                              <CheckCircle className="w-3.5 h-3.5" /> Approve
+                              <Eye className="w-4 h-4" />
                             </button>
                           </div>
                         )}

@@ -31,7 +31,7 @@ const storage = multerS3({
 
 const uploadParams = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit max
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit max for video
 }).fields([
   { name: "idProof", maxCount: 1 },
   { name: "tenthCertificate", maxCount: 1 },
@@ -41,6 +41,7 @@ const uploadParams = multer({
   { name: "affidavit", maxCount: 1 },
   { name: "migrationCertificate", maxCount: 1 },
   { name: "projectSubmission", maxCount: 1 },
+  { name: "videoKycFile", maxCount: 1 },
 ]);
 
 export const uploadStudentDocs = uploadParams;
@@ -189,6 +190,8 @@ export const enrollStudent = async (req, res, next) => {
         completionYear: data.plusTwoCompletionYear,
         board: data.plusTwoBoard,
         percentage: data.plusTwoPercentage,
+        totalMarks: data.plusTwoTotalMarks || undefined,
+        obtainedMarks: data.plusTwoObtainedMarks || undefined,
       },
       bachelors: {
         certificates: extractPaths("bachelorsCertificates"),
@@ -211,9 +214,13 @@ export const enrollStudent = async (req, res, next) => {
 
       affidavit: extractPath("affidavit"),
       videoKycStatus: data.videoKycStatus || "Pending",
+      videoKycFile: extractPath("videoKycFile"),
       migrationCertificate: extractPath("migrationCertificate"),
       projectSubmission: extractPath("projectSubmission"),
       employmentStatus: data.employmentStatus || "Unemployed",
+      company: data.company,
+      designation: data.designation,
+      employmentDescription: data.employmentDescription,
 
       idProof: extractPath("idProof"),
       applicationStatus: data.applicationStatus || "Draft",
@@ -322,6 +329,9 @@ export const updateStudentDetails = async (req, res, next) => {
       "completionYear",
       "videoKycStatus",
       "employmentStatus",
+      "company",
+      "designation",
+      "employmentDescription",
       "highestQualification",
       "applicationStatus",
       "enrollmentStatus",
@@ -365,6 +375,10 @@ export const updateStudentDetails = async (req, res, next) => {
     if (req.body.plusTwoBoard) student.plusTwo.board = req.body.plusTwoBoard;
     if (req.body.plusTwoPercentage)
       student.plusTwo.percentage = req.body.plusTwoPercentage;
+    if (req.body.plusTwoTotalMarks !== undefined)
+      student.plusTwo.totalMarks = req.body.plusTwoTotalMarks === "" ? undefined : req.body.plusTwoTotalMarks;
+    if (req.body.plusTwoObtainedMarks !== undefined)
+      student.plusTwo.obtainedMarks = req.body.plusTwoObtainedMarks === "" ? undefined : req.body.plusTwoObtainedMarks;
 
     if (req.body.bachelorsUniversity)
       student.bachelors.university = req.body.bachelorsUniversity;
@@ -429,6 +443,7 @@ export const updateStudentDetails = async (req, res, next) => {
     updateNestedPath("tenthCertificate", "tenth", "certificate");
     updateNestedPath("plusTwoCertificate", "plusTwo", "certificate");
     updatePath("affidavit", "affidavit");
+    updatePath("videoKycFile", "videoKycFile");
     updatePath("migrationCertificate", "migrationCertificate");
     updatePath("projectSubmission", "projectSubmission");
 

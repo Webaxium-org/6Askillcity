@@ -335,12 +335,72 @@ const LoadingScreen = ({ onFinished }) => {
   );
 };
 
+const programCategories = [
+  {
+    id: "bachelors",
+    title: "Bachelors Degree",
+    subtitle: "Undergraduate Education",
+    count: "5 Programs",
+    icon: GraduationCap,
+    color: "from-blue-600 to-indigo-600",
+    accentColor: "#17468C",
+    shadowColor: "rgba(23,70,140,0.15)",
+    bgLight: "bg-blue-50/50",
+    borderColor: "border-blue-100",
+    description: "Establish a strong professional foundation with our industry-aligned undergraduate programs, delivering rigorous academic theory combined with core practical skills.",
+    programs: ["BCom", "BA", "BSc", "BCA", "BBA"],
+  },
+  {
+    id: "masters",
+    title: "Masters Degree",
+    subtitle: "Postgraduate Excellence",
+    count: "5 Programs",
+    icon: School,
+    color: "from-[#B82424] to-red-500",
+    accentColor: "#B82424",
+    shadowColor: "rgba(184,36,36,0.15)",
+    bgLight: "bg-red-50/50",
+    borderColor: "border-red-100",
+    description: "Advance your expertise and unlock executive leadership opportunities with our advanced, research-informed postgraduate degrees tailored for modern career demands.",
+    programs: ["MCom", "MA", "MSc", "MCA", "MBA"],
+  },
+  {
+    id: "pg-diploma",
+    title: "PG Diploma",
+    subtitle: "Specialized Certifications",
+    count: "5 Programs",
+    icon: ShieldCheck,
+    color: "from-indigo-600 to-purple-600",
+    accentColor: "#6366f1",
+    shadowColor: "rgba(99,102,241,0.15)",
+    bgLight: "bg-indigo-50/50",
+    borderColor: "border-indigo-100",
+    description: "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
+    programs: ["Advanced PG in Computer Applications", "Diploma in Business Administration", "PG Diploma in Financial Management", "Diploma in Human Resource Development", "PG Diploma in Marketing Strategy"],
+  },
+  {
+    id: "skill-programs",
+    title: "Skill Programs",
+    subtitle: "Vocational & Practical Learning",
+    count: "5 Programs",
+    icon: Sparkles,
+    color: "from-amber-600 to-orange-500",
+    accentColor: "#d97706",
+    shadowColor: "rgba(217,119,6,0.15)",
+    bgLight: "bg-amber-50/50",
+    borderColor: "border-amber-100",
+    description: "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
+    programs: ["Full Stack Web Development", "Digital Marketing & Branding", "Advanced Data Analytics", "Cloud Computing Foundations", "Creative UI/UX Design & Prototyping"],
+  },
+];
+
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useDispatch();
 
   const navigate = useNavigate();
+  const [activeCategory, setActiveCategory] = useState("bachelors");
 
   useEffect(() => {
     // Handle hash scrolling when the component mounts or hash changes
@@ -455,15 +515,7 @@ export default function App() {
                       onClick={() => navigate("/register-admission-point")}
                       className="rounded-full shadow-xl shadow-[#B82424]/20 text-base hover:-translate-y-1 transition-all duration-300"
                     >
-                      Join the Network <ArrowRight size={18} className="ml-2" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => navigate("/login")}
-                      className="rounded-full text-base hover:bg-accent border-border shadow-sm hover:-translate-y-1 transition-all duration-300"
-                    >
-                      Login to account
+                      Join Education Network <ArrowRight size={18} className="ml-2" />
                     </Button>
                   </motion.div>
 
@@ -480,13 +532,13 @@ export default function App() {
                         BTU
                       </span> */}
                       <span className="hover:text-[#17468C] transition-colors cursor-default">
-                        TGU
-                      </span>
-                      <span className="hover:text-[#17468C] transition-colors cursor-default">
                         UGC
                       </span>
                       <span className="hover:text-[#17468C] transition-colors cursor-default">
-                        NCTE
+                        AIU
+                      </span>
+                      <span className="hover:text-[#17468C] transition-colors cursor-default">
+                        BCI
                       </span>
                     </div>
                   </motion.div>
@@ -518,7 +570,7 @@ export default function App() {
                         Partner Inquiry
                       </CardTitle>
                       <CardDescription>
-                        Quick registration for new centers
+                        Quick registration for new partners
                       </CardDescription>
                     </CardHeader>
 
@@ -586,13 +638,27 @@ export default function App() {
 
                         <Button
                           type="submit"
-                          variant="primary"
+                          variant="none"
+                          size="none"
                           disabled={isSubmitting}
-                          className="w-full mt-4 rounded-xl shadow-lg shadow-[#17468C]/20 hover:shadow-[#17468C]/40 hover:-translate-y-0.5 transition-all duration-300"
+                          className="w-full mt-4 py-3.5 px-6 rounded-xl font-bold bg-gradient-to-r from-[#17468C] via-[#1E56A0] to-[#17468C] hover:from-[#1E56A0] hover:to-[#2C74B3] text-white shadow-lg shadow-[#17468C]/25 hover:shadow-xl hover:shadow-[#17468C]/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden group tracking-wide text-sm md:text-base cursor-pointer"
                         >
-                          {isSubmitting
-                            ? "Submitting..."
-                            : "Submit Registration"}
+                          {/* Premium subtle shine overlay */}
+                          <div className="animate-shine pointer-events-none" />
+
+                          <span className="flex items-center justify-center gap-2">
+                            {isSubmitting ? (
+                              <>
+                                <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                                Submitting Inquiry...
+                              </>
+                            ) : (
+                              <>
+                                Submit Registration
+                                <Send size={16} className="transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5 text-white/80" />
+                              </>
+                            )}
+                          </span>
                         </Button>
                       </form>
                     </CardContent>
@@ -704,20 +770,14 @@ export default function App() {
 
               <div className="grid md:grid-cols-2 gap-10">
                 {[
-                  // {
-                  //   title: "Bir Tikendrajit University",
-                  //   loc: "Manipur",
-                  //   color:
-                  //     "bg-gradient-to-br from-[#B82424] to-red-600 shadow-red-500/30",
-                  //   icon: <School className="text-white" size={28} />,
-                  //   desc: "Established by the Manipur Government (Act No. 9 of 2020) and under u/s 2(f) of UGC Act 1956. We aim to create world-level research facilities and provide state-of-the-art education to empower youth with global human resources.",
-                  //   stats: [
-                  //     { label: "Legislation", value: "Act No. 9 of 2020" },
-                  //     { label: "Recognition", value: "UGC u/s 2(f)" },
-                  //   ],
-                  // },
                   {
-                    title: "The Global University",
+                    title: (
+                      <span>
+                        The Global University,{" "}
+                        <span className="text-2xl font-semibold text-foreground/80">India,</span>{" "}
+                        <span className="text-lg font-medium text-foreground/60">Arunachal Pradesh</span>
+                      </span>
+                    ),
                     loc: "Arunachal Pradesh",
                     color:
                       "bg-white border-2 border-blue-500/20 shadow-xl shadow-blue-500/10",
@@ -867,7 +927,7 @@ export default function App() {
               <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
                 {[
                   {
-                    title: "Admission Centres",
+                    title: "Application Centres",
                     subtitle: "Application Recruitment",
                     description:
                       "6A Skillcity invites ADMISSION APPLICATION CENTRE from across India to partner and facilitate the admission process for students. Partnering with us allows admission recruiters to streamline the admission process for students, providing them with access to a diverse range of UGC-approved courses.",
@@ -876,6 +936,8 @@ export default function App() {
                       "from-[#17468C]/20 via-[#17468C]/5 to-transparent",
                     bgBadge:
                       "bg-[#17468C]/20 text-blue-300 border border-[#17468C]/30",
+                    buttonClass:
+                      "bg-gradient-to-r from-[#17468C] to-[#2563eb] hover:from-[#1E56A0] hover:to-[#3b82f6] shadow-blue-500/25 border-transparent",
                     points: [
                       "Assist students in the application process for The Global University programs.",
                       "Provide guidance and support to applicants throughout the admission journey.",
@@ -894,6 +956,8 @@ export default function App() {
                       "from-[#B82424]/20 via-[#B82424]/5 to-transparent",
                     bgBadge:
                       "bg-[#B82424]/20 text-red-300 border border-[#B82424]/30",
+                    buttonClass:
+                      "bg-gradient-to-r from-[#B82424] to-[#ef4444] hover:from-[#c92a2a] hover:to-[#f87171] shadow-red-500/25 border-transparent",
                     points: [
                       "Offer The Global University skill-enhancing programs to your students.",
                       "Provide hands-on training and practical experience in alignment with industry requirements.",
@@ -964,11 +1028,19 @@ export default function App() {
                       </CardContent>
                       <CardFooter className="px-10 pb-10 pt-6 relative z-10">
                         <Button
-                          variant="outline"
-                          className="w-full h-12 rounded-xl bg-white/10 border-white/20 text-white hover:bg-white hover:text-black transition-all duration-300 group-hover:shadow-lg"
+                          variant="none"
+                          size="none"
+                          className={cn(
+                            "w-full py-4 rounded-xl text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-0.5 border",
+                            path.buttonClass
+                          )}
                           onClick={() => navigate("/register-admission-point")}
                         >
-                          Become a Partner
+                          <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
+                          <span className="relative z-10 flex items-center justify-center gap-2">
+                            Become a Partner
+                            <ArrowRight size={18} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+                          </span>
                         </Button>
                       </CardFooter>
                     </Card>
@@ -1003,14 +1075,13 @@ export default function App() {
 
                   <div className="space-y-6">
                     <p className="text-lg text-muted-foreground leading-relaxed">
-                      6A Skillcity serves as an academic partner of{" "}
+                      6A Skillcity serves as a national admission partner of{" "}
                       <span className="text-foreground font-semibold">
-                        {/* Bir Tikendrajit University &  */}
-                        The Global University
+                        The Global University, India, Arunachal Pradesh
                       </span>{" "}
-                      handling all academic affairs. The foundation connects
-                      admission application centers and vocational education
-                      centers with {/* Bir Tikendrajit University & */} The
+                      handling all admission affairs. The foundation connects
+                      admission application centers and skill education
+                      centers with The
                       Global University.
                     </p>
                     <p className="text-lg text-muted-foreground leading-relaxed">
@@ -1086,7 +1157,7 @@ export default function App() {
                                 Academic Partner
                               </p>
                               <p className="text-xl font-bold">
-                                Official TGU Partner
+                                Official TGU Admission Partner
                               </p>
                             </div>
                           </div>
@@ -1095,6 +1166,217 @@ export default function App() {
                     </div>
                   </div>
                 </motion.div>
+              </div>
+            </div>
+          </section>
+
+          {/* ACADEMIC PROGRAMS SECTION */}
+          <section id="programs" className="py-28 bg-muted/30 relative overflow-hidden">
+            {/* Ambient decorative glowing blobs */}
+            <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-[#17468C]/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+            <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-[#B82424]/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+
+            <div className="container mx-auto px-6 relative z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, type: "spring" }}
+                className="text-center max-w-3xl mx-auto mb-20 space-y-4"
+              >
+                <Badge variant="brandBlue" className="px-4 py-1.5 text-xs shadow-sm shadow-[#17468C]/5 border-[#17468C]/15 backdrop-blur-md bg-[#17468C]/5">
+                  Curriculum & Pathways
+                </Badge>
+                <h2 className="text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-none">
+                  Academic Programs
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                  Explore our comprehensive array of certified degree pathways and specialized industry-led skill programs.
+                </p>
+              </motion.div>
+
+              <div className="grid lg:grid-cols-12 gap-10 items-start">
+                {/* Left Side: Category Tabs Selector */}
+                <div className="lg:col-span-4 flex flex-col gap-4">
+                  {programCategories.map((cat, idx) => {
+                    const CatIcon = cat.icon;
+                    const isActive = activeCategory === cat.id;
+
+                    return (
+                      <motion.button
+                        key={cat.id}
+                        onClick={() => setActiveCategory(cat.id)}
+                        initial={{ opacity: 0, x: -30 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: idx * 0.1, duration: 0.5 }}
+                        className={cn(
+                          "w-full flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 text-left cursor-pointer group relative overflow-hidden",
+                          isActive
+                            ? "bg-white shadow-xl shadow-foreground/5 border-border scale-[1.02]"
+                            : "bg-white/40 backdrop-blur-sm border-border/60 hover:bg-white/80 hover:border-border hover:shadow-md"
+                        )}
+                      >
+                        {/* Dynamic category active vertical ribbon */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeRibbon"
+                            className={cn(
+                              "absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b",
+                              cat.color
+                            )}
+                          />
+                        )}
+
+                        <div className="flex items-center gap-4 relative z-10">
+                          <div
+                            className={cn(
+                              "p-3 rounded-xl transition-all duration-300",
+                              isActive
+                                ? "bg-gradient-to-br text-white shadow-md shadow-foreground/5"
+                                : "bg-muted text-muted-foreground group-hover:bg-white group-hover:text-foreground"
+                            )}
+                            style={isActive ? { backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)` } : {}}
+                          >
+                            <CatIcon size={22} className="transition-transform duration-500 group-hover:rotate-3" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-foreground text-[15px] leading-tight">
+                              {cat.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+                              {cat.subtitle}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="relative z-10 flex flex-col items-end gap-1">
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "text-[10px] font-bold tracking-wide transition-colors",
+                              isActive ? "bg-muted text-foreground" : "bg-muted/50 text-muted-foreground"
+                            )}
+                          >
+                            {cat.count}
+                          </Badge>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Right Side: Tab Panel Content Card */}
+                <div className="lg:col-span-8">
+                  <AnimatePresence mode="wait">
+                    {programCategories.map((cat) => {
+                      if (activeCategory !== cat.id) return null;
+                      const CatIcon = cat.icon;
+
+                      return (
+                        <motion.div
+                          key={cat.id}
+                          initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+                          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
+                          transition={{ duration: 0.4 }}
+                          className="bg-card/85 backdrop-blur-xl border border-border shadow-2xl shadow-foreground/5 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden"
+                        >
+                          {/* Corner ambient glow inside panel */}
+                          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br opacity-[0.03] rounded-bl-full pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, transparent)` }} />
+
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/60 mb-8">
+                            <div className="flex items-center gap-4">
+                              <div
+                                className="p-4 rounded-2xl text-white shadow-lg"
+                                style={{
+                                  background: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
+                                  boxShadow: `0 8px 25px ${cat.shadowColor}`
+                                }}
+                              >
+                                <CatIcon size={28} />
+                              </div>
+                              <div>
+                                <h3 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight">
+                                  {cat.title}
+                                </h3>
+                                <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-1">
+                                  {cat.subtitle}
+                                </p>
+                              </div>
+                            </div>
+
+                            <Badge
+                              className="px-4 py-1.5 text-xs font-bold text-white border-transparent"
+                              style={{
+                                background: `linear-gradient(to right, ${cat.accentColor}, ${cat.accentColor}cc)`
+                              }}
+                            >
+                              {cat.count} Available
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-8">
+                            <p className="text-[17px] text-muted-foreground leading-relaxed">
+                              {cat.description}
+                            </p>
+
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
+                                Available Specializations
+                              </p>
+                              <div className="grid sm:grid-cols-2 gap-4">
+                                {cat.programs.map((prog, pIdx) => (
+                                  <motion.div
+                                    key={prog}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: pIdx * 0.05, duration: 0.3 }}
+                                    className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item cursor-default"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <CheckCircle
+                                        size={18}
+                                        className="transition-colors duration-300"
+                                        style={{ color: cat.accentColor }}
+                                      />
+                                      <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors uppercase">
+                                        {prog}
+                                      </span>
+                                    </div>
+                                    <ArrowRight
+                                      size={14}
+                                      className="text-muted-foreground/0 group-hover/item:text-muted-foreground/100 group-hover/item:translate-x-0.5 transition-all duration-300"
+                                    />
+                                  </motion.div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="pt-4">
+                              <Button
+                                variant="none"
+                                size="none"
+                                className="px-8 py-4 rounded-xl font-bold text-white transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer text-[15px]"
+                                style={{
+                                  background: `linear-gradient(to right, ${cat.accentColor}, ${cat.accentColor}dd)`,
+                                  boxShadow: `0 8px 25px ${cat.shadowColor}`
+                                }}
+                                onClick={() => {
+                                  const el = document.getElementById("contact");
+                                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                                }}
+                              >
+                                Inquire About {cat.title}
+                                <ArrowRight size={18} />
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           </section>
@@ -1182,8 +1464,8 @@ export default function App() {
                         image: Ugc,
                       },
                       {
-                        title: "Government of Manipur",
-                        desc: "Recognized and supported by the Government of Manipur for academic excellence.",
+                        title: "Government of Arunachal Pradesh",
+                        desc: "Recognized and supported by the Government of Arunachal Pradesh for academic excellence.",
                         color: "from-yellow-50 to-yellow-100/50",
                         textColor: "text-[#A59200]",
                         borderColor: "border-yellow-200",
@@ -1191,7 +1473,7 @@ export default function App() {
                       },
                       {
                         title: "Association of Indian Universities (AIU)",
-                        desc: "Membership and recognition by AIU ensuring global equivalence.",
+                        desc: "Membership by AIU ensuring global equivalence.",
                         color: "from-indigo-50 to-indigo-100/50",
                         textColor: "text-indigo-700",
                         borderColor: "border-indigo-200",
@@ -1327,6 +1609,107 @@ export default function App() {
             </div>
           </section>
 
+          {/* CTA BANNER SECTION */}
+          <section className="py-24 bg-background relative overflow-hidden">
+            <div className="container mx-auto px-6">
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, type: "spring" }}
+                className="relative rounded-[3rem] overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] px-8 py-16 md:py-24 shadow-2xl text-white border border-white/10"
+              >
+                {/* Abstract grid & wavy glowing overlays */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)] pointer-events-none" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+
+                {/* Floating ambient accent shapes */}
+                <div className="absolute -top-40 -left-40 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" />
+
+                <div className="relative z-10 grid lg:grid-cols-12 gap-12 items-center max-w-6xl mx-auto">
+                  {/* Left Column: Asymmetrical Typography and Value Proposition */}
+                  <div className="lg:col-span-7 space-y-6 text-left">
+                    <Badge
+                      variant="none"
+                      className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider text-white border border-white/30 bg-white/10 backdrop-blur-md inline-flex items-center gap-2 shadow-inner"
+                    >
+                      <Sparkles size={14} className="text-white animate-pulse" />
+                      PARTNER INVITATION 2026
+                    </Badge>
+
+                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight">
+                      Ready to Empower <br />
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-white/60">
+                        The Next Generation?
+                      </span>
+                    </h2>
+
+                    <p className="text-white/80 text-lg md:text-xl max-w-xl font-medium leading-relaxed">
+                      Join our expansive network of elite academic and vocational partners today. Let's shape minds, build careers, and create a lasting educational legacy together.
+                    </p>
+
+                    {/* Elite Stats or details row */}
+                    <div className="pt-4 flex flex-wrap items-center gap-6 border-t border-white/10 mt-8">
+                      <div className="flex items-center gap-2.5">
+                        <CheckCircle size={20} className="text-white/70" />
+                        <span className="text-sm font-bold text-white/80 uppercase tracking-wider">UGC Recognized Channels</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <CheckCircle size={20} className="text-white/70" />
+                        <span className="text-sm font-bold text-white/80 uppercase tracking-wider">National Coverage</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Hyper-Premium Floating Call-to-Action Card */}
+                  <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                    <motion.div
+                      whileHover={{ y: -6, rotate: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group"
+                    >
+                      {/* Internal ambient glowing pulse */}
+                      <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
+
+                      <div className="relative z-10 space-y-6 text-center lg:text-left">
+                        <h4 className="text-2xl font-bold text-white tracking-tight">
+                          Become a Partner
+                        </h4>
+                        <p className="text-white/70 text-sm leading-relaxed">
+                          Submit your center details and launch your official collaboration.
+                        </p>
+
+                        {/* Interactive Long Gradient CTA button */}
+                        <div className="pt-2">
+                          <Button
+                            variant="none"
+                            size="none"
+                            className="w-full py-4.5 px-8 bg-white text-[#17468C] font-extrabold text-lg rounded-xl shadow-lg hover:shadow-2xl hover:shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group/btn cursor-pointer flex items-center justify-center gap-2"
+                            onClick={() => navigate("/register-admission-point")}
+                          >
+                            {/* Premium shine animation */}
+                            <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-[#17468C]/5 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
+
+                            <span className="relative z-10 flex items-center justify-center gap-2 text-[#17468C]">
+                              Register Now
+                              <ArrowRight size={18} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+                            </span>
+                          </Button>
+                        </div>
+
+                        <div className="pt-4 flex items-center justify-center lg:justify-start gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                          Applications Active for 2026
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </section>
+
           {/* FOOTER */}
           <footer
             className="pt-24 pb-10 bg-background border-t border-border"
@@ -1345,7 +1728,7 @@ export default function App() {
                   <div className="flex gap-3">
                     {[
                       { Icon: Phone, href: "tel:+919633331014" },
-                      { Icon: Mail, href: "mailto:info@6askillcity.com" },
+                      { Icon: Mail, href: "mailto:partner@6askillcity.com" },
                       { Icon: Globe, href: "https://6askillcity.com" },
                     ].map(({ Icon, href }, i) => (
                       <Button
@@ -1382,14 +1765,6 @@ export default function App() {
                         Partner Portal
                       </a>
                     </li>
-                    <li>
-                      <a
-                        href="#"
-                        className="hover:text-[#17468C] transition-colors"
-                      >
-                        Verification
-                      </a>
-                    </li>
                   </ul>
                 </div>
 
@@ -1397,16 +1772,44 @@ export default function App() {
                   <h5 className="text-sm font-bold text-foreground">
                     Official Hub
                   </h5>
-                  <div className="flex gap-3 text-sm text-muted-foreground">
-                    <MapPin
-                      size={20}
-                      className="shrink-0 text-muted-foreground/60 mt-0.5"
-                    />
-                    <span className="leading-relaxed">
-                      Grace Tower, First Floor, Cabin No.C1 Door No. 67/1382,
-                      St. Vincent Road, Kacheripady, Ernakulam North,
-                      Kerala-682018
-                    </span>
+                  <div className="space-y-4">
+                    <div className="flex gap-3 text-sm text-muted-foreground">
+                      <MapPin
+                        size={20}
+                        className="shrink-0 text-muted-foreground/60 mt-0.5"
+                      />
+                      <span className="leading-relaxed">
+                        Grace Tower, First Floor, Cabin No.C1 Door No. 67/1382,
+                        St. Vincent Road, Kacheripady, Ernakulam North,
+                        Kerala, India - 682018
+                      </span>
+                    </div>
+                    <div className="flex gap-3 text-sm text-muted-foreground">
+                      <Phone
+                        size={18}
+                        className="shrink-0 text-muted-foreground/60 mt-0.5"
+                      />
+                      <div className="flex flex-col gap-1">
+                        <a href="tel:+919633331014" className="hover:text-primary transition-colors">
+                          +91 9633331014
+                        </a>
+                        <a href="tel:+91995453322" className="hover:text-primary transition-colors">
+                          +91 995453322
+                        </a>
+                        <a href="tel:04844614539" className="hover:text-primary transition-colors">
+                          0484 461 4539
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 text-sm text-muted-foreground">
+                      <Mail
+                        size={18}
+                        className="shrink-0 text-muted-foreground/60 mt-0.5"
+                      />
+                      <a href="mailto:partner@6askillcity.com" className="hover:text-primary transition-colors">
+                        partner@6askillcity.com
+                      </a>
+                    </div>
                   </div>
                 </div>
 

@@ -50,7 +50,7 @@ const STATUS_CONFIG = {
   "Pending Eligibility": {
     color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
     icon: Clock,
-    label: "Pending Review",
+    label: "REVIEW IN PROGRESS",
   },
   Eligible: {
     color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
@@ -218,11 +218,10 @@ export default function ApplicationsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all shrink-0 ${
-                  activeTab === tab.id
-                    ? "bg-card text-primary shadow-sm border border-border"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all shrink-0 ${activeTab === tab.id
+                  ? "bg-card text-primary shadow-sm border border-border"
+                  : "text-muted-foreground hover:bg-muted"
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label.toUpperCase()}
@@ -263,12 +262,11 @@ export default function ApplicationsPage() {
                     "Applicant",
                     "Course / University",
                     "Status",
-                    "Schedule",
-                    "Actions",
+                    "Profile",
                   ].map((h) => (
                     <th
                       key={h}
-                      className={`px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest ${h === "Actions" ? "text-right" : ""}`}
+                      className={`px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest ${h === "Profile" ? "text-right" : ""}`}
                     >
                       {h}
                     </th>
@@ -278,7 +276,7 @@ export default function ApplicationsPage() {
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="py-20 text-center">
+                    <td colSpan={4} className="py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
                         <span className="text-[10px] font-black uppercase tracking-widest">
@@ -289,7 +287,7 @@ export default function ApplicationsPage() {
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-20 text-center">
+                    <td colSpan={4} className="py-20 text-center">
                       <div className="flex flex-col items-center gap-4 text-muted-foreground">
                         <div className="w-16 h-16 rounded-[1.5rem] bg-muted/50 flex items-center justify-center">
                           <FileText className="w-8 h-8 opacity-20" />
@@ -369,28 +367,8 @@ export default function ApplicationsPage() {
                           </span>
                         </td>
 
-                        {/* Schedule */}
-                        <td className="px-6 py-5">
-                          {app.nextFollowupDate ? (
-                            <div
-                              className={`flex items-center gap-1.5 text-[10px] font-black uppercase ${new Date(app.nextFollowupDate) < new Date() ? "text-rose-500" : "text-amber-500"}`}
-                            >
-                              <Bell className="w-3.5 h-3.5" />
-                              {new Date(
-                                app.nextFollowupDate,
-                              ).toLocaleDateString([], {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground/40 font-black uppercase tracking-widest italic">
-                              No Task
-                            </span>
-                          )}
-                        </td>
 
-                        {/* Actions */}
+                        {/* Profile */}
                         <td
                           className="px-6 py-5"
                           onClick={(e) => e.stopPropagation()}

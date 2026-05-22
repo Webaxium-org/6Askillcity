@@ -526,6 +526,8 @@ export default function AddStudent() {
             tenthPercentage: s.tenth?.percentage || "",
             plusTwoCompletionYear: s.plusTwo?.completionYear || "",
             plusTwoBoard: s.plusTwo?.board || "",
+            plusTwoTotalMarks: s.plusTwo?.totalMarks || "",
+            plusTwoObtainedMarks: s.plusTwo?.obtainedMarks || "",
             plusTwoPercentage: s.plusTwo?.percentage || "",
             bachelorsUniversity: s.bachelors?.university || "",
             bachelorsCourse: s.bachelors?.course || "",
@@ -541,6 +543,9 @@ export default function AddStudent() {
             mastersPapersEqualised: s.masters?.papersEqualised || "",
             videoKycStatus: s.videoKycStatus || "Pending",
             employmentStatus: s.employmentStatus || "Unemployed",
+            company: s.company || "",
+            designation: s.designation || "",
+            employmentDescription: s.employmentDescription || "",
             highestQualification: s.highestQualification || "Plus Two",
             batch: s.batch || "",
             applicationStatus: s.applicationStatus || "Draft",
@@ -576,6 +581,7 @@ export default function AddStudent() {
               s.migrationCertificate?.path || s.migrationCertificate || null,
             projectSubmission:
               s.projectSubmission?.path || s.projectSubmission || null,
+            videoKycFile: s.videoKycFile?.path || s.videoKycFile || null,
           });
         }
       } catch (error) {
@@ -617,6 +623,8 @@ export default function AddStudent() {
     tenthPercentage: "",
     plusTwoCompletionYear: "",
     plusTwoBoard: "",
+    plusTwoTotalMarks: "",
+    plusTwoObtainedMarks: "",
     plusTwoPercentage: "",
     bachelorsUniversity: "",
     bachelorsCourse: "",
@@ -632,6 +640,9 @@ export default function AddStudent() {
     mastersPapersEqualised: "",
     videoKycStatus: "Pending",
     employmentStatus: "Unemployed",
+    company: "",
+    designation: "",
+    employmentDescription: "",
     highestQualification: "Plus Two",
     batch: "",
     applicationStatus: "Draft",
@@ -647,6 +658,7 @@ export default function AddStudent() {
     affidavit: null,
     migrationCertificate: null,
     projectSubmission: null,
+    videoKycFile: null,
   });
 
   // Auto-calculate percentage for 10th
@@ -663,14 +675,28 @@ export default function AddStudent() {
     }
   }, [formData.tenthTotalMarks, formData.tenthObtainedMarks]);
 
+  // Auto-calculate percentage for Plus Two
+  useEffect(() => {
+    if (formData.plusTwoTotalMarks && formData.plusTwoObtainedMarks) {
+      const total = parseFloat(formData.plusTwoTotalMarks);
+      const obtained = parseFloat(formData.plusTwoObtainedMarks);
+      if (total > 0) {
+        setFormData((p) => ({
+          ...p,
+          plusTwoPercentage: ((obtained / total) * 100).toFixed(2),
+        }));
+      }
+    }
+  }, [formData.plusTwoTotalMarks, formData.plusTwoObtainedMarks]);
+
   // Reset program/branch if selections become invalid
   useEffect(() => {
-    if (formData.university) {
+    if (formData.university && permittedHierarchy.universities.length > 0) {
       // 1. Verify if selected program still belongs to the selected university
       const isProgValid = permittedHierarchy.programs.some(
         (p) =>
           (p.university?._id?.toString() || p.university?.toString()) ===
-            formData.university && p._id.toString() === formData.program,
+          formData.university && p._id.toString() === formData.program,
       );
 
       if (!isProgValid && formData.program) {
@@ -681,7 +707,7 @@ export default function AddStudent() {
         const isBranchValid = permittedHierarchy.branches.some(
           (b) =>
             (b.program?._id?.toString() || b.program?.toString()) ===
-              formData.program && b._id.toString() === formData.branch,
+            formData.program && b._id.toString() === formData.branch,
         );
         if (!isBranchValid && formData.branch) {
           setFormData((prev) => ({ ...prev, branch: "" }));
@@ -1129,7 +1155,7 @@ export default function AddStudent() {
       formData.applicationStatus,
       "Completed",
     );
-    if (!saved && !studentId) return;
+    if (!saved) return;
 
     setLoading(true);
 
@@ -1330,8 +1356,8 @@ export default function AddStudent() {
                         style={
                           scanning
                             ? {
-                                clipPath: `inset(${100 - scanProgress}% 0 0 0)`,
-                              }
+                              clipPath: `inset(${100 - scanProgress}% 0 0 0)`,
+                            }
                             : {}
                         }
                       />
@@ -1605,12 +1631,29 @@ export default function AddStudent() {
                       error={errors.plusTwoBoard}
                     />
                     <InputField
-                      label="Percentage"
-                      name="plusTwoPercentage"
-                      value={formData.plusTwoPercentage}
+                      label="Total Marks"
+                      name="plusTwoTotalMarks"
+                      value={formData.plusTwoTotalMarks}
                       onChange={handleChange}
-                      error={errors.plusTwoPercentage}
+                      type="number"
+                      error={errors.plusTwoTotalMarks}
                     />
+                    <InputField
+                      label="Obtained Marks"
+                      name="plusTwoObtainedMarks"
+                      value={formData.plusTwoObtainedMarks}
+                      onChange={handleChange}
+                      type="number"
+                      error={errors.plusTwoObtainedMarks}
+                    />
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase text-foreground">
+                        Percentage
+                      </label>
+                      <div className="px-5 py-3 rounded-xl bg-blue-500/5 border border-blue-500/10 text-blue-600 font-black text-sm">
+                        {formData.plusTwoPercentage || "0.00"}%
+                      </div>
+                    </div>
                     <FileUploadBox
                       label="+2 Certificate"
                       field="plusTwoCertificate"
@@ -1639,60 +1682,60 @@ export default function AddStudent() {
 
                 {(formData.highestQualification === "Bachelors" ||
                   formData.highestQualification === "Masters") && (
-                  <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-6">
-                    <h3 className="text-md font-black flex items-center gap-3 text-indigo-500">
-                      <Building2 className="w-5 h-5" /> Bachelors
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      <InputField
-                        label="University"
-                        name="bachelorsUniversity"
-                        value={formData.bachelorsUniversity}
-                        onChange={handleChange}
-                      />
-                      <InputField
-                        label="Course"
-                        name="bachelorsCourse"
-                        value={formData.bachelorsCourse}
-                        onChange={handleChange}
-                      />
-                      <InputField
-                        label="Branch"
-                        name="bachelorsBranch"
-                        value={formData.bachelorsBranch}
-                        onChange={handleChange}
-                      />
-                      <InputField
-                        label="Completion Year"
-                        name="bachelorsCompletionYear"
-                        value={formData.bachelorsCompletionYear}
-                        onChange={handleChange}
-                        type="number"
-                      />
-                      <InputField
-                        label="Passed Papers"
-                        name="bachelorsPapersPassed"
-                        value={formData.bachelorsPapersPassed}
-                        onChange={handleChange}
-                        type="number"
-                      />
-                      <InputField
-                        label="Equalised"
-                        name="bachelorsPapersEqualised"
-                        value={formData.bachelorsPapersEqualised}
-                        onChange={handleChange}
-                        type="number"
-                      />
-                      <FileUploadBox
-                        label="Certs (Max 5)"
-                        field="bachelorsCertificates"
-                        value={files.bachelorsCertificates}
-                        multiple
-                        onChange={handleMultiFileChange}
-                      />
+                    <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-6">
+                      <h3 className="text-md font-black flex items-center gap-3 text-indigo-500">
+                        <Building2 className="w-5 h-5" /> Bachelors
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <InputField
+                          label="University"
+                          name="bachelorsUniversity"
+                          value={formData.bachelorsUniversity}
+                          onChange={handleChange}
+                        />
+                        <InputField
+                          label="Course"
+                          name="bachelorsCourse"
+                          value={formData.bachelorsCourse}
+                          onChange={handleChange}
+                        />
+                        <InputField
+                          label="Branch"
+                          name="bachelorsBranch"
+                          value={formData.bachelorsBranch}
+                          onChange={handleChange}
+                        />
+                        <InputField
+                          label="Completion Year"
+                          name="bachelorsCompletionYear"
+                          value={formData.bachelorsCompletionYear}
+                          onChange={handleChange}
+                          type="number"
+                        />
+                        <InputField
+                          label="Passed Papers"
+                          name="bachelorsPapersPassed"
+                          value={formData.bachelorsPapersPassed}
+                          onChange={handleChange}
+                          type="number"
+                        />
+                        <InputField
+                          label="Equalised"
+                          name="bachelorsPapersEqualised"
+                          value={formData.bachelorsPapersEqualised}
+                          onChange={handleChange}
+                          type="number"
+                        />
+                        <FileUploadBox
+                          label="Certs (Max 5)"
+                          field="bachelorsCertificates"
+                          value={files.bachelorsCertificates}
+                          multiple
+                          onChange={handleMultiFileChange}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {formData.highestQualification === "Masters" && (
                   <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-6">
@@ -1835,7 +1878,7 @@ export default function AddStudent() {
                         ...(() => {
                           const batches = [];
                           const currentYear = new Date().getFullYear();
-                          for (let y = currentYear; y <= currentYear + 3; y++) {
+                          for (let y = currentYear; y <= currentYear + 9; y++) {
                             batches.push(`Jan-${y}`, `June-${y}`);
                           }
                           return batches;
@@ -1860,6 +1903,14 @@ export default function AddStudent() {
                       onChange={handleChange}
                       options={["Pending", "Completed", "Rejected"]}
                     />
+                    {formData.videoKycStatus === "Completed" && (
+                      <FileUploadBox
+                        label="Video KYC File"
+                        field="videoKycFile"
+                        value={files.videoKycFile}
+                        onChange={handleFileChange}
+                      />
+                    )}
                     <InputField
                       label="Employment"
                       name="employmentStatus"
@@ -1872,6 +1923,31 @@ export default function AddStudent() {
                         "Student",
                       ]}
                     />
+                    {formData.employmentStatus === "Employed" && (
+                      <>
+                        <InputField
+                          label="Company"
+                          name="company"
+                          value={formData.company}
+                          onChange={handleChange}
+                        />
+                        <InputField
+                          label="Designation"
+                          name="designation"
+                          value={formData.designation}
+                          onChange={handleChange}
+                        />
+                      </>
+                    )}
+                    {(formData.employmentStatus === "Self-Employed" || formData.employmentStatus === "Student") && (
+                      <InputField
+                        label="Description"
+                        name="employmentDescription"
+                        value={formData.employmentDescription}
+                        onChange={handleChange}
+                        placeholder={formData.employmentStatus === "Student" ? "Current course/institution" : "Business description"}
+                      />
+                    )}
                     <FileUploadBox
                       label="Affidavit"
                       field="affidavit"

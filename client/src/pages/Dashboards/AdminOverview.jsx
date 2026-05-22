@@ -136,23 +136,22 @@ const SectionCard = ({
             Total Metrics
           </span>
           <div
-            className={`h-1.5 w-1.5 rounded-full animate-pulse ${
-              color === "blue"
-                ? "bg-blue-500/50"
-                : color === "emerald"
-                  ? "bg-emerald-500/50"
-                  : color === "purple"
-                    ? "bg-purple-500/50"
-                    : color === "amber"
-                      ? "bg-amber-500/50"
-                      : color === "rose"
-                        ? "bg-rose-500/50"
-                        : color === "cyan"
-                          ? "bg-cyan-500/50"
-                          : color === "slate"
-                            ? "bg-slate-500/50"
-                            : "bg-teal-500/50"
-            }`}
+            className={`h-1.5 w-1.5 rounded-full animate-pulse ${color === "blue"
+              ? "bg-blue-500/50"
+              : color === "emerald"
+                ? "bg-emerald-500/50"
+                : color === "purple"
+                  ? "bg-purple-500/50"
+                  : color === "amber"
+                    ? "bg-amber-500/50"
+                    : color === "rose"
+                      ? "bg-rose-500/50"
+                      : color === "cyan"
+                        ? "bg-cyan-500/50"
+                        : color === "slate"
+                          ? "bg-slate-500/50"
+                          : "bg-teal-500/50"
+              }`}
           />
         </div>
       </div>
@@ -266,12 +265,12 @@ const AdminOverview = () => {
           value: stats?.pendingEligibilityCount,
         },
         {
-          label: "Application Rejected",
-          value: stats?.rejectedApplicationsCount,
-        },
-        {
           label: "Application Approved",
           value: stats?.approvedApplicationsCount,
+        },
+        {
+          label: "Application Rejected",
+          value: stats?.rejectedApplicationsCount,
         },
       ],
     },
@@ -287,15 +286,15 @@ const AdminOverview = () => {
             : "₹0",
         },
         {
-          label: "Fees To Be Paid",
-          value: stats?.courseFeeStats
-            ? `₹${stats.courseFeeStats.pendingFeeTotal.toLocaleString()}`
-            : "₹0",
-        },
-        {
           label: "Partial Fee Paid",
           value: stats?.courseFeeStats
             ? `₹${stats.courseFeeStats.partialPaidTotal.toLocaleString()}`
+            : "₹0",
+        },
+        {
+          label: "Fees To Be Paid",
+          value: stats?.courseFeeStats
+            ? `₹${stats.courseFeeStats.pendingFeeTotal.toLocaleString()}`
             : "₹0",
         },
         {

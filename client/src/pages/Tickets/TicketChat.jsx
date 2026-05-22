@@ -36,7 +36,7 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId, prefil
   const [usersList, setUsersList]   = useState([]);
 
   // chat fields
-  const [status, setStatus]             = useState(ticket?.status || "Open");
+  const [status, setStatus]             = useState(ticket?.status || "Received");
   const [postponedUntil, setPostponedUntil] = useState(
     ticket?.postponedUntil ? ticket.postponedUntil.split("T")[0] : ""
   );
@@ -110,7 +110,7 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId, prefil
         type: "error", 
         message: e.response?.data?.message || "Failed to update ticket status. The ticket may already be closed."
       }));
-      setStatus(ticketState?.status || "Open"); // Revert
+      setStatus(ticketState?.status || "Received"); // Revert
     }
     finally { setIsSubmitting(false); }
   };
@@ -246,7 +246,7 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId, prefil
                 {canUpdateStatus ? (
                   <select value={status} onChange={(e) => handleStatusChange(e.target.value)} disabled={isSubmitting}
                     className="text-xs font-medium border border-border rounded-lg bg-background px-2 py-1 outline-none focus:border-primary">
-                    {["Open", "In Progress", "Closed", "Postponed"].map(s => <option key={s}>{s}</option>)}
+                    {["Received", "On Progress", "Closed", "Postponed"].map(s => <option key={s}>{s}</option>)}
                   </select>
                 ) : (
                   <span className="text-xs font-medium px-2 py-1 rounded-lg bg-muted">{status}</span>

@@ -18,9 +18,9 @@ export const getTickets = async (params) => {
   }
 };
 
-export const getTicketMetrics = async () => {
+export const getTicketMetrics = async (params) => {
   try {
-    const { data } = await axiosInstance.get("/tickets/metrics");
+    const { data } = await axiosInstance.get("/tickets/metrics", { params });
     return data;
   } catch (error) {
     throw error;

@@ -75,8 +75,8 @@ export const getTickets = async (filter, query) => {
 
 export const getTicketMetrics = async (baseFilter) => {
   const total = await Ticket.countDocuments(baseFilter);
-  const open = await Ticket.countDocuments({ ...baseFilter, status: "Open" });
-  const inProgress = await Ticket.countDocuments({ ...baseFilter, status: "In Progress" });
+  const open = await Ticket.countDocuments({ ...baseFilter, status: "Received" });
+  const inProgress = await Ticket.countDocuments({ ...baseFilter, status: "On Progress" });
   const postponed = await Ticket.countDocuments({ ...baseFilter, status: "Postponed" });
   const closed = await Ticket.countDocuments({ ...baseFilter, status: "Closed" });
 

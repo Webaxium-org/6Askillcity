@@ -4,6 +4,7 @@ import Branch from "../models/branch.js";
 import ProgramFee from "../models/programFee.js";
 import ActivityLog from "../models/activityLog.js";
 import createError from "http-errors";
+import xlsx from "xlsx";
 
 // Helper to log activity
 const logActivity = async (action, details, performedBy, targetType, targetId) => {
@@ -26,7 +27,7 @@ const logActivity = async (action, details, performedBy, targetType, targetId) =
 
 export const getUniversities = async (req, res, next) => {
   try {
-    const universities = await University.find({ isActive: true }).sort({ name: 1 });
+    const universities = await University.find({}).sort({ name: 1 });
     res.status(200).json({ success: true, data: universities });
   } catch (error) {
     next(error);
@@ -80,7 +81,7 @@ export const updateUniversity = async (req, res, next) => {
 export const getPrograms = async (req, res, next) => {
   try {
     const { universityId } = req.query;
-    const filter = { isActive: true };
+    const filter = {};
     if (universityId) filter.university = universityId;
     const programs = await Program.find(filter).populate("university", "name").sort({ name: 1 });
     res.status(200).json({ success: true, data: programs });
@@ -139,7 +140,7 @@ export const updateProgram = async (req, res, next) => {
 export const getBranches = async (req, res, next) => {
   try {
     const { programId } = req.query;
-    const filter = { isActive: true };
+    const filter = {};
     if (programId) filter.program = programId;
 
     // Use aggregation to get branches with their current fees
@@ -299,3 +300,173 @@ export const getActivityLogs = async (req, res, next) => {
     next(error);
   }
 };
+
+export const importUniversityData = async (req, res, next) => {
+  try {
+    const { universityId } = req.body;
+    if (!universityId) {
+      throw createError(400, "University ID is required");
+    }
+    if (!req.file) {
+      throw createError(400, "Excel file is required");
+    }
+
+    const university = await University.findById(universityId);
+    if (!university) {
+      throw createError(404, "University not found");
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    if (!rows || rows.length === 0) {
+      throw createError(400, "Excel file is empty");
+    }
+
+    // Try to find the header row or use defaults
+    let headerRowIdx = -1;
+    let streamColIdx = 1; // Col B default
+    let courseColIdx = 3; // Col D default
+    let durationColIdx = 4; // Col E default
+    let eligibilityColIdx = 5; // Col F default
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const rowStr = Array.from(row).map(cell => cell?.toString().toLowerCase() || "");
+      const hasStream = rowStr.some(cell => cell.includes("stream"));
+      const hasCourse = rowStr.some(cell => cell.includes("course"));
+      if (hasStream && hasCourse) {
+        headerRowIdx = i;
+        const streamIdx = rowStr.findIndex(cell => cell.includes("stream"));
+        const courseIdx = rowStr.findIndex(cell => cell.includes("course") || cell.includes("branch"));
+        const durationIdx = rowStr.findIndex(cell => cell.includes("duration"));
+        const eligibilityIdx = rowStr.findIndex(cell => cell.includes("eligibility"));
+
+        if (streamIdx !== -1) streamColIdx = streamIdx;
+        if (courseIdx !== -1) courseColIdx = courseIdx;
+        if (durationIdx !== -1) durationColIdx = durationIdx;
+        if (eligibilityIdx !== -1) eligibilityColIdx = eligibilityIdx;
+        break;
+      }
+    }
+
+    const startRowIdx = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
+    let currentStream = "";
+    let currentDuration = "";
+    let currentEligibility = "";
+    let importCount = 0;
+
+    const determineProgramType = (name) => {
+      const n = name.toLowerCase();
+      if (n.includes("master") || n.includes("post graduate") || n.includes("m.com") || n.includes("mba") || n.includes("m.ca") || n.includes("m.tech") || n.includes("m.sc") || n.includes("m.a")) {
+        return "Masters Degree";
+      }
+      if (n.includes("skill programs") || n.includes("vocational")) {
+        return "Skill Programs";
+      }
+      if (n.includes("skill test")) {
+        return "Skill Test";
+      }
+      return "Bachelors Degree";
+    };
+
+    const parseEligibility = (raw) => {
+      if (!raw) return [];
+      return raw
+        .split(/\r?\n/)
+        .map(line => line.replace(/^\d+[\.\)]\s*/, "").trim())
+        .filter(line => line.length > 0);
+    };
+
+    for (let i = startRowIdx; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+
+      const stream = row[streamColIdx]?.toString().trim();
+      const course = row[courseColIdx]?.toString().trim();
+      const duration = row[durationColIdx]?.toString().trim();
+      const eligibility = row[eligibilityColIdx]?.toString().trim();
+
+      if (stream) currentStream = stream;
+      if (duration) currentDuration = duration;
+      if (eligibility) currentEligibility = eligibility;
+
+      // Skip row if there is no branch course name, or if it matches a header name or index serials
+      if (!course || course.toLowerCase() === "course" || course.toLowerCase() === "stream" || course.toLowerCase() === "branch" || course.match(/^\d+$/)) {
+        continue;
+      }
+
+      if (!currentStream) continue;
+
+      const progType = determineProgramType(currentStream);
+      const checklist = parseEligibility(currentEligibility);
+
+      // Find or create Program
+      let program = await Program.findOne({
+        university: universityId,
+        name: currentStream
+      });
+
+      if (!program) {
+        program = new Program({
+          name: currentStream,
+          university: universityId,
+          programType: progType,
+          eligibilityChecklist: checklist,
+          isActive: true
+        });
+        await program.save();
+      } else {
+        program.eligibilityChecklist = checklist;
+        program.programType = progType;
+        await program.save();
+      }
+
+      // Find or create Branch
+      let branch = await Branch.findOne({
+        program: program._id,
+        name: course
+      });
+
+      if (!branch) {
+        branch = new Branch({
+          name: course,
+          program: program._id,
+          duration: currentDuration || "N/A",
+          isActive: true
+        });
+        await branch.save();
+
+        const defaultFee = new ProgramFee({
+          branch: branch._id,
+          applicationFee: 0,
+          tuitionFee: 0,
+          totalFee: 0,
+          isCurrent: true
+        });
+        await defaultFee.save();
+      } else {
+        branch.duration = currentDuration || branch.duration;
+        await branch.save();
+      }
+
+      importCount++;
+    }
+
+    await logActivity(
+      "IMPORT_UNIVERSITY_DATA",
+      `Imported ${importCount} branches/courses for university: ${university.name}`,
+      req.user.userId,
+      "University",
+      university._id
+    );
+
+    res.status(200).json({ success: true, message: `Successfully imported ${importCount} courses/branches.` });
+  } catch (error) {
+    next(error);
+  }
+};
+

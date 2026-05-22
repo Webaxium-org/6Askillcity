@@ -667,20 +667,10 @@ export default function AdminDashboard() {
                                 setSelectedApp(app);
                                 setIsReviewModalOpen(true);
                               }}
-                              className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 hover:border-emerald-500 transition-all duration-200"
-                              title="Review & Approve"
+                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
+                              title="View Details"
                             >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setRejectTarget(app._id);
-                                setRejectRemark("");
-                              }}
-                              className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-red-500 transition-all duration-200"
-                              title="Reject"
-                            >
-                              <XCircle className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
