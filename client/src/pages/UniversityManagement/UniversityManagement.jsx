@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import {
   Building2,
@@ -67,6 +67,12 @@ const PROGRAM_TYPES = [
   { value: "Masters Degree", label: "Masters Degree" },
   { value: "Skill Programs", label: "Skill Programs" },
   { value: "Skill Test", label: "Skill Test" },
+];
+
+const PROGRAM_MODES = [
+  { value: "External", label: "External" },
+  { value: "On-Campus", label: "On-Campus" },
+  { value: "Skill Based", label: "Skill Based" },
 ];
 
 const tabs = [
@@ -836,6 +842,9 @@ export default function UniversityManagement() {
                           Course Type
                         </th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Mode
+                        </th>
+                        <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                           University
                         </th>
                         <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -850,7 +859,7 @@ export default function UniversityManagement() {
                       {filteredPrograms.length === 0 ? (
                         <tr>
                           <td
-                            colSpan="5"
+                            colSpan="6"
                             className="px-6 py-20 text-center text-muted-foreground"
                           >
                             No programs found.
@@ -888,6 +897,21 @@ export default function UniversityManagement() {
                               ) : (
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20">
                                   Bachelors Degree
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium">
+                              {prog.mode === "On-Campus" ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                  On-Campus
+                                </span>
+                              ) : prog.mode === "Skill Based" ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+                                  Skill Based
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-500/10 text-slate-600 border border-slate-500/20">
+                                  External
                                 </span>
                               )}
                             </td>
@@ -1238,6 +1262,25 @@ export default function UniversityManagement() {
                       {PROGRAM_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>
                           {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                      Mode
+                    </label>
+                    <select
+                      name="mode"
+                      defaultValue={
+                        editingProgram?.mode || "External"
+                      }
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
+                    >
+                      {PROGRAM_MODES.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
                         </option>
                       ))}
                     </select>

@@ -31,6 +31,16 @@ const ProgramSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    mode: {
+      type: String,
+      enum: [
+        "External",
+        "On-Campus",
+        "Skill Based",
+      ],
+      required: [true, "Program mode is required"],
+      default: "External",
+    },
   },
   { timestamps: true },
 );

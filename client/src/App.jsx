@@ -30,6 +30,9 @@ import ReportDetail from "./pages/Reports/ReportDetail";
 import NotificationsPage from "./pages/Notifications/NotificationsPage";
 import AdminOverview from "./pages/Dashboards/AdminOverview";
 import DocumentsServices from "./pages/Dashboards/DocumentsServices";
+import PrivacyPolicy from "./pages/Information/PrivacyPolicy";
+import RefundPolicy from "./pages/Information/RefundPolicy";
+import Terms from "./pages/Information/Terms";
 
 function App() {
   return (
@@ -119,6 +122,11 @@ function App() {
                 element={<PartnerProfile />}
               />
             </Route>
+
+            {/* Informational Pages */}
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/terms" element={<Terms />} />
 
             {/* Error Pages */}
             <Route path="/server-error" element={<ServerError />} />

@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 import Logo from "../../assets/logo.png";
 import AboutImg from "../../assets/about.png";
@@ -348,7 +349,13 @@ const programCategories = [
     bgLight: "bg-blue-50/50",
     borderColor: "border-blue-100",
     description: "Establish a strong professional foundation with our industry-aligned undergraduate programs, delivering rigorous academic theory combined with core practical skills.",
-    programs: ["BCom", "BA", "BSc", "BCA", "BBA"],
+    programs: [
+      "Bachelor of Commerce (BCom)",
+      "Bachelor of Arts (BA)",
+      "Bachelor of Science (BSc)",
+      "Bachelor of Computer Applications (BCA)",
+      "Bachelor of Business Administration (BBA)",
+    ],
   },
   {
     id: "masters",
@@ -362,7 +369,13 @@ const programCategories = [
     bgLight: "bg-red-50/50",
     borderColor: "border-red-100",
     description: "Advance your expertise and unlock executive leadership opportunities with our advanced, research-informed postgraduate degrees tailored for modern career demands.",
-    programs: ["MCom", "MA", "MSc", "MCA", "MBA"],
+    programs: [
+      "Master of Commerce (MCom)",
+      "Master of Arts (MA)",
+      "Master of Science (MSc)",
+      "Master of Computer Applications (MCA)",
+      "Master of Business Administration (MBA)",
+    ],
   },
   {
     id: "pg-diploma",
@@ -382,7 +395,7 @@ const programCategories = [
     id: "skill-programs",
     title: "Skill Programs",
     subtitle: "Vocational & Practical Learning",
-    count: "5 Programs",
+    count: "5+ Programs",
     icon: Sparkles,
     color: "from-amber-600 to-orange-500",
     accentColor: "#d97706",
@@ -390,7 +403,13 @@ const programCategories = [
     bgLight: "bg-amber-50/50",
     borderColor: "border-amber-100",
     description: "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
-    programs: ["Full Stack Web Development", "Digital Marketing & Branding", "Advanced Data Analytics", "Cloud Computing Foundations", "Creative UI/UX Design & Prototyping"],
+    programs: [
+      "CARPET",
+      "AUTOMOTIVE REPAIR",
+      "FABRICATION",
+      "ELECTRONICS",
+      "FASHION DESIGN",
+    ],
   },
 ];
 
@@ -924,7 +943,7 @@ export default function App() {
                 </p>
               </motion.div>
 
-              <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
                 {[
                   {
                     title: "Application Centres",
@@ -947,10 +966,10 @@ export default function App() {
                     ],
                   },
                   {
-                    title: "Vocational Centres",
+                    title: "Skill Training Centres",
                     subtitle: "Skill-Based Learning",
                     description:
-                      "6A Skillcity recognizes the importance of vocational education in preparing students for the dynamic demands of the workforce. We invite vocational education centers across India to partner with us in offering specialized courses that cater to the needs of various industries.",
+                      "6A Skillcity recognizes the importance of skill education in preparing students for the dynamic demands of the workforce. We invite vocational education centers across India to partner with us in offering specialized courses that cater to the needs of various industries.",
                     color: "text-red-400",
                     hoverGradient:
                       "from-[#B82424]/20 via-[#B82424]/5 to-transparent",
@@ -964,6 +983,26 @@ export default function App() {
                       "Empower students with the skills and knowledge necessary for successful career pathways.",
                       "Enhance your institution’s reputation as a provider of holistic education with a focus on employability.",
                       "Contribute to bridging the gap between academia and industry.",
+                    ],
+                  },
+                  {
+                    title: "Skill Testing Centres",
+                    subtitle: "Skill Testing & Certification",
+                    description:
+                      "6A Skillcity invites SKILL TESTING CENTRES to partner with us in facilitating assessments for individuals who possess practical skills but lack formal certification. Our partner universities evaluate their real-world expertise and award UGC-approved certificates to validate their capabilities.",
+                    color: "text-emerald-400",
+                    hoverGradient:
+                      "from-[#10b981]/20 via-[#10b981]/5 to-transparent",
+                    bgBadge:
+                      "bg-[#10b981]/20 text-emerald-300 border border-[#10b981]/30",
+                    buttonClass:
+                      "bg-gradient-to-r from-[#059669] to-[#10b981] hover:from-[#047857] hover:to-[#059669] shadow-emerald-500/25 border-transparent",
+                    points: [
+                      "Partner with universities to test and evaluate candidates' existing practical skills.",
+                      "Facilitate formal UGC-approved certification for experienced individuals.",
+                      "Provide assessment pathways for skilled workers without formal academic qualifications.",
+                      "Serve as a verified testing venue for Recognition of Prior Learning (RPL).",
+                      "Empower professionals with credentials that validate their real-world expertise.",
                     ],
                   },
                 ].map((path, i) => (
@@ -1711,159 +1750,7 @@ export default function App() {
           </section>
 
           {/* FOOTER */}
-          <footer
-            className="pt-24 pb-10 bg-background border-t border-border"
-            id="contact"
-          >
-            <div className="container mx-auto px-6">
-              <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-border">
-                <div className="lg:col-span-4 space-y-6">
-                  <div className="flex items-center gap-2">
-                    <img src={Logo} alt="Logo" className="w-24" />
-                  </div>
-                  <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                    Managing global academic affairs with precision, integrity,
-                    and a commitment to student success.
-                  </p>
-                  <div className="flex gap-3">
-                    {[
-                      { Icon: Phone, href: "tel:+919633331014" },
-                      { Icon: Mail, href: "mailto:partner@6askillcity.com" },
-                      { Icon: Globe, href: "https://6askillcity.com" },
-                    ].map(({ Icon, href }, i) => (
-                      <Button
-                        key={i}
-                        variant="outline"
-                        size="icon"
-                        className="rounded-full h-10 w-10 text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
-                        onClick={() => (window.location.href = href)}
-                      >
-                        <Icon size={18} />
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="lg:col-span-2 space-y-5">
-                  <h5 className="text-sm font-bold text-foreground">
-                    Navigation
-                  </h5>
-                  <ul className="space-y-3 text-sm text-muted-foreground">
-                    <li>
-                      <a
-                        href="#"
-                        className="hover:text-[#17468C] transition-colors"
-                      >
-                        Our Mission
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="#"
-                        className="hover:text-[#17468C] transition-colors"
-                      >
-                        Partner Portal
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="lg:col-span-3 space-y-5">
-                  <h5 className="text-sm font-bold text-foreground">
-                    Official Hub
-                  </h5>
-                  <div className="space-y-4">
-                    <div className="flex gap-3 text-sm text-muted-foreground">
-                      <MapPin
-                        size={20}
-                        className="shrink-0 text-muted-foreground/60 mt-0.5"
-                      />
-                      <span className="leading-relaxed">
-                        Grace Tower, First Floor, Cabin No.C1 Door No. 67/1382,
-                        St. Vincent Road, Kacheripady, Ernakulam North,
-                        Kerala, India - 682018
-                      </span>
-                    </div>
-                    <div className="flex gap-3 text-sm text-muted-foreground">
-                      <Phone
-                        size={18}
-                        className="shrink-0 text-muted-foreground/60 mt-0.5"
-                      />
-                      <div className="flex flex-col gap-1">
-                        <a href="tel:+919633331014" className="hover:text-primary transition-colors">
-                          +91 9633331014
-                        </a>
-                        <a href="tel:+91995453322" className="hover:text-primary transition-colors">
-                          +91 995453322
-                        </a>
-                        <a href="tel:04844614539" className="hover:text-primary transition-colors">
-                          0484 461 4539
-                        </a>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-sm text-muted-foreground">
-                      <Mail
-                        size={18}
-                        className="shrink-0 text-muted-foreground/60 mt-0.5"
-                      />
-                      <a href="mailto:partner@6askillcity.com" className="hover:text-primary transition-colors">
-                        partner@6askillcity.com
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-3 space-y-5">
-                  <h5 className="text-sm font-bold text-foreground">
-                    Newsletter
-                  </h5>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter email"
-                      className="h-10 rounded-lg bg-muted"
-                    />
-                    <Button
-                      variant="primary"
-                      size="icon"
-                      className="shrink-0 h-10 w-10 rounded-lg shadow-md shadow-primary/20 hover:-translate-y-0.5 transition-all"
-                    >
-                      <Send size={16} />
-                    </Button>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground font-medium">
-                    By subscribing, you agree to our privacy protocols.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p className="text-xs font-semibold text-muted-foreground">
-                  © {new Date().getFullYear()} 6A Skillcity Foundation. All
-                  rights reserved.
-                </p>
-                <div className="flex gap-6 text-xs font-semibold text-muted-foreground">
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Compliance
-                  </a>
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Privacy
-                  </a>
-                  <a
-                    href="#"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Terms
-                  </a>
-                </div>
-              </div>
-            </div>
-          </footer>
+          <Footer />
         </div>
       )}
     </div>

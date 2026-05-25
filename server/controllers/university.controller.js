@@ -93,8 +93,8 @@ export const getPrograms = async (req, res, next) => {
 export const createProgram = async (req, res, next) => {
   try {
     console.log("Creating Program with body:", req.body);
-    const { name, university, isActive, programType, eligibilityChecklist } = req.body;
-    const program = new Program({ name, university, isActive, programType, eligibilityChecklist });
+    const { name, university, isActive, programType, eligibilityChecklist, mode } = req.body;
+    const program = new Program({ name, university, isActive, programType, eligibilityChecklist, mode });
     await program.save();
 
     // Removed fee creation from program, it will now be handled at branch level

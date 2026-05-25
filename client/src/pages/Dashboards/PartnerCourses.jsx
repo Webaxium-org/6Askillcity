@@ -142,6 +142,15 @@ const PartnerCourses = () => {
                           Bachelors Degree
                         </span>
                       )}
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                        course.program?.mode === "On-Campus"
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/15"
+                          : course.program?.mode === "Skill Based"
+                            ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/15"
+                            : "bg-slate-500/10 text-slate-600 border-slate-500/15"
+                      }`}>
+                        {course.program?.mode || "External"}
+                      </span>
                     </div>
                   </div>
 
@@ -325,6 +334,22 @@ const PartnerCourses = () => {
                           </span>
                           <span className="text-sm font-bold text-foreground">
                             {activeDetailCourse.duration}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-border bg-muted/20 col-span-2">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                            Mode
+                          </span>
+                          <span className="text-sm font-bold text-foreground capitalize">
+                            {activeDetailCourse.program?.mode || "External"}
                           </span>
                         </div>
                       </div>
