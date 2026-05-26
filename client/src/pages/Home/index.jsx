@@ -398,7 +398,7 @@ const programCategories = [
     id: "skill-programs",
     title: "Skill Programs",
     subtitle: "Vocational & Practical Learning",
-    count: "5+ Programs",
+    count: "102 Programs",
     icon: Sparkles,
     color: "from-amber-600 to-orange-500",
     accentColor: "#d97706",
@@ -412,6 +412,103 @@ const programCategories = [
       "FABRICATION",
       "ELECTRONICS",
       "FASHION DESIGN",
+      "GARMENT MAKING",
+      "GEMS & JEWELLERY",
+      "HOSPITALITY",
+      "BEAUTY CULTURE & HAIR DRESSING",
+      "CHEMICAL",
+      "INFORMATION & COMMUNICATION TECHNOLOGY",
+      "KHADI",
+      "MEDICAL & NURSING",
+      "PRINTING",
+      "PROCESS INSTRUMENTATION",
+      "PRODUCTION & MANUFACTURING",
+      "REFRIGERATION & AIR CONDITIONING",
+      "RETAIL",
+      "TOY MAKING",
+      "INDIAN SWEETS, SNACKS & FOOD",
+      "PAINT",
+      "CONSTRUCTION",
+      "SECURITY",
+      "WOOD WORK",
+      "MEDIA",
+      "FOOD PROCESSING AND PRESERVATION",
+      "LEATHER AND SPORTS GOODS",
+      "TRAVEL AND TOURISM",
+      "COURIER AND LOGISTICS",
+      "INSURANCE AND LOGISTICS",
+      "JUTE SECTOR",
+      "JUTE DIVERSIFIED PRODUCTS SECTOR",
+      "FISHERIES AND ALLIED SECTOR",
+      "FIRE AND SAFETY ENGINEERING",
+      "BUSINESS AND COMMERCE",
+      "MATERIAL MANAGEMENT",
+      "HAND MADE PAPER AND PAPER PRODUCTS",
+      "INDUSTRIAL ELECTRICAL",
+      "TEXTILE - COTTON GINNING",
+      "TEXTILE - COTTON SPINNING",
+      "TEXTILES - DOUBLING",
+      "TEXTILES - WINDING",
+      "TEXTILES - REELING",
+      "TEXTILES - WEAVING PREPARATION",
+      "TEXTILES - WEAVING",
+      "TEXTILES - CHEMICAL PROCESSING",
+      "TEXTILES - QUALITY CONTROL",
+      "TEXTILES - NON - WOVEN",
+      "TEXTILES- WOOL",
+      "TEXTILES - SILK",
+      "TEXTILES - HDPE/PP",
+      "SERICULTURE",
+      "POULTRY",
+      "ANIMAL HUSBANDRY",
+      "GLASSWARE",
+      "APICULTURE",
+      "ELECTRICAL",
+      "ELECTRO-MECHANICAL",
+      "SPA AND WELLNESS",
+      "RENEWABLE ENERGY",
+      "FRAGRANCE, FLAVOUR AND PERFUME",
+      "FILM PRODUCTION",
+      "BAMBOO FABRICATION",
+      "SHIPPING",
+      "AGRICULTURE",
+      "SOFT SKILLS",
+      "HOME DÉCOR - ART BONSAI",
+      "HOME DÉCOR - ART FLOWER",
+      "HOME DÉCOR - ART JEWELLERY",
+      "HOME DÉCOR - ART CERAMIC CRAFT",
+      "HOME DÉCOR - ART PAINTING",
+      "HOME DÉCOR - ART MEHANDI",
+      "HOME DÉCOR - ART WOOD HANDICRAFT",
+      "ANIMAL HUSBANDRY AND MEAT PROCESSING",
+      "HOME DÉCOR - ART WATERFALLS",
+      "TELECOM",
+      "COUNSELLING SKILL",
+      "FISHING SKILLS",
+      "COMPUTER COURSES",
+      "COMMUNICATIVE & SOFT SKILLS",
+      "OFFICE MANAGEMENT EDUCATION",
+      "HOTEL MANAGEMENT & TOURISM",
+      "FASHION DESIGNING COURSES",
+      "TECHNICAL TRAINING EDUCATION",
+      "AVIATION COURSES",
+      "FIRE & SAFETY EDUCATION",
+      "ELECTRICAL & ELECTRONICS",
+      "AUTOMOBILE COURSES",
+      "CIVIL & ARCHITECTURAL EDUCATION",
+      "INTERIOR & EXTERIOR EDUCATION",
+      "ALLIED HEALTH EDUCATION",
+      "AYURVEDA COURSES",
+      "STED BEAUTY SCHOOL",
+      "BUSINESS EDUCATION",
+      "STED MEDIA SCHOOL",
+      "CHILD EDUCATION",
+      "FISHERIES EDUCATION",
+      "TEXTILE EDUCATION",
+      "YOGA AND NATUROGRAPHY COURSES",
+      "AGRICULTURE EDUCATION",
+      "DAIRY EDUCATION",
+      "STED MUSIC SCHOOL"
     ],
   },
 ];
@@ -1561,31 +1658,61 @@ export default function App() {
                               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
                                 Available Specializations
                               </p>
-                              <div className="grid sm:grid-cols-2 gap-4">
-                                {cat.programs.map((prog, pIdx) => (
-                                  <motion.div
-                                    key={prog}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: pIdx * 0.05, duration: 0.3 }}
-                                    className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item cursor-default"
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <CheckCircle
-                                        size={18}
-                                        className="transition-colors duration-300"
-                                        style={{ color: cat.accentColor }}
+                              <div 
+                                className={cn(
+                                  "transition-all duration-500 ease-in-out",
+                                  cat.id === "skill-programs" ? "max-h-[420px] overflow-y-auto pr-3 py-2 scroll-smooth custom-scrollbar" : ""
+                                )}
+                                style={
+                                  cat.id === "skill-programs"
+                                    ? {
+                                        scrollbarWidth: "thin",
+                                        scrollbarColor: `${cat.accentColor}33 transparent`,
+                                      }
+                                    : {}
+                                }
+                              >
+                                <style dangerouslySetInnerHTML={{ __html: `
+                                  .custom-scrollbar::-webkit-scrollbar {
+                                    width: 6px;
+                                  }
+                                  .custom-scrollbar::-webkit-scrollbar-track {
+                                    background: transparent;
+                                  }
+                                  .custom-scrollbar::-webkit-scrollbar-thumb {
+                                    background-color: ${cat.accentColor}33;
+                                    border-radius: 20px;
+                                  }
+                                  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                                    background-color: ${cat.accentColor}66;
+                                  }
+                                `}} />
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                  {cat.programs.map((prog, pIdx) => (
+                                    <motion.div
+                                      key={prog}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ delay: Math.min(pIdx, 20) * 0.03, duration: 0.3 }}
+                                      className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item cursor-default"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <CheckCircle
+                                          size={18}
+                                          className="transition-colors duration-300"
+                                          style={{ color: cat.accentColor }}
+                                        />
+                                        <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors uppercase">
+                                          {prog}
+                                        </span>
+                                      </div>
+                                      <ArrowRight
+                                        size={14}
+                                        className="text-muted-foreground/0 group-hover/item:text-muted-foreground/100 group-hover/item:translate-x-0.5 transition-all duration-300"
                                       />
-                                      <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors uppercase">
-                                        {prog}
-                                      </span>
-                                    </div>
-                                    <ArrowRight
-                                      size={14}
-                                      className="text-muted-foreground/0 group-hover/item:text-muted-foreground/100 group-hover/item:translate-x-0.5 transition-all duration-300"
-                                    />
-                                  </motion.div>
-                                ))}
+                                    </motion.div>
+                                  ))}
+                                </div>
                               </div>
                             </div>
 

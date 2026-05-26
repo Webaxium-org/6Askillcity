@@ -92,7 +92,7 @@ export default function Footer() {
                 Official Hub
               </h5>
               <p className="text-[11px] font-black text-[#17468C] uppercase tracking-wider leading-none">
-                6askillcity OPC Pvt.Ltd
+                6A SKILL CITY (OPC) PRIVATE LIMITED
               </p>
             </div>
             <div className="space-y-4">
@@ -151,8 +151,8 @@ export default function Footer() {
               mobHref: "tel:+919633331014",
               land: "0484 461 4539",
               landHref: "tel:04844614539",
-              email: "partnerquery@gmail.com",
-              emailHref: "mailto:partnerquery@gmail.com",
+              email: "partner@6askillcity.com",
+              emailHref: "mailto:partner@6askillcity.com",
               badgeColor: "bg-[#B82424]/10 text-[#B82424]",
               dotColor: "bg-[#B82424]",
               cardColor: "border-[#B82424]/10 hover:border-[#B82424]/40 hover:bg-[#B82424]/[0.02]",
@@ -160,8 +160,8 @@ export default function Footer() {
             },
             {
               title: "IT Team",
-              mob: "+91 354 234 2342",
-              mobHref: "tel:+913542342342",
+              mob: "+91 73560 75454",
+              mobHref: "tel:+9173560 75454",
               land: "0484 461 4422",
               landHref: "tel:04844614422",
               email: "it@6askillcity.com",
@@ -173,12 +173,12 @@ export default function Footer() {
             },
             {
               title: "Finance",
-              mob: "+91 345 334 2342",
-              mobHref: "tel:+913453342342",
+              mob: "+91 99954 53322",
+              mobHref: "tel:+9199954 53322",
               land: "0484 461 4477",
               landHref: "tel:04844614477",
-              email: "finance@6askillcity.com",
-              emailHref: "mailto:finance@6askillcity.com",
+              email: "accounts@6askillcity.com",
+              emailHref: "mailto:accounts@6askillcity.com",
               badgeColor: "bg-[#17468C]/10 text-[#17468C]",
               dotColor: "bg-[#17468C]",
               cardColor: "border-[#17468C]/10 hover:border-[#17468C]/40 hover:bg-[#17468C]/[0.02]",
