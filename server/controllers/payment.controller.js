@@ -63,7 +63,7 @@ export const getManagementStudents = async (req, res, next) => {
           as: "university",
         },
       },
-      { $unwind: "$university" },
+      { $unwind: { path: "$university", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "programs",
@@ -72,7 +72,7 @@ export const getManagementStudents = async (req, res, next) => {
           as: "program",
         },
       },
-      { $unwind: "$program" },
+      { $unwind: { path: "$program", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "programfees",
