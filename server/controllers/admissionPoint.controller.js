@@ -7,6 +7,7 @@ import multerS3 from "multer-s3";
 import path from "path";
 import { s3, bucketName } from "../utils/s3Config.js";
 import { generateStrongPassword } from "../helper/index.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 // S3 Storage Configuration
 const storage = multerS3({
@@ -575,6 +576,66 @@ export const generateAdminAccessToken = async (req, res, next) => {
       success: true,
       message: "Access token generated successfully. Valid for 15 minutes.",
       token,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const submitPartnerInquiry = async (req, res, next) => {
+  try {
+    const { centerName, contactName, phone, email, address } = req.body;
+
+    if (!centerName || !contactName || !phone || !email || !address) {
+      throw createError(400, "All fields are required");
+    }
+
+    const adminEmailsStr = process.env.ADMIN_EMAILS || "shafi.sd@webaxium.com, webapps@webaxium.com";
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <h2 style="color: #17468C; margin-top: 0; border-bottom: 2px solid #17468C; padding-bottom: 8px;">New Partner Inquiry</h2>
+        <p style="font-size: 15px; color: #555; line-height: 1.5;">A new partner has submitted an inquiry on 6A Skillcity. Below are the details:</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+          <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; width: 35%; color: #333;">Center Name</td>
+            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;">${centerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Contact Name</td>
+            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;">${contactName}</td>
+          </tr>
+          <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Phone Number</td>
+            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;">${phone}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Email Address</td>
+            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;"><a href="mailto:${email}" style="color: #B82424; text-decoration: none;">${email}</a></td>
+          </tr>
+          <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Office Address</td>
+            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555; line-height: 1.4;">${address}</td>
+          </tr>
+        </table>
+        
+        <div style="margin-top: 24px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 16px;">
+          This inquiry was sent automatically from the 6A Skillcity portal.
+        </div>
+      </div>
+    `;
+
+    await sendEmail({
+      email: adminEmailsStr,
+      subject: `New Partner Inquiry - ${centerName}`,
+      message: `New Partner Inquiry: Center: ${centerName}, Contact: ${contactName}, Phone: ${phone}, Email: ${email}, Address: ${address}`,
+      html: emailHtml,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Inquiry submitted successfully.",
     });
   } catch (error) {
     next(error);

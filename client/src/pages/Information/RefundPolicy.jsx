@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { RotateCcw, ShieldAlert, BadgeInfo, Clock } from "lucide-react";
+import { RotateCcw, ShieldAlert, BadgeInfo, Clock, Scale } from "lucide-react";
 
 export default function RefundPolicy() {
   return (
@@ -17,7 +17,7 @@ export default function RefundPolicy() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex p-3 rounded-2xl bg-red-500/10 text-red-600 mb-2"
+            className="inline-flex p-3 rounded-2xl bg-[#B82424]/10 text-[#B82424] mb-2"
           >
             <RotateCcw size={32} />
           </motion.div>
@@ -35,7 +35,7 @@ export default function RefundPolicy() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-muted-foreground text-lg"
           >
-            Learn about refund structures, university policies, and transaction processing.
+            Please read our refund policies, procedures, timelines, and limitations.
           </motion.p>
         </div>
       </section>
@@ -47,82 +47,94 @@ export default function RefundPolicy() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="space-y-12"
+            className="space-y-10"
           >
             {/* General Policy */}
-            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-6">
+            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-5">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-red-500/10 text-red-600">
+                <div className="p-2.5 rounded-xl bg-[#B82424]/10 text-[#B82424]">
                   <BadgeInfo size={22} />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground">General Policy</h2>
               </div>
-              <ul className="space-y-3 pl-2">
-                {[
-                  "6ASkillCity facilitates payment transactions between institutes and universities. Refunds are subject to the policies of the respective institute or university.",
-                  "6ASkillCity does not independently issue refunds.",
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 mt-2 shrink-0" />
-                    <span className="leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-muted-foreground text-base leading-relaxed pl-2 font-medium">
+                6ASkillCity acts as a payment facilitation and support platform between 
+                students, institutes, and universities. Refund requests shall be governed in 
+                accordance with the refund policies of the respective institute or university, as 
+                applicable.
+              </p>
             </div>
 
-            {/* Refund Process */}
-            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-6">
+            {/* Refund Procedure */}
+            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-5">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600">
+                <div className="p-2.5 rounded-xl bg-[#17468C]/10 text-[#17468C]">
                   <RotateCcw size={22} />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Refund Process</h2>
+                <h2 className="text-2xl font-bold text-foreground">Refund Procedure</h2>
               </div>
-              <ul className="space-y-3 pl-2">
-                {[
-                  "Institutes must initiate refund requests directly with the university.",
-                  "Once approved, refunds will be processed through the 6ASkillCity platform using the original payment method.",
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
-                    <span className="leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-4 pl-2">
+                <p className="text-muted-foreground text-base leading-relaxed font-medium">
+                  Students seeking a refund must submit their request through the concerned institute or 
+                  university in accordance with the applicable policies, procedures, and timelines.
+                </p>
+                <p className="text-muted-foreground text-base leading-relaxed font-medium">
+                  Upon approval of the refund by the concerned institute or university, the refund may be 
+                  processed either by the respective university/institute or through the 6ASkillCity platform 
+                  using the original mode of payment, subject to applicable processing requirements.
+                </p>
+              </div>
             </div>
 
-            {/* Non-Refundable Cases */}
-            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-6">
+            {/* Non-Refundable Charges */}
+            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-5">
               <div className="flex items-center gap-4">
                 <div className="p-2.5 rounded-xl bg-[#B82424]/10 text-[#B82424]">
                   <ShieldAlert size={22} />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Non-Refundable Cases</h2>
+                <h2 className="text-2xl font-bold text-foreground">Non-Refundable Charges</h2>
               </div>
-              <ul className="space-y-3 pl-2">
-                {[
-                  "Application fees or administrative charges may be non-refundable.",
-                  "Refund eligibility depends on the university’s and institute’s policies.",
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#B82424] mt-2 shrink-0" />
-                    <span className="leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-muted-foreground text-base leading-relaxed pl-2 font-medium">
+                Certain charges, including application fees, processing fees, convenience fees, or 
+                administrative charges, may be non-refundable, subject to the policies communicated by the 
+                respective institute or university prior to payment.
+              </p>
             </div>
 
-            {/* Timeline */}
-            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-6">
+            {/* Processing Timeline */}
+            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-5">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600">
+                <div className="p-2.5 rounded-xl bg-[#17468C]/10 text-[#17468C]">
                   <Clock size={22} />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Timeline</h2>
+                <h2 className="text-2xl font-bold text-foreground">Processing Timeline</h2>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Refunds, once approved, will be processed within <strong className="text-foreground">7–14 business days</strong>.
+              <p className="text-muted-foreground text-base leading-relaxed pl-2 font-medium">
+                Approved refunds shall ordinarily be processed within 7-14 business days. However, the actual 
+                credit timeline may vary depending upon banking channels, payment gateways, financial 
+                institutions, or other third-party payment service providers.
               </p>
+            </div>
+
+            {/* Limitation */}
+            <div className="p-8 rounded-[2rem] border border-border bg-card/50 backdrop-blur-sm space-y-5">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-[#B82424]/10 text-[#B82424]">
+                  <Scale size={22} />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">Limitation</h2>
+              </div>
+              <div className="space-y-4 pl-2">
+                <p className="text-muted-foreground text-base leading-relaxed font-medium">
+                  6ASkillCity shall act only as a facilitation platform for payment processing and refund 
+                  coordination and shall not independently determine refund eligibility, which shall remain 
+                  subject to the policies and approval of the respective institute or university.
+                </p>
+                <p className="text-muted-foreground text-base leading-relaxed font-medium">
+                  Nothing contained in this policy shall limit or restrict any rights or remedies available to users 
+                  under applicable laws, including consumer protection laws in force in India.
+                </p>
+              </div>
             </div>
           </motion.div>
         </div>

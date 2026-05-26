@@ -29,6 +29,6 @@ export default defineConfig({
     },
   },
   preview: {
-    allowedHosts: ["six-a-skillcity-m25sx.ondigitalocean.app"],
+    allowedHosts: ["6askillcity.com"],
   },
 });

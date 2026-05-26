@@ -38,21 +38,6 @@ export default function Footer() {
               Managing global academic affairs with precision, integrity,
               and a commitment to student success.
             </p>
-            <div className="flex gap-3">
-              {[
-                { Icon: Phone, href: "tel:+919633331014" },
-                { Icon: Mail, href: "mailto:partner@6askillcity.com" },
-                { Icon: Globe, href: "https://6askillcity.com" },
-              ].map(({ Icon, href }, i) => (
-                <a
-                  key={i}
-                  href={href}
-                  className="flex items-center justify-center rounded-full h-10 w-10 text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 border border-input transition-all"
-                >
-                  <Icon size={18} />
-                </a>
-              ))}
-            </div>
           </div>
 
           <div className="lg:col-span-2 space-y-5">
@@ -61,12 +46,34 @@ export default function Footer() {
             </h5>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <Link
-                  to="/"
-                  className="hover:text-[#17468C] transition-colors"
+                <a
+                  href="/#mission-vision"
+                  onClick={(e) => {
+                    const element = document.getElementById("mission-vision");
+                    if (element) {
+                      e.preventDefault();
+                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }}
+                  className="hover:text-[#17468C] transition-colors cursor-pointer"
                 >
                   Our Mission
-                </Link>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/#mission-vision"
+                  onClick={(e) => {
+                    const element = document.getElementById("mission-vision");
+                    if (element) {
+                      e.preventDefault();
+                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }}
+                  className="hover:text-[#17468C] transition-colors cursor-pointer"
+                >
+                  Our Vision
+                </a>
               </li>
               <li>
                 <Link
@@ -79,10 +86,15 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="lg:col-span-3 space-y-5">
-            <h5 className="text-sm font-bold text-foreground">
-              Official Hub
-            </h5>
+          <div className="lg:col-span-3 space-y-5 text-left">
+            <div className="space-y-1.5">
+              <h5 className="text-sm font-bold text-foreground">
+                Official Hub
+              </h5>
+              <p className="text-[11px] font-black text-[#17468C] uppercase tracking-wider leading-none">
+                6askillcity OPC Pvt.Ltd
+              </p>
+            </div>
             <div className="space-y-4">
               <div className="flex gap-3 text-sm text-muted-foreground">
                 <MapPin
@@ -94,32 +106,6 @@ export default function Footer() {
                   St. Vincent Road, Kacheripady, Ernakulam North,
                   Kerala, India - 682018
                 </span>
-              </div>
-              <div className="flex gap-3 text-sm text-muted-foreground">
-                <Phone
-                  size={18}
-                  className="shrink-0 text-muted-foreground/60 mt-0.5"
-                />
-                <div className="flex flex-col gap-1">
-                  <a href="tel:+919633331014" className="hover:text-primary transition-colors">
-                    +91 9633331014
-                  </a>
-                  <a href="tel:+91995453322" className="hover:text-primary transition-colors">
-                    +91 995453322
-                  </a>
-                  <a href="tel:04844614539" className="hover:text-primary transition-colors">
-                    0484 461 4539
-                  </a>
-                </div>
-              </div>
-              <div className="flex gap-3 text-sm text-muted-foreground">
-                <Mail
-                  size={18}
-                  className="shrink-0 text-muted-foreground/60 mt-0.5"
-                />
-                <a href="mailto:partner@6askillcity.com" className="hover:text-primary transition-colors">
-                  partner@6askillcity.com
-                </a>
               </div>
             </div>
           </div>
@@ -154,6 +140,78 @@ export default function Footer() {
               By subscribing, you agree to our privacy protocols.
             </p>
           </div>
+        </div>
+
+        {/* Horizontal Department Contact Grid */}
+        <div className="grid md:grid-cols-3 gap-6 py-10 border-t border-border mt-12">
+          {[
+            {
+              title: "Partner Enquiry",
+              mob: "+91 9633331014",
+              mobHref: "tel:+919633331014",
+              land: "0484 461 4539",
+              landHref: "tel:04844614539",
+              email: "partnerquery@gmail.com",
+              emailHref: "mailto:partnerquery@gmail.com",
+              badgeColor: "bg-[#B82424]/10 text-[#B82424]",
+              dotColor: "bg-[#B82424]",
+              cardColor: "border-[#B82424]/10 hover:border-[#B82424]/40 hover:bg-[#B82424]/[0.02]",
+              linkHover: "hover:text-[#B82424]"
+            },
+            {
+              title: "IT Team",
+              mob: "+91 354 234 2342",
+              mobHref: "tel:+913542342342",
+              land: "0484 461 4422",
+              landHref: "tel:04844614422",
+              email: "it@6askillcity.com",
+              emailHref: "mailto:it@6askillcity.com",
+              badgeColor: "bg-[#17468C]/10 text-[#17468C]",
+              dotColor: "bg-[#17468C]",
+              cardColor: "border-[#17468C]/10 hover:border-[#17468C]/40 hover:bg-[#17468C]/[0.02]",
+              linkHover: "hover:text-[#17468C]"
+            },
+            {
+              title: "Finance",
+              mob: "+91 345 334 2342",
+              mobHref: "tel:+913453342342",
+              land: "0484 461 4477",
+              landHref: "tel:04844614477",
+              email: "finance@6askillcity.com",
+              emailHref: "mailto:finance@6askillcity.com",
+              badgeColor: "bg-[#17468C]/10 text-[#17468C]",
+              dotColor: "bg-[#17468C]",
+              cardColor: "border-[#17468C]/10 hover:border-[#17468C]/40 hover:bg-[#17468C]/[0.02]",
+              linkHover: "hover:text-[#17468C]"
+            },
+          ].map((dept, idx) => (
+            <div
+              key={idx}
+              className={`p-5 rounded-2xl bg-card border hover:shadow-lg transition-all duration-300 space-y-3.5 text-left group ${dept.cardColor}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${dept.badgeColor}`}>
+                  {dept.title}
+                </span>
+                <div className={`w-2 h-2 rounded-full ${dept.dotColor} opacity-70 group-hover:scale-125 transition-transform duration-300`} />
+              </div>
+              
+              <div className="space-y-2.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2.5">
+                  <Phone size={14} className="text-muted-foreground/50 shrink-0 group-hover:text-foreground transition-colors" />
+                  <div className="flex flex-wrap items-center gap-x-1.5">
+                    <a href={dept.mobHref} className={`transition-colors font-bold text-foreground/80 group-hover:text-foreground ${dept.linkHover}`}>{dept.mob}</a>
+                    <span className="text-muted-foreground/20">|</span>
+                    <a href={dept.landHref} className={`transition-colors ${dept.linkHover}`}>{dept.land}</a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Mail size={14} className="text-muted-foreground/50 shrink-0 group-hover:text-foreground transition-colors" />
+                  <a href={dept.emailHref} className={`transition-colors font-semibold ${dept.linkHover}`}>{dept.email}</a>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">

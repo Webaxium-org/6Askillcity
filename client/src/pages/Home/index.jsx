@@ -13,10 +13,13 @@ import {
   ShieldCheck,
   Send,
   ChevronDown,
+  Target,
+  Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
+import { axiosInstance } from "../../api/axiosInstance";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
@@ -381,7 +384,7 @@ const programCategories = [
     id: "pg-diploma",
     title: "PG Diploma",
     subtitle: "Specialized Certifications",
-    count: "5 Programs",
+    count: "3 Programs",
     icon: ShieldCheck,
     color: "from-indigo-600 to-purple-600",
     accentColor: "#6366f1",
@@ -389,7 +392,7 @@ const programCategories = [
     bgLight: "bg-indigo-50/50",
     borderColor: "border-indigo-100",
     description: "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
-    programs: ["Advanced PG in Computer Applications", "Diploma in Business Administration", "PG Diploma in Financial Management", "Diploma in Human Resource Development", "PG Diploma in Marketing Strategy"],
+    programs: ["Advanced PG in Computer Applications",  "PG Diploma in Financial Management",  "PG Diploma in Marketing Strategy"],
   },
   {
     id: "skill-programs",
@@ -420,6 +423,7 @@ export default function App() {
 
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("bachelors");
+  const [highlightInquiry, setHighlightInquiry] = useState(false);
 
   useEffect(() => {
     // Handle hash scrolling when the component mounts or hash changes
@@ -444,23 +448,51 @@ export default function App() {
     }
   }, [isLoading]);
 
-  const handlePartnerInquiry = (e) => {
+  const handlePartnerInquiry = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call for registration
-    setTimeout(() => {
-      setIsSubmitting(false);
+    const centerName = e.target.centerName.value;
+    const contactName = e.target.contactName.value;
+    const phone = e.target.phone.value;
+    const email = e.target.email.value;
+    const address = e.target.address.value;
+
+    try {
+      const response = await axiosInstance.post("/admission-points/partner-inquiry", {
+        centerName,
+        contactName,
+        phone,
+        email,
+        address,
+      });
+
+      if (response.data?.success) {
+        dispatch(
+          showAlert({
+            type: "success",
+            message:
+              "Registration inquiry submitted! Our partnership team will review your application and contact you within 24 hours.",
+          }),
+        );
+        e.target.reset();
+      } else {
+        throw new Error(response.data?.message || "Failed to submit inquiry.");
+      }
+    } catch (error) {
+      console.error("Partner inquiry error:", error);
       dispatch(
         showAlert({
-          type: "success",
+          type: "destructive",
           message:
-            "Registration submitted! Our partnership team will review your application and contact you within 24 hours.",
+            error.response?.data?.message ||
+            error.message ||
+            "Failed to submit inquiry. Please try again.",
         }),
       );
-      // Optional: clear form fields here if using state
-      e.target.reset();
-    }, 1500);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -540,25 +572,52 @@ export default function App() {
 
                   <motion.div
                     variants={fadeInUp}
-                    className="flex items-center gap-4 pt-8 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                    className="pt-8 space-y-4"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      Trusted By
-                    </p>
-                    <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-                    <div className="flex gap-6 font-bold text-muted-foreground/50">
-                      {/* <span className="hover:text-[#17468C] transition-colors cursor-default">
-                        BTU
-                      </span> */}
-                      <span className="hover:text-[#17468C] transition-colors cursor-default">
-                        UGC
-                      </span>
-                      <span className="hover:text-[#17468C] transition-colors cursor-default">
-                        AIU
-                      </span>
-                      <span className="hover:text-[#17468C] transition-colors cursor-default">
-                        BCI
-                      </span>
+                    <div className="flex items-center gap-4">
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground shrink-0">
+                        Recognized By
+                      </p>
+                      <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-4">
+                      {[
+                        {
+                          logo: Ugc,
+                          shortName: "UGC",
+                          fullName: "University Grants Commission",
+                        },
+                        {
+                          logo: Aiu,
+                          shortName: "AIU",
+                          fullName: "Association of Indian Universities",
+                        },
+                        {
+                          logo: Bci,
+                          shortName: "BCI",
+                          fullName: "Bar Council of India",
+                        },
+                      ].map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-3 bg-white/50 backdrop-blur-md border border-border/60 py-2 px-3.5 rounded-xl hover:bg-white hover:shadow-md hover:border-border transition-all duration-300 cursor-default"
+                        >
+                          <img
+                            src={item.logo}
+                            alt={item.shortName}
+                            className="w-8 h-8 object-contain shrink-0"
+                          />
+                          <div className="text-left leading-tight">
+                            <p className="text-xs font-black text-foreground">
+                              {item.shortName}
+                            </p>
+                            <p className="text-[9px] font-semibold text-muted-foreground">
+                              {item.fullName}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 </motion.div>
@@ -570,22 +629,63 @@ export default function App() {
                     filter: "blur(20px)",
                     y: 40,
                   }}
-                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)", y: 0 }}
-                  transition={{
-                    delay: 0.4,
-                    duration: 1,
-                    type: "spring",
-                    bounce: 0.3,
-                  }}
+                  animate={
+                    highlightInquiry
+                      ? {
+                          scale: [1, 1.06, 0.96, 1.02, 1],
+                          rotateY: [0, 360],
+                          z: [0, 40, -10, 5, 0],
+                        }
+                      : {
+                          opacity: 1,
+                          scale: 1,
+                          filter: "blur(0px)",
+                          y: 0,
+                          rotateX: 0,
+                          rotateY: 0,
+                        }
+                  }
+                  transition={
+                    highlightInquiry
+                      ? {
+                          duration: 2.5,
+                          ease: "easeInOut",
+                        }
+                      : {
+                          delay: 0.4,
+                          duration: 1,
+                          type: "spring",
+                          bounce: 0.3,
+                        }
+                  }
+                  style={{ perspective: 1000 }}
                   className="lg:col-span-5 relative group"
                 >
                   {/* Glowing background blob behind the card */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[1.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-700 pointer-events-none" />
+                  <div
+                    className={cn(
+                      "absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[1.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-700 pointer-events-none",
+                      highlightInquiry && "opacity-60 scale-105",
+                    )}
+                  />
 
-                  <Card className="shadow-2xl shadow-foreground/5 relative overflow-hidden bg-card/80 backdrop-blur-2xl border-border">
+                  <Card
+                    id="partner-inquiry-form"
+                    className={cn(
+                      "shadow-2xl relative overflow-hidden bg-card/80 backdrop-blur-2xl transition-all duration-500 rounded-[1.5rem]",
+                      highlightInquiry
+                        ? "border-[#17468C] ring-4 ring-[#17468C]/15 shadow-[#17468C]/20 scale-[1.03]"
+                        : "border-border shadow-foreground/5",
+                    )}
+                  >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#17468C]/5 to-transparent rounded-bl-full pointer-events-none" />
                     <CardHeader className="relative z-10 space-y-2 pb-4 pt-8 px-8">
-                      <CardTitle className="text-2xl font-bold">
+                      <CardTitle
+                        className={cn(
+                          "text-2xl font-bold transition-colors duration-500",
+                          highlightInquiry && "text-[#17468C]",
+                        )}
+                      >
                         Partner Inquiry
                       </CardTitle>
                       <CardDescription>
@@ -755,6 +855,7 @@ export default function App() {
           {/* UNIVERSITY CARDS */}
           <section id="universities" className="py-32 bg-muted relative">
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-background to-transparent pointer-events-none" />
+            
             <div className="container mx-auto px-6 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
@@ -787,132 +888,106 @@ export default function App() {
                 </Button>
               </motion.div>
 
-              <div className="grid md:grid-cols-2 gap-10">
-                {[
-                  {
-                    title: (
-                      <span>
-                        The Global University,{" "}
-                        <span className="text-2xl font-semibold text-foreground/80">India,</span>{" "}
-                        <span className="text-lg font-medium text-foreground/60">Arunachal Pradesh</span>
-                      </span>
-                    ),
-                    loc: "Arunachal Pradesh",
-                    color:
-                      "bg-white border-2 border-blue-500/20 shadow-xl shadow-blue-500/10",
-                    icon: (
-                      <img
-                        src={GlobalUniversityLogo}
-                        alt="Global University"
-                        className="w-16 h-16 object-contain"
-                      />
-                    ),
-                    desc: "Widely recognized as a beacon of academic excellence and innovation in Arunachal Pradesh. Since 2024, it has been known among the top education institutions in India, shaping minds and empowering positive impact.",
-                    stats: [
-                      { label: "Recognition", value: "Prominent Institution" },
-                      { label: "Focus", value: "Innovation & Impact" },
-                    ],
-                    images: [TguWebp, TguImg2, TguImg1, TguImg3],
-                  },
-                ].map((uni, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
-                    whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{
-                      delay: i * 0.15,
-                      duration: 0.8,
-                      type: "spring",
-                      bounce: 0.4,
-                    }}
-                    className="h-full"
-                  >
-                    <Card className="h-full flex flex-col hover:-translate-y-2 hover:shadow-2xl hover:shadow-foreground/10 transition-all duration-500 border-border bg-card/60 backdrop-blur-sm relative overflow-hidden group rounded-2xl">
-                      {/* Shine effect on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-foreground/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none z-20" />
+              <div className="max-w-6xl mx-auto">
+                <motion.div
+                  initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+                  whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{
+                    duration: 0.8,
+                    type: "spring",
+                    bounce: 0.3,
+                  }}
+                >
+                  <Card className="hover:shadow-2xl hover:shadow-[#17468C]/5 transition-all duration-500 border-border bg-card/60 backdrop-blur-sm relative overflow-hidden group rounded-[2rem] p-8 md:p-12">
+                    {/* Shine effect on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-foreground/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none z-20" />
 
-                      <CardHeader className="flex flex-row items-center justify-between pb-8 pt-8 px-8 relative z-10">
-                        <div
-                          className={cn(
-                            "p-4 rounded-2xl transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 shadow-lg",
-                            uni.color,
-                          )}
-                        >
-                          {uni.icon}
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="bg-muted backdrop-blur text-sm"
-                        >
-                          {uni.loc}
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="flex-grow space-y-4 px-8 relative z-10">
-                        <CardTitle className="text-3xl font-bold">
-                          {uni.title}
-                        </CardTitle>
-                        <CardDescription className="text-[15px] text-muted-foreground leading-relaxed">
-                          {uni.desc}
-                        </CardDescription>
-                        {uni.images && (
-                          <div className="grid grid-cols-4 grid-rows-2 gap-2 mt-6 h-40">
-                            {/* Large Image (Left, 2x2) */}
-                            <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden group shadow-md border border-border/50">
-                              <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent group-hover:opacity-0 transition-opacity duration-500 z-10 pointer-events-none" />
-                              <img
-                                src={uni.images[0]}
-                                alt="Campus View 1"
-                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                              />
-                            </div>
-                            {/* Medium Wide Image (Top Right, 2x1) */}
-                            <div className="col-span-2 row-span-1 relative rounded-xl overflow-hidden group shadow-sm border border-border/50">
-                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
-                              <img
-                                src={uni.images[1]}
-                                alt="Campus View 2"
-                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                              />
-                            </div>
-                            {/* Small Image (Bottom Right 1, 1x1) */}
-                            <div className="col-span-1 row-span-1 relative rounded-xl overflow-hidden group shadow-sm border border-border/50">
-                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
-                              <img
-                                src={uni.images[2]}
-                                alt="Campus View 3"
-                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                              />
-                            </div>
-                            {/* Small Image (Bottom Right 2, 1x1) */}
-                            <div className="col-span-1 row-span-1 relative rounded-xl overflow-hidden group shadow-sm border border-border/50">
-                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
-                              <img
-                                src={uni.images[3]}
-                                alt="Campus View 4"
-                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                              />
-                            </div>
+                    <div className="grid lg:grid-cols-12 gap-10 items-center">
+                      {/* Left: Info Details */}
+                      <div className="lg:col-span-7 space-y-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                          <div className="p-4 rounded-2xl bg-white border-2 border-blue-500/20 shadow-xl shadow-blue-500/10 w-24 h-24 flex items-center justify-center shrink-0">
+                            <img
+                              src={GlobalUniversityLogo}
+                              alt="Global University"
+                              className="w-16 h-16 object-contain"
+                            />
                           </div>
-                        )}
-                      </CardContent>
-                      <CardFooter className="border-t border-border pt-6 pb-8 px-8 bg-muted relative z-10 mt-6">
-                        <div className="flex items-center gap-12 w-full">
-                          {uni.stats.map((stat, idx) => (
+                          <div>
+                            <h3 className="text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
+                              The Global University,{" "}
+                              <span className="text-2xl font-semibold text-foreground/80">India,</span>{" "}
+                              <span className="text-lg font-medium text-foreground/60">Arunachal Pradesh</span>
+                            </h3>
+                          </div>
+                        </div>
+
+                        <p className="text-lg text-muted-foreground leading-relaxed">
+                          Widely recognized as a beacon of academic excellence and innovation in Arunachal Pradesh. Since 2024, it has been known among the top education institutions in India, shaping minds and empowering positive impact through premium UGC-approved programs.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-border/60">
+                          {[
+                            { label: "Recognition", value: "Prominent Institution" },
+                            { label: "Focus", value: "Innovation & Impact" },
+                          ].map((stat, idx) => (
                             <div key={idx} className="space-y-1">
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                 {stat.label}
                               </p>
-                              <p className="text-sm font-bold text-foreground">
+                              <p className="text-xl font-extrabold text-foreground">
                                 {stat.value}
                               </p>
                             </div>
                           ))}
                         </div>
-                      </CardFooter>
-                    </Card>
-                  </motion.div>
-                ))}
+                      </div>
+
+                      {/* Right: Campus Grid */}
+                      <div className="lg:col-span-5 relative">
+                        <div className="grid grid-cols-4 grid-rows-2 gap-3 h-64 md:h-80">
+                          {/* Large Image (Left, 2x2) */}
+                          <div className="col-span-2 row-span-2 relative rounded-2xl overflow-hidden group shadow-md border border-border/50">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent group-hover:opacity-0 transition-opacity duration-500 z-10 pointer-events-none" />
+                            <img
+                              src={TguWebp}
+                              alt="Campus View 1"
+                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                            />
+                          </div>
+                          {/* Medium Wide Image (Top Right, 2x1) */}
+                          <div className="col-span-2 row-span-1 relative rounded-2xl overflow-hidden group shadow-sm border border-border/50">
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                            <img
+                              src={TguImg2}
+                              alt="Campus View 2"
+                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                            />
+                          </div>
+                          {/* Small Image (Bottom Right 1, 1x1) */}
+                          <div className="col-span-1 row-span-1 relative rounded-2xl overflow-hidden group shadow-sm border border-border/50">
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                            <img
+                              src={TguImg1}
+                              alt="Campus View 3"
+                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                            />
+                          </div>
+                          {/* Small Image (Bottom Right 2, 1x1) */}
+                          <div className="col-span-1 row-span-1 relative rounded-2xl overflow-hidden group shadow-sm border border-border/50">
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                            <img
+                              src={TguImg3}
+                              alt="Campus View 4"
+                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
               </div>
             </div>
           </section>
@@ -1186,15 +1261,12 @@ export default function App() {
 
                     <div className="absolute bottom-8 left-8 right-8 z-20">
                       <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white shadow-2xl">
-                        <CardContent className="p-6">
+                        <CardContent className="p-6 pt-6">
                           <div className="flex items-center gap-4">
                             <div className="p-3 rounded-2xl bg-white/20">
                               <GraduationCap className="text-white" size={32} />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-white/80">
-                                Academic Partner
-                              </p>
                               <p className="text-xl font-bold">
                                 Official TGU Admission Partner
                               </p>
@@ -1204,6 +1276,131 @@ export default function App() {
                       </Card>
                     </div>
                   </div>
+                </motion.div>
+              </div>
+            </div>
+          </section>
+
+          {/* MISSION & VISION SECTION */}
+          <section id="mission-vision" className="py-24 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden">
+            {/* Ambient decorative glowing blobs */}
+            <div className="absolute top-1/3 left-10 w-96 h-96 bg-[#17468C]/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+            <div className="absolute bottom-1/3 right-10 w-96 h-96 bg-[#B82424]/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+            
+            <div className="container mx-auto px-6 relative z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, type: "spring" }}
+                className="text-center max-w-3xl mx-auto mb-20 space-y-4"
+              >
+                <Badge variant="brandRed" className="px-4 py-1.5 text-xs shadow-sm shadow-[#B82424]/5 border-[#B82424]/15 backdrop-blur-md bg-[#B82424]/5">
+                  Our Purpose & Future
+                </Badge>
+                <h2 className="text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-none">
+                  Mission & Vision
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                  Guiding our efforts to bridge the gap between aspirations and achievements, creating a world of borderless opportunities.
+                </p>
+              </motion.div>
+
+              <div className="grid md:grid-cols-2 gap-10 items-stretch">
+                {/* Our Mission Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: -40, filter: "blur(10px)" }}
+                  whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
+                  className="h-full"
+                >
+                  <Card className="h-full bg-card/60 backdrop-blur-xl border-border hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#B82424]/5 transition-all duration-500 rounded-3xl relative overflow-hidden group p-8 md:p-10 flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#B82424]/5 to-transparent rounded-bl-full pointer-events-none" />
+                    
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="p-4 rounded-2xl bg-[#B82424]/10 text-[#B82424] shadow-lg shadow-[#B82424]/10 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
+                          <Target size={32} />
+                        </div>
+                        <div>
+                          <h3 className="text-3xl font-extrabold text-foreground tracking-tight">Our Mission</h3>
+                          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">Empowering potential through education</p>
+                        </div>
+                      </div>
+
+                      <p className="text-lg text-muted-foreground leading-relaxed">
+                        To democratize high-quality skill development and academic excellence across India by establishing a seamless, technology-driven partnership network. We aim to empower application, training, and testing centers, enabling every student to access UGC-approved, industry-aligned education.
+                      </p>
+
+                      <ul className="space-y-3.5 pt-2">
+                        {[
+                          "Provide nationwide access to premium UGC-approved degree pathways.",
+                          "Foster collaborative networks of training and certification centers.",
+                          "Equip learners with employment-ready skills matching global standards.",
+                          "Bridge the critical gap between traditional academia and modern industries."
+                        ].map((point, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <CheckCircle size={18} className="text-[#B82424] mt-1 shrink-0" />
+                            <span className="text-muted-foreground font-medium">{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="pt-8 border-t border-border/50 mt-8 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-[#B82424]">
+                      <span>Action Driven</span>
+                      <Sparkles size={16} className="animate-pulse" />
+                    </div>
+                  </Card>
+                </motion.div>
+
+                {/* Our Vision Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: 40, filter: "blur(10px)" }}
+                  whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
+                  className="h-full"
+                >
+                  <Card className="h-full bg-card/60 backdrop-blur-xl border-border hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#17468C]/5 transition-all duration-500 rounded-3xl relative overflow-hidden group p-8 md:p-10 flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#17468C]/5 to-transparent rounded-bl-full pointer-events-none" />
+                    
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="p-4 rounded-2xl bg-[#17468C]/10 text-[#17468C] shadow-lg shadow-[#17468C]/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+                          <Eye size={32} />
+                        </div>
+                        <div>
+                          <h3 className="text-3xl font-extrabold text-foreground tracking-tight">Our Vision</h3>
+                          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">The future of vocational learning</p>
+                        </div>
+                      </div>
+
+                      <p className="text-lg text-muted-foreground leading-relaxed">
+                        To become the nation's premier catalyst for vocational and academic transformation, fostering a future-ready workforce. We envision an ecosystem where practical expertise and formal recognition unite, creating borderless opportunities for lifelong learning, global competence, and sustainable career success.
+                      </p>
+
+                      <ul className="space-y-3.5 pt-2">
+                        {[
+                          "Build a borderless community of certified, highly skilled professionals.",
+                          "Pioneer Recognition of Prior Learning (RPL) on a national scale.",
+                          "Be the benchmark of excellence for academic-vocational integration.",
+                          "Drive continuous economic empowerment through localized education pathways."
+                        ].map((point, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <CheckCircle size={18} className="text-[#17468C] mt-1 shrink-0" />
+                            <span className="text-muted-foreground font-medium">{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="pt-8 border-t border-border/50 mt-8 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-[#17468C]">
+                      <span>Future Focused</span>
+                      <Sparkles size={16} className="animate-pulse" />
+                    </div>
+                  </Card>
                 </motion.div>
               </div>
             </div>
@@ -1597,7 +1794,7 @@ export default function App() {
                               <img
                                 src={item.image}
                                 alt={item.title}
-                                className="h-10 object-contain"
+                                className="h-14 object-contain"
                               />
                             </div>
                           </div>
@@ -1616,7 +1813,7 @@ export default function App() {
                           </div>
 
                           <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                            Learn more{" "}
+                            Know more{" "}
                             <ArrowRight
                               size={14}
                               className="group-hover:translate-x-1 transition-transform"
@@ -1668,7 +1865,7 @@ export default function App() {
 
                 <div className="relative z-10 grid lg:grid-cols-12 gap-12 items-center max-w-6xl mx-auto">
                   {/* Left Column: Asymmetrical Typography and Value Proposition */}
-                  <div className="lg:col-span-7 space-y-6 text-left">
+                  <div className="lg:col-span-4 space-y-6 text-left">
                     <Badge
                       variant="none"
                       className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider text-white border border-white/30 bg-white/10 backdrop-blur-md inline-flex items-center gap-2 shadow-inner"
@@ -1678,68 +1875,90 @@ export default function App() {
                     </Badge>
 
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight">
-                      Ready to Empower <br />
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-white/60">
-                        The Next Generation?
-                      </span>
+                      Ready to <br />
+                      Partner?
                     </h2>
-
-                    <p className="text-white/80 text-lg md:text-xl max-w-xl font-medium leading-relaxed">
-                      Join our expansive network of elite academic and vocational partners today. Let's shape minds, build careers, and create a lasting educational legacy together.
-                    </p>
-
-                    {/* Elite Stats or details row */}
-                    <div className="pt-4 flex flex-wrap items-center gap-6 border-t border-white/10 mt-8">
-                      <div className="flex items-center gap-2.5">
-                        <CheckCircle size={20} className="text-white/70" />
-                        <span className="text-sm font-bold text-white/80 uppercase tracking-wider">UGC Recognized Channels</span>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <CheckCircle size={20} className="text-white/70" />
-                        <span className="text-sm font-bold text-white/80 uppercase tracking-wider">National Coverage</span>
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Right Column: Hyper-Premium Floating Call-to-Action Card */}
-                  <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                  {/* Right Column: Two Responsive CTA Cards */}
+                  <div className="lg:col-span-8 grid md:grid-cols-2 gap-6 w-full">
+                    {/* Card 1: Become a Partner */}
                     <motion.div
-                      whileHover={{ y: -6, rotate: 1 }}
+                      whileHover={{ y: -6, rotate: 0.5 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group"
+                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
                     >
-                      {/* Internal ambient glowing pulse */}
                       <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
 
-                      <div className="relative z-10 space-y-6 text-center lg:text-left">
+                      <div className="relative z-10 space-y-4 text-left flex-grow">
                         <h4 className="text-2xl font-bold text-white tracking-tight">
                           Become a Partner
                         </h4>
                         <p className="text-white/70 text-sm leading-relaxed">
-                          Submit your center details and launch your official collaboration.
+                          Submit your complete center details and launch your official collaboration.
                         </p>
+                      </div>
 
-                        {/* Interactive Long Gradient CTA button */}
-                        <div className="pt-2">
-                          <Button
-                            variant="none"
-                            size="none"
-                            className="w-full py-4.5 px-8 bg-white text-[#17468C] font-extrabold text-lg rounded-xl shadow-lg hover:shadow-2xl hover:shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group/btn cursor-pointer flex items-center justify-center gap-2"
-                            onClick={() => navigate("/register-admission-point")}
-                          >
-                            {/* Premium shine animation */}
-                            <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-[#17468C]/5 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
+                      <div className="relative z-10 pt-6 space-y-4">
+                        <Button
+                          variant="none"
+                          size="none"
+                          className="w-full py-4 px-6 bg-white text-[#17468C] font-extrabold text-base rounded-xl shadow-lg hover:shadow-2xl hover:shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group/btn cursor-pointer flex items-center justify-center gap-2"
+                          onClick={() => navigate("/register-admission-point")}
+                        >
+                          <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-[#17468C]/5 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
+                          <span className="relative z-10 flex items-center justify-center gap-2 text-[#17468C]">
+                            Register Now
+                            <ArrowRight size={16} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+                          </span>
+                        </Button>
 
-                            <span className="relative z-10 flex items-center justify-center gap-2 text-[#17468C]">
-                              Register Now
-                              <ArrowRight size={18} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
-                            </span>
-                          </Button>
-                        </div>
-
-                        <div className="pt-4 flex items-center justify-center lg:justify-start gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
+                        <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
                           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                          Applications Active for 2026
+                          Applications Active
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Card 2: Partner Inquiry (Enquire Now) */}
+                    <motion.div
+                      whileHover={{ y: -6, rotate: -0.5 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
+                    >
+                      <div className="absolute -inset-1 bg-gradient-to-r from-[#B82424] to-[#17468C] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
+
+                      <div className="relative z-10 space-y-4 text-left flex-grow">
+                        <h4 className="text-2xl font-bold text-white tracking-tight">
+                          Partner Inquiry
+                        </h4>
+                        <p className="text-white/70 text-sm leading-relaxed">
+                          Have quick questions? Submit an inquiry and our partner team will reach out.
+                        </p>
+                      </div>
+
+                      <div className="relative z-10 pt-6 space-y-4">
+                        <Button
+                          variant="none"
+                          size="none"
+                          className="w-full py-4 px-6 bg-[#B82424] text-white font-extrabold text-base rounded-xl shadow-lg hover:shadow-2xl hover:shadow-[#B82424]/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group/btn cursor-pointer flex items-center justify-center gap-2 border border-[#B82424]"
+                          onClick={() => {
+                            const el = document.getElementById("partner-inquiry-form");
+                            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                            setHighlightInquiry(true);
+                            setTimeout(() => setHighlightInquiry(false), 2000);
+                          }}
+                        >
+                          <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
+                          <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                            Enquire Now
+                            <ArrowRight size={16} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+                          </span>
+                        </Button>
+
+                        <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                          Quick Response Team
                         </div>
                       </div>
                     </motion.div>
