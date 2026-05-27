@@ -143,6 +143,10 @@ export const applyForService = async (req, res, next) => {
     if (!student) return next(createError(404, "Student not found"));
     if (!service) return next(createError(404, "Service not found"));
 
+    if (req.user?.userType === "partner" && student.registeredBy.toString() !== req.user.userId.toString()) {
+      return next(createError(403, "You are not authorized to apply for this student"));
+    }
+
     const application = new ServiceApplication({
       student: studentId,
       service: serviceId,
@@ -150,9 +154,11 @@ export const applyForService = async (req, res, next) => {
       feeAmount: service.currentFee,
       feeRef: service.currentFeeRef._id,
       adminRemarks,
+      createdBy: req.user.userId,
+      createdByType: req.user.userType === "partner" ? "AdmissionPoint" : "User",
       history: [{
         status: "Pending Applications",
-        updatedBy: req.user.id,
+        updatedBy: req.user.userId,
         remarks: "Application initialized"
       }]
     });
@@ -174,7 +180,21 @@ export const getServiceApplications = async (req, res, next) => {
     let query = {};
 
     if (status) query.status = status;
-    if (studentId) query.student = studentId;
+
+    if (req.user?.userType === "partner") {
+      const partnerStudentIds = await Student.find({ registeredBy: req.user.userId }).distinct("_id");
+      if (studentId) {
+        if (partnerStudentIds.map(id => id.toString()).includes(studentId.toString())) {
+          query.student = studentId;
+        } else {
+          query.student = null;
+        }
+      } else {
+        query.student = { $in: partnerStudentIds };
+      }
+    } else {
+      if (studentId) query.student = studentId;
+    }
 
     const applications = await ServiceApplication.find(query)
       .populate({
@@ -337,17 +357,29 @@ export const recordServicePayment = async (req, res, next) => {
 
 export const getServiceDashboardStats = async (req, res, next) => {
   try {
+    const isPartner = req.user?.userType === "partner";
+    const partnerId = req.user?.userId;
+
+    let query = {};
+    let paymentMatch = { approvalStatus: "approved", type: "Documents & Services" };
+
+    if (isPartner) {
+      const partnerStudentIds = await Student.find({ registeredBy: partnerId }).distinct("_id");
+      query.student = { $in: partnerStudentIds };
+      paymentMatch.partner = partnerId;
+    }
+
     const [totalApps, pendingApps, inProgressApps, totalRevenue] = await Promise.all([
-      ServiceApplication.countDocuments(),
-      ServiceApplication.countDocuments({ status: "Pending Applications" }),
-      ServiceApplication.countDocuments({ status: "Application On Progress" }),
+      ServiceApplication.countDocuments(query),
+      ServiceApplication.countDocuments({ ...query, status: "Pending Applications" }),
+      ServiceApplication.countDocuments({ ...query, status: "Application On Progress" }),
       Payment.aggregate([
-        { $match: { approvalStatus: "approved", type: "Documents & Services" } },
+        { $match: paymentMatch },
         { $group: { _id: null, total: { $sum: "$amount" } } }
       ])
     ]);
 
-    const recentApplications = await ServiceApplication.find()
+    const recentApplications = await ServiceApplication.find(query)
       .populate("student", "name")
       .populate("service", "title")
       .sort("-createdAt")

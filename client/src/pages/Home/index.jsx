@@ -37,7 +37,7 @@ import Holistic from "../../assets/Holistic.webp";
 import PartnershipIllustration from "../../assets/partnership_illustration.png";
 import GlobalUniversityLogo from "../../assets/global_university_logo.png";
 import TguImg1 from "../../assets/tgu/tgu-img-1.jpeg";
-import TguImg2 from "../../assets/tgu/tgu-img-2.jpg";
+import TguImg2 from "../../assets/tgu/tgu_university.webp";
 import TguImg3 from "../../assets/tgu/tgu-img-3.jpeg";
 import TguWebp from "../../assets/tgu/tgu.webp";
 
@@ -57,6 +57,7 @@ const Button = React.forwardRef(
       default: "bg-primary text-primary-foreground hover:bg-primary/90",
       primary: "bg-[#17468C] text-white hover:bg-[#17468C]/90 shadow",
       brandRed: "bg-[#B82424] text-white hover:bg-[#B82424]/90 shadow",
+      brandGradient: "bg-gradient-to-r from-[#0a3382] via-[#63163a] to-[#bd0808] text-white hover:opacity-95 shadow-xl",
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       outline:
@@ -72,15 +73,31 @@ const Button = React.forwardRef(
       icon: "h-10 w-10",
     };
 
+    let finalClass = cn(
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+      variants[variant],
+      sizes[size],
+      className,
+    );
+
+    if (className?.includes("rounded-full") || variants[variant]?.includes("rounded-full")) {
+      finalClass = finalClass.replace(/rounded-md/g, "");
+    }
+
+    const hasCustomWeight = className?.includes("font-semibold") || className?.includes("font-bold") || className?.includes("font-extrabold") || className?.includes("font-black");
+    if (hasCustomWeight) {
+      finalClass = finalClass.replace(/font-medium/g, "");
+    }
+
+    const hasCustomTextSize = className?.includes("text-base") || className?.includes("text-lg") || className?.includes("text-xl") || className?.includes("text-2xl") || variants[variant]?.includes("text-base") || variants[variant]?.includes("text-lg");
+    if (hasCustomTextSize) {
+      finalClass = finalClass.replace(/text-sm/g, "");
+    }
+
     return (
       <button
         ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
-          variants[variant],
-          sizes[size],
-          className,
-        )}
+        className={finalClass}
         {...props}
       />
     );
@@ -384,7 +401,7 @@ const programCategories = [
     id: "pg-diploma",
     title: "PG Diploma",
     subtitle: "Specialized Certifications",
-    count: "23 Programs",
+    count: "48 Programs",
     icon: ShieldCheck,
     color: "from-indigo-600 to-purple-600",
     accentColor: "#6366f1",
@@ -393,29 +410,54 @@ const programCategories = [
     borderColor: "border-indigo-100",
     description: "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
     programs: [
-      "Fire Technology & Industrial Safety Operation",
-      "Fire & Safety",
-      "Special Effects Makeup",
-      "Hair Dressing",
+      "Addiction Counselling",
+      "Banking & Finance",
       "Beauty Therapy",
-      "Nail Technology",
+      "Business & Marketing",
+      "Business Management",
+      "Child Psychology",
+      "Cognitive Behaviour Therapy",
+      "Computer Application",
       "Cosmetology",
+      "Counselling Psychology",
+      "Disaster Risk Reduction",
+      "Environmental & Social Governance",
+      "Environmental Health & Safety",
+      "Environmental Management",
+      "Fashion & Creative Makeup",
+      "Finance Management",
+      "Fire & Safety",
+      "Fire Fighting",
+      "Fire Safety & Audit",
+      "Fire Technology & Industrial Safety Operation",
+      "GIS & Remote Sensing",
+      "Hair Dressing",
+      "Health Management",
+      "Hospital & Tourism",
+      "Hospital Management",
+      "Hotel Management",
+      "HR Management",
+      "Industrial Safety",
+      "Industrial Safety & Environment Management",
+      "Journalism & Mass Communication",
+      "Makeup Artistry",
+      "Marketing",
+      "Mass Communication",
+      "Material Management",
+      "Metallurgy",
+      "Nail Technology",
+      "Personal Management",
+      "Personnel Management",
+      "PGDIT",
+      "Physical Education",
+      "Rural Development",
       "Salon Management",
+      "School Counselling",
+      "Special Effects Makeup",
+      "Special Need",
       "Styling & Makeup Artistry",
       "Script Writing & Direction",
-      "Fashion & Creative Makeup",
-      "Makeup Artistry",
-      "School Counselling",
-      "Addiction Counselling",
-      "Cognitive Behaviour Therapy",
-      "Counselling Psychology",
-      "Fire Fighting",
-      "Hotel Management",
-      "Physical Education",
-      "Disaster Risk Reduction",
-      "Environmental Health & Safety",
-      "Fire Safety & Audit",
-      "GIS & Remote Sensing"
+      "Supply Chain Management"
     ],
   },
   {
@@ -682,12 +724,12 @@ export default function App() {
                     className="flex flex-col sm:flex-row gap-4 pt-4"
                   >
                     <Button
-                      variant="brandRed"
+                      variant="brandGradient"
                       size="lg"
                       onClick={() => navigate("/register-admission-point")}
-                      className="rounded-full shadow-xl shadow-[#B82424]/20 text-base hover:-translate-y-1 transition-all duration-300"
+                      className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-base font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-8 py-5 h-auto"
                     >
-                      Join Education Network <ArrowRight size={18} className="ml-2" />
+                      Join Education Network <ArrowRight size={18} className="ml-2.5 stroke-[2]" />
                     </Button>
                   </motion.div>
 
@@ -881,7 +923,7 @@ export default function App() {
                           variant="none"
                           size="none"
                           disabled={isSubmitting}
-                          className="w-full mt-4 py-3.5 px-6 rounded-xl font-bold bg-gradient-to-r from-[#17468C] via-[#1E56A0] to-[#17468C] hover:from-[#1E56A0] hover:to-[#2C74B3] text-white shadow-lg shadow-[#17468C]/25 hover:shadow-xl hover:shadow-[#17468C]/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden group tracking-wide text-sm md:text-base cursor-pointer"
+                          className="w-full mt-4 py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group tracking-wide text-base h-auto cursor-pointer"
                         >
                           {/* Premium subtle shine overlay */}
                           <div className="animate-shine pointer-events-none" />
@@ -895,7 +937,7 @@ export default function App() {
                             ) : (
                               <>
                                 Submit Registration
-                                <Send size={16} className="transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5 text-white/80" />
+                                <ArrowRight size={18} className="ml-2.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-1" />
                               </>
                             )}
                           </span>
@@ -1152,7 +1194,7 @@ export default function App() {
                     bgBadge:
                       "bg-[#17468C]/20 text-blue-300 border border-[#17468C]/30",
                     buttonClass:
-                      "bg-gradient-to-r from-[#17468C] to-[#2563eb] hover:from-[#1E56A0] hover:to-[#3b82f6] shadow-blue-500/25 border-transparent",
+                      "bg-gradient-to-r from-[#1570ff] to-[#0949d0] shadow-[#1570ff]/25 hover:shadow-[#1570ff]/40 border-transparent",
                     points: [
                       "Assist students in the application process for The Global University programs.",
                       "Provide guidance and support to applicants throughout the admission journey.",
@@ -1172,7 +1214,7 @@ export default function App() {
                     bgBadge:
                       "bg-[#B82424]/20 text-red-300 border border-[#B82424]/30",
                     buttonClass:
-                      "bg-gradient-to-r from-[#B82424] to-[#ef4444] hover:from-[#c92a2a] hover:to-[#f87171] shadow-red-500/25 border-transparent",
+                      "bg-gradient-to-r from-[#e60000] to-[#990000] shadow-[#e60000]/25 hover:shadow-[#e60000]/40 border-transparent",
                     points: [
                       "Offer The Global University skill-enhancing programs to your students.",
                       "Provide hands-on training and practical experience in alignment with industry requirements.",
@@ -1192,7 +1234,7 @@ export default function App() {
                     bgBadge:
                       "bg-[#10b981]/20 text-emerald-300 border border-[#10b981]/30",
                     buttonClass:
-                      "bg-gradient-to-r from-[#059669] to-[#10b981] hover:from-[#047857] hover:to-[#059669] shadow-emerald-500/25 border-transparent",
+                      "bg-gradient-to-r from-[#0a3382] via-[#63163a] to-[#bd0808] shadow-[#bd0808]/25 hover:shadow-[#bd0808]/40 border-transparent",
                     points: [
                       "Partner with universities to test and evaluate candidates' existing practical skills.",
                       "Facilitate formal UGC-approved certification for experienced individuals.",
@@ -1266,7 +1308,7 @@ export default function App() {
                           variant="none"
                           size="none"
                           className={cn(
-                            "w-full py-4 rounded-xl text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl hover:-translate-y-0.5 border",
+                            "w-full py-5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 border-transparent text-base h-auto",
                             path.buttonClass
                           )}
                           onClick={() => navigate("/register-admission-point")}
@@ -1745,18 +1787,14 @@ export default function App() {
                               <Button
                                 variant="none"
                                 size="none"
-                                className="px-8 py-4 rounded-xl font-bold text-white transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer text-[15px]"
-                                style={{
-                                  background: `linear-gradient(to right, ${cat.accentColor}, ${cat.accentColor}dd)`,
-                                  boxShadow: `0 8px 25px ${cat.shadowColor}`
-                                }}
+                                className="px-8 py-5 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-base h-auto"
                                 onClick={() => {
                                   const el = document.getElementById("contact");
                                   if (el) el.scrollIntoView({ behavior: "smooth" });
                                 }}
                               >
                                 Inquire About {cat.title}
-                                <ArrowRight size={18} />
+                                <ArrowRight size={18} className="transition-transform duration-300 hover:translate-x-1" />
                               </Button>
                             </div>
                           </div>
@@ -2052,61 +2090,65 @@ export default function App() {
                       </div>
 
                       <div className="relative z-10 pt-6 space-y-4">
-                        <Button
-                          variant="none"
-                          size="none"
-                          className="w-full py-4 px-6 bg-white text-[#17468C] font-extrabold text-base rounded-xl shadow-lg hover:shadow-2xl hover:shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group/btn cursor-pointer flex items-center justify-center gap-2"
-                          onClick={() => navigate("/register-admission-point")}
-                        >
-                          <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-[#17468C]/5 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
-                          <span className="relative z-10 flex items-center justify-center gap-2 text-[#17468C]">
-                            Register Now
-                            <ArrowRight size={16} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
-                          </span>
-                        </Button>
-
-                        <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                          Applications Active
+                        <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 hover:-translate-y-1 group/btnWrapper cursor-pointer">
+                          <Button
+                            variant="none"
+                            size="none"
+                            className="w-full py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto"
+                            onClick={() => navigate("/register-admission-point")}
+                          >
+                            <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
+                            <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                              Register Now
+                              <ArrowRight size={18} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
+                            </span>
+                          </Button>
                         </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Card 2: Partner Inquiry (Enquire Now) */}
-                    <motion.div
-                      whileHover={{ y: -6, rotate: -0.5 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
-                    >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-[#B82424] to-[#17468C] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
-
-                      <div className="relative z-10 space-y-4 text-left flex-grow">
-                        <h4 className="text-2xl font-bold text-white tracking-tight">
-                          Partner Inquiry
-                        </h4>
-                        <p className="text-white/70 text-sm leading-relaxed">
-                          Have quick questions? Submit an inquiry and our partner team will reach out.
-                        </p>
-                      </div>
-
-                      <div className="relative z-10 pt-6 space-y-4">
-                        <Button
-                          variant="none"
-                          size="none"
-                          className="w-full py-4 px-6 bg-[#B82424] text-white font-extrabold text-base rounded-xl shadow-lg hover:shadow-2xl hover:shadow-[#B82424]/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group/btn cursor-pointer flex items-center justify-center gap-2 border border-[#B82424]"
-                          onClick={() => {
-                            const el = document.getElementById("partner-inquiry-form");
-                            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                            setHighlightInquiry(true);
-                            setTimeout(() => setHighlightInquiry(false), 2000);
-                          }}
-                        >
-                          <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
-                          <span className="relative z-10 flex items-center justify-center gap-2 text-white">
-                            Enquire Now
-                            <ArrowRight size={16} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
-                          </span>
-                        </Button>
+ 
+                         <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
+                           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                           Applications Active
+                         </div>
+                       </div>
+                     </motion.div>
+ 
+                     {/* Card 2: Partner Inquiry (Enquire Now) */}
+                     <motion.div
+                       whileHover={{ y: -6, rotate: -0.5 }}
+                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                       className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
+                     >
+                       <div className="absolute -inset-1 bg-gradient-to-r from-[#B82424] to-[#17468C] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
+ 
+                       <div className="relative z-10 space-y-4 text-left flex-grow">
+                         <h4 className="text-2xl font-bold text-white tracking-tight">
+                           Partner Inquiry
+                         </h4>
+                         <p className="text-white/70 text-sm leading-relaxed">
+                           Have quick questions? Submit an inquiry and our partner team will reach out.
+                         </p>
+                       </div>
+ 
+                       <div className="relative z-10 pt-6 space-y-4">
+                         <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 hover:-translate-y-1 group/btnWrapper cursor-pointer">
+                           <Button
+                             variant="none"
+                             size="none"
+                             className="w-full py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#e60000] to-[#990000] text-white shadow-2xl shadow-[#e60000]/25 hover:shadow-[#e60000]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto border-transparent"
+                             onClick={() => {
+                               const el = document.getElementById("partner-inquiry-form");
+                               if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                               setHighlightInquiry(true);
+                               setTimeout(() => setHighlightInquiry(false), 2000);
+                             }}
+                           >
+                             <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
+                             <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                               Enquire Now
+                               <ArrowRight size={18} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
+                             </span>
+                           </Button>
+                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />

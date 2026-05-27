@@ -597,7 +597,9 @@ export const getPendingEligibility = async (req, res, next) => {
     }
 
     // Handle Partner Filter
-    if (partnerId && partnerId !== "all") {
+    if (req.user?.userType === "partner") {
+      query.registeredBy = req.user.userId;
+    } else if (partnerId && partnerId !== "all") {
       query.registeredBy = partnerId;
     }
 

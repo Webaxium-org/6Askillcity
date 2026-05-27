@@ -146,7 +146,7 @@ const Sidebar = ({
           icon: LayoutDashboard,
           path: "/dashboard",
         },
-        ...(user?.role === "admin"
+        ...(user?.role === "admin" || user?.role === "manager" || user?.type === "partner"
           ? [
               {
                 id: "overview",
@@ -234,6 +234,10 @@ const Sidebar = ({
                 icon: FileText,
                 path: "/dashboard/reports",
               },
+            ]
+          : []),
+        ...(user?.role === "admin" || user?.role === "manager" || user?.type === "partner"
+          ? [
               {
                 id: "documents-services",
                 label: "Documents & Services",

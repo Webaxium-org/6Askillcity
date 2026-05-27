@@ -183,10 +183,13 @@ export default function DocumentsServices() {
       if (servicesRes.success) setServices(servicesRes.data);
       if (studentsRes.success) setStudents(studentsRes.data);
 
-      // Fetch partners for filter
-      const { getAllApprovedAdmissionPoints } = await import("../../api/admissionPoint.api");
-      const partnerRes = await getAllApprovedAdmissionPoints();
-      if (partnerRes.success) setPartners(partnerRes.data);
+      // Fetch partners for filter if admin/manager
+      const isPartner = user?.type === "partner" || user?.role === "partner";
+      if (!isPartner) {
+        const { getAllApprovedAdmissionPoints } = await import("../../api/admissionPoint.api");
+        const partnerRes = await getAllApprovedAdmissionPoints();
+        if (partnerRes.success) setPartners(partnerRes.data);
+      }
 
     } catch (error) {
       dispatch(showAlert({ type: "error", message: "Failed to load system data" }));
@@ -297,13 +300,15 @@ export default function DocumentsServices() {
               <PlusCircle size={18} />
               Apply for Student
             </button>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="px-6 py-4 rounded-2xl bg-card border border-border text-foreground font-black text-xs uppercase tracking-widest hover:bg-muted transition-all flex items-center gap-2"
-            >
-              <Settings size={18} />
-              Create Service
-            </button>
+            {user?.type !== "partner" && user?.role !== "partner" && (
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="px-6 py-4 rounded-2xl bg-card border border-border text-foreground font-black text-xs uppercase tracking-widest hover:bg-muted transition-all flex items-center gap-2"
+              >
+                <Settings size={18} />
+                Create Service
+              </button>
+            )}
           </div>
         </div>
 
@@ -353,18 +358,20 @@ export default function DocumentsServices() {
             <Activity className={cn("w-4 h-4", activeTab === "applications" ? "text-white" : "text-primary/70")} />
             Applications
           </button>
-          <button 
-            onClick={() => setActiveTab("management")}
-            className={cn(
-              "flex items-center gap-2.5 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden group border shrink-0",
-              activeTab === "management" 
-                ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20" 
-                : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
-            )}
-          >
-            <Settings className={cn("w-4 h-4", activeTab === "management" ? "text-white" : "text-primary/70")} />
-            Manage Services
-          </button>
+          {user?.type !== "partner" && user?.role !== "partner" && (
+            <button 
+              onClick={() => setActiveTab("management")}
+              className={cn(
+                "flex items-center gap-2.5 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden group border shrink-0",
+                activeTab === "management" 
+                  ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20" 
+                  : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
+              )}
+            >
+              <Settings className={cn("w-4 h-4", activeTab === "management" ? "text-white" : "text-primary/70")} />
+              Manage Services
+            </button>
+          )}
         </div>
 
         {activeTab === "applications" ? (
@@ -1162,6 +1169,9 @@ const CreateServiceForm = ({ onSuccess }) => {
 };
 
 const ApplyServiceForm = ({ services, students, onSuccess }) => {
+  const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner" || user?.role === "partner";
+
   const [formData, setFormData] = useState({
     studentId: "",
     serviceId: "",
@@ -1171,6 +1181,14 @@ const ApplyServiceForm = ({ services, students, onSuccess }) => {
   const [loading, setLoading] = useState(false);
 
   const selectedService = services.find(s => s._id === formData.serviceId);
+
+  const displayedStudents = isPartner
+    ? students.filter(s => {
+        const regId = s.registeredBy?._id || s.registeredBy;
+        const currentUserId = user?.id || user?._id;
+        return regId && currentUserId && regId.toString() === currentUserId.toString();
+      })
+    : students;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1197,7 +1215,7 @@ const ApplyServiceForm = ({ services, students, onSuccess }) => {
             className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
           >
             <option value="">Select a student...</option>
-            {students.map(s => (
+            {displayedStudents.map(s => (
               <option key={s._id} value={s._id}>{s.name} ({s.university?.name})</option>
             ))}
           </select>
@@ -1267,6 +1285,9 @@ const ApplyServiceForm = ({ services, students, onSuccess }) => {
 };
 
 const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
+  const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner" || user?.role === "partner";
+
   const [formData, setFormData] = useState({
     status: application?.status || "",
     remarks: ""
@@ -1303,9 +1324,24 @@ const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
       <div className="space-y-6">
         <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-bold flex items-center gap-3">
           <AlertCircle size={18} />
-          Payment Required: You must record the service fee before processing this application.
+          {isPartner 
+            ? "Payment Required: You must pay or record the service fee to process this application."
+            : "Payment Required: You must record the service fee before processing this application."
+          }
         </div>
         <RecordPaymentForm application={application} onSuccess={onSuccess} cashfree={cashfree} />
+      </div>
+    );
+  }
+
+  if (isPartner) {
+    return (
+      <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 text-center space-y-3">
+        <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-500" />
+        <p className="text-sm font-black uppercase tracking-widest text-emerald-600">Payment Completed</p>
+        <p className="text-xs text-muted-foreground font-medium">
+          This application fee has been successfully paid. Platform administrators will review the documents and advance the pipeline status accordingly.
+        </p>
       </div>
     );
   }
@@ -1590,10 +1626,7 @@ const RecordPaymentForm = ({ application, onSuccess, cashfree }) => {
 
     setLoading(true);
     try {
-      const res = await serviceApi.createServiceServiceCashfreeOrder ? await serviceApi.createServiceServiceCashfreeOrder(application._id, {
-        amount: formData.amount,
-        remarks: formData.remarks,
-      }) : await serviceApi.createServiceCashfreeOrder(application._id, {
+      const res = await serviceApi.createServiceCashfreeOrder(application._id, {
         amount: formData.amount,
         remarks: formData.remarks,
       });

@@ -59,9 +59,11 @@ function App() {
                 element={<StudentRegistration />}
               />
               <Route path="/dashboard/tickets" element={<TicketsPage />} />
-              <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              <Route element={<ProtectedRoute allowedRoles={["admin", "manager", "partner"]} />}>
                 <Route path="/dashboard/overview" element={<AdminOverview />} />
                 <Route path="/dashboard/documents-services" element={<DocumentsServices />} />
+              </Route>
+              <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
                 <Route path="/dashboard/reports" element={<Reports />} />
                 <Route
                   path="/dashboard/reports/:reportId"

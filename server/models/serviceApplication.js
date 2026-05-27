@@ -42,6 +42,14 @@ const ServiceApplicationSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "createdByType"
+  },
+  createdByType: {
+    type: String,
+    enum: ["User", "AdmissionPoint"]
+  },
   pendingDate: Date,
   processingDate: Date,
   receivedDate: Date,

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Student from "../models/student.js";
 import AdmissionPoint from "../models/admissionPoint.js";
 import University from "../models/university.js";
@@ -13,6 +14,132 @@ export const getAdminStats = async (req, res, next) => {
   try {
     const year = parseInt(req.query.year) || moment().year();
     const half = req.query.half || (moment().month() < 6 ? "H1" : "H2");
+
+    const isPartner = req.user?.role === "partner" || req.user?.userType === "partner";
+    const partnerId = req.user?.userId;
+
+    const studentFilter = (base) => {
+      if (isPartner) {
+        return { ...base, registeredBy: partnerId };
+      }
+      return base;
+    };
+
+    const ticketFilter = (base) => {
+      if (isPartner) {
+        return {
+          ...base,
+          $or: [
+            { creatorId: partnerId },
+            { assignedToPartner: partnerId },
+          ],
+        };
+      }
+      return base;
+    };
+
+    let partnerStudentIds = [];
+    if (isPartner) {
+      partnerStudentIds = await Student.find({ registeredBy: partnerId }).distinct("_id");
+    }
+
+    const feeMatchStage = { deleted: { $ne: true }, applicationStatus: "Eligible" };
+    if (isPartner) {
+      feeMatchStage.registeredBy = new mongoose.Types.ObjectId(partnerId);
+    }
+
+    const serviceStatusPipeline = [];
+    if (isPartner) {
+      serviceStatusPipeline.push({ $match: { student: { $in: partnerStudentIds } } });
+    }
+    serviceStatusPipeline.push({
+      $group: {
+        _id: null,
+        wholePaid: {
+          $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] },
+        },
+        partialPaid: {
+          $sum: {
+            $cond: [{ $eq: ["$paymentStatus", "Partially Paid"] }, 1, 0],
+          },
+        },
+        unpaid: {
+          $sum: { $cond: [{ $eq: ["$paymentStatus", "Unpaid"] }, 1, 0] },
+        },
+        pending: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "Pending Applications"] }, 1, 0],
+          },
+        },
+        progress: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "Application On Progress"] }, 1, 0],
+          },
+        },
+        received: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "Documents Received"] }, 1, 0],
+          },
+        },
+        sent: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "Documents Sent Courier"] }, 1, 0],
+          },
+        },
+      },
+    });
+
+    const serviceTitlePipeline = [];
+    if (isPartner) {
+      serviceTitlePipeline.push({ $match: { student: { $in: partnerStudentIds } } });
+    }
+    serviceTitlePipeline.push(
+      {
+        $lookup: {
+          from: "servicedefinitions",
+          localField: "service",
+          foreignField: "_id",
+          as: "serviceInfo",
+        },
+      },
+      { $unwind: "$serviceInfo" },
+      {
+        $group: {
+          _id: "$serviceInfo.title",
+          wholePaid: {
+            $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] },
+          },
+          partialPaid: {
+            $sum: {
+              $cond: [{ $eq: ["$paymentStatus", "Partially Paid"] }, 1, 0],
+            },
+          },
+          unpaid: {
+            $sum: { $cond: [{ $eq: ["$paymentStatus", "Unpaid"] }, 1, 0] },
+          },
+          pending: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Pending Applications"] }, 1, 0],
+            },
+          },
+          progress: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Application On Progress"] }, 1, 0],
+            },
+          },
+          received: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Documents Received"] }, 1, 0],
+            },
+          },
+          sent: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Documents Sent Courier"] }, 1, 0],
+            },
+          },
+        },
+      }
+    );
 
     const [
       totalStudents,
@@ -36,22 +163,22 @@ export const getAdminStats = async (req, res, next) => {
       postponedTicketsCount,
       closedTicketsCount,
     ] = await Promise.all([
-      Student.countDocuments({ applicationStatus: "Eligible" }),
-      AdmissionPoint.countDocuments({ status: "approved" }),
+      Student.countDocuments(studentFilter({ applicationStatus: "Eligible" })),
+      isPartner ? 1 : AdmissionPoint.countDocuments({ status: "approved" }),
       University.countDocuments({ isActive: true }),
-      Payment.find({ approvalStatus: "approved" }),
-      Student.countDocuments({ applicationStatus: "Pending Eligibility" }),
-      AdmissionPoint.countDocuments({ status: "pending" }),
-      Ticket.countDocuments({
+      isPartner ? Payment.find({ approvalStatus: "approved", partner: partnerId }) : Payment.find({ approvalStatus: "approved" }),
+      Student.countDocuments(studentFilter({ applicationStatus: "Pending Eligibility" })),
+      isPartner ? 0 : AdmissionPoint.countDocuments({ status: "pending" }),
+      Ticket.countDocuments(ticketFilter({
         status: { $in: ["Received", "On Progress", "Postponed"] },
-      }),
-      Student.countDocuments({ applicationStatus: "Rejected" }),
-      Student.countDocuments({
+      })),
+      Student.countDocuments(studentFilter({ applicationStatus: "Rejected" })),
+      Student.countDocuments(studentFilter({
         createdAt: { $gte: moment().startOf("day").toDate() },
         applicationStatus: "Pending Eligibility",
-      }),
+      })),
       Student.aggregate([
-        { $match: { deleted: { $ne: true }, applicationStatus: "Eligible" } },
+        { $match: feeMatchStage },
         {
           $lookup: {
             from: "payments",
@@ -107,7 +234,7 @@ export const getAdminStats = async (req, res, next) => {
           },
         },
       ]),
-      Student.countDocuments({
+      Student.countDocuments(studentFilter({
         $or: [
           { status: "On Progress" },
           { status: { $exists: false } },
@@ -115,109 +242,26 @@ export const getAdminStats = async (req, res, next) => {
         ],
         applicationStatus: "Eligible",
         deleted: { $ne: true },
-      }),
-      Student.countDocuments({
+      })),
+      Student.countDocuments(studentFilter({
         status: "Enrolled",
         applicationStatus: "Eligible",
         deleted: { $ne: true },
-      }),
-      Student.countDocuments({
+      })),
+      Student.countDocuments(studentFilter({
         status: "Cancelled",
         applicationStatus: "Eligible",
         deleted: { $ne: true },
-      }),
-      ServiceApplication.aggregate([
-        {
-          $group: {
-            _id: null,
-            wholePaid: {
-              $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] },
-            },
-            partialPaid: {
-              $sum: {
-                $cond: [{ $eq: ["$paymentStatus", "Partially Paid"] }, 1, 0],
-              },
-            },
-            unpaid: {
-              $sum: { $cond: [{ $eq: ["$paymentStatus", "Unpaid"] }, 1, 0] },
-            },
-            pending: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Pending Applications"] }, 1, 0],
-              },
-            },
-            progress: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Application On Progress"] }, 1, 0],
-              },
-            },
-            received: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Documents Received"] }, 1, 0],
-              },
-            },
-            sent: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Documents Sent Courier"] }, 1, 0],
-              },
-            },
-          },
-        },
-      ]),
-      ServiceApplication.aggregate([
-        {
-          $lookup: {
-            from: "servicedefinitions",
-            localField: "service",
-            foreignField: "_id",
-            as: "serviceInfo",
-          },
-        },
-        { $unwind: "$serviceInfo" },
-        {
-          $group: {
-            _id: "$serviceInfo.title",
-            wholePaid: {
-              $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] },
-            },
-            partialPaid: {
-              $sum: {
-                $cond: [{ $eq: ["$paymentStatus", "Partially Paid"] }, 1, 0],
-              },
-            },
-            unpaid: {
-              $sum: { $cond: [{ $eq: ["$paymentStatus", "Unpaid"] }, 1, 0] },
-            },
-            pending: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Pending Applications"] }, 1, 0],
-              },
-            },
-            progress: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Application On Progress"] }, 1, 0],
-              },
-            },
-            received: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Documents Received"] }, 1, 0],
-              },
-            },
-            sent: {
-              $sum: {
-                $cond: [{ $eq: ["$status", "Documents Sent Courier"] }, 1, 0],
-              },
-            },
-          },
-        },
-      ]),
+      })),
+      ServiceApplication.aggregate(serviceStatusPipeline),
+      ServiceApplication.aggregate(serviceTitlePipeline),
       ServiceDefinition.find({ status: "Active" }),
-      Ticket.countDocuments({
+      Ticket.countDocuments(ticketFilter({
         createdAt: { $gte: moment().startOf("day").toDate() },
-      }),
-      Ticket.countDocuments({ status: "Received" }),
-      Ticket.countDocuments({ status: "Postponed" }),
-      Ticket.countDocuments({ status: "Closed" }),
+      })),
+      Ticket.countDocuments(ticketFilter({ status: "Received" })),
+      Ticket.countDocuments(ticketFilter({ status: "Postponed" })),
+      Ticket.countDocuments(ticketFilter({ status: "Closed" })),
     ]);
 
     const srvStats = serviceStatusStats[0] || null;
@@ -295,10 +339,10 @@ export const getAdminStats = async (req, res, next) => {
       });
 
       // Enrollment for this specific month
-      const count = await Student.countDocuments({
+      const count = await Student.countDocuments(studentFilter({
         applicationStatus: "Eligible",
         updatedAt: { $gte: startOfMonth, $lte: endOfMonth },
-      });
+      }));
 
       enrollmentData.push({
         name: monthDate.format("MMM YY"),
@@ -306,9 +350,9 @@ export const getAdminStats = async (req, res, next) => {
       });
 
       // Application Submissions (createdAt)
-      const appCount = await Student.countDocuments({
+      const appCount = await Student.countDocuments(studentFilter({
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
-      });
+      }));
 
       applicationData.push({
         name: monthDate.format("MMM YY"),

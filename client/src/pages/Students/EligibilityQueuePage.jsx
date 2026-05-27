@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import {
   getPendingEligibility,
@@ -142,6 +142,9 @@ function RejectModal({ app, onClose, onConfirm }) {
 export default function EligibilityQueuePage() {
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner";
+
   const [applications, setApplications] = useState([]);
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,22 +181,20 @@ export default function EligibilityQueuePage() {
     }
   }, [dispatch, statusTab, startDate, endDate, selectedPartner]);
 
-  const fetchPartners = async () => {
-    try {
-      const res = await getAllApprovedAdmissionPoints();
-      if (res.success) setPartners(res.data);
-    } catch (error) {
-      console.error("Failed to fetch partners", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPartners();
-  }, [searchParams]);
-
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    const fetchPartners = async () => {
+      try {
+        const res = await getAllApprovedAdmissionPoints();
+        if (res.success) setPartners(res.data);
+      } catch (error) {
+        console.error("Failed to fetch partners", error);
+      }
+    };
+    if (!isPartner) {
+      fetchPartners();
+    }
+  }, [fetchData, isPartner]);
 
   const handleApprove = async (id) => {
     setApprovingId(id);
@@ -355,7 +356,7 @@ export default function EligibilityQueuePage() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className={cn("bg-card border border-border rounded-2xl p-6 shadow-sm grid grid-cols-1 gap-6", isPartner ? "md:grid-cols-2" : "md:grid-cols-3")}>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                     <Calendar className="w-3 h-3" /> Start Date
@@ -378,23 +379,25 @@ export default function EligibilityQueuePage() {
                     className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border focus:border-primary outline-none text-sm transition-all"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Building2 className="w-3 h-3" /> Admission Point
-                  </label>
-                  <select
-                    value={selectedPartner}
-                    onChange={(e) => setSelectedPartner(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border focus:border-primary outline-none text-sm transition-all cursor-pointer"
-                  >
-                    <option value="all">All Partners</option>
-                    {partners.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.centerName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!isPartner && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <Building2 className="w-3 h-3" /> Admission Point
+                    </label>
+                    <select
+                      value={selectedPartner}
+                      onChange={(e) => setSelectedPartner(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border focus:border-primary outline-none text-sm transition-all cursor-pointer"
+                    >
+                      <option value="all">All Partners</option>
+                      {partners.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.centerName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               
               <div className="flex flex-wrap items-center gap-2 mt-4 px-2">

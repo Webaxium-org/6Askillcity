@@ -1,4 +1,5 @@
 import React from "react";
+import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -35,6 +36,9 @@ export const ReviewModal = ({
   onReject,
   approvingId,
 }) => {
+  const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner";
+
   if (!app) return null;
 
   const isApproving = approvingId === app._id;
@@ -561,28 +565,30 @@ export const ReviewModal = ({
             </div>
 
             {/* Footer Actions */}
-            <div className="px-8 py-6 border-t border-border bg-muted/30 flex gap-4 shrink-0">
-              <button
-                onClick={() => onReject(app)}
-                className="flex-1 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
-              >
-                <XCircle className="w-5 h-5" /> Reject
-              </button>
-              <button
-                onClick={() => onApprove(app._id)}
-                disabled={isApproving}
-                className="flex-[2] py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
-              >
-                {isApproving ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    Approve
-                  </>
-                )}
-              </button>
-            </div>
+            {!isPartner && (
+              <div className="px-8 py-6 border-t border-border bg-muted/30 flex gap-4 shrink-0">
+                <button
+                  onClick={() => onReject(app)}
+                  className="flex-1 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-5 h-5" /> Reject
+                </button>
+                <button
+                  onClick={() => onApprove(app._id)}
+                  disabled={isApproving}
+                  className="flex-[2] py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                >
+                  {isApproving ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Approve
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
       )}

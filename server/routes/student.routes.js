@@ -46,7 +46,7 @@ router.get(
 // NOTE: Must be declared BEFORE /:id to avoid route shadowing
 router.get(
   "/pending-eligibility",
-  isAuthorized({ roles: ["admin", "manager"] }),
+  isAuthorized({ roles: ["admin", "manager", "partner"] }),
   getPendingEligibility
 );
 

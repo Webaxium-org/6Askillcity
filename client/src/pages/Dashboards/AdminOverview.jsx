@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { getAdminDashboardStats } from "../../api/admin.api";
@@ -161,6 +162,9 @@ const SectionCard = ({
 
 const AdminOverview = () => {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner";
+  
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -387,7 +391,7 @@ const AdminOverview = () => {
   ];
 
   return (
-    <DashboardLayout title="Admin Dashboard">
+    <DashboardLayout title={isPartner ? "Partner Overview" : "Admin Dashboard"}>
       <div className="max-w-[1600px] mx-auto space-y-10 pb-20">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
