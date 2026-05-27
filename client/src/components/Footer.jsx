@@ -162,10 +162,10 @@ export default function Footer() {
               title: "IT Team",
               mob: "+91 73560 75454",
               mobHref: "tel:+9173560 75454",
-              land: "0484 461 4422",
-              landHref: "tel:04844614422",
-              email: "it@6askillcity.com",
-              emailHref: "mailto:it@6askillcity.com",
+              land: "",
+              landHref: "",
+              email: "partner@6askillcity.com",
+              emailHref: "mailto:partner@6askillcity.com",
               badgeColor: "bg-[#17468C]/10 text-[#17468C]",
               dotColor: "bg-[#17468C]",
               cardColor: "border-[#17468C]/10 hover:border-[#17468C]/40 hover:bg-[#17468C]/[0.02]",
@@ -175,8 +175,8 @@ export default function Footer() {
               title: "Finance",
               mob: "+91 99954 53322",
               mobHref: "tel:+9199954 53322",
-              land: "0484 461 4477",
-              landHref: "tel:04844614477",
+              land: "",
+              landHref: "",
               email: "accounts@6askillcity.com",
               emailHref: "mailto:accounts@6askillcity.com",
               badgeColor: "bg-[#17468C]/10 text-[#17468C]",
@@ -195,7 +195,7 @@ export default function Footer() {
                 </span>
                 <div className={`w-2 h-2 rounded-full ${dept.dotColor} opacity-70 group-hover:scale-125 transition-transform duration-300`} />
               </div>
-              
+
               <div className="space-y-2.5 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2.5">
                   <Phone size={14} className="text-muted-foreground/50 shrink-0 group-hover:text-foreground transition-colors" />

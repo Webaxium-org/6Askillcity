@@ -384,7 +384,7 @@ const programCategories = [
     id: "pg-diploma",
     title: "PG Diploma",
     subtitle: "Specialized Certifications",
-    count: "3 Programs",
+    count: "23 Programs",
     icon: ShieldCheck,
     color: "from-indigo-600 to-purple-600",
     accentColor: "#6366f1",
@@ -392,7 +392,31 @@ const programCategories = [
     bgLight: "bg-indigo-50/50",
     borderColor: "border-indigo-100",
     description: "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
-    programs: ["Advanced PG in Computer Applications", "PG Diploma in Financial Management", "PG Diploma in Marketing Strategy"],
+    programs: [
+      "Fire Technology & Industrial Safety Operation",
+      "Fire & Safety",
+      "Special Effects Makeup",
+      "Hair Dressing",
+      "Beauty Therapy",
+      "Nail Technology",
+      "Cosmetology",
+      "Salon Management",
+      "Styling & Makeup Artistry",
+      "Script Writing & Direction",
+      "Fashion & Creative Makeup",
+      "Makeup Artistry",
+      "School Counselling",
+      "Addiction Counselling",
+      "Cognitive Behaviour Therapy",
+      "Counselling Psychology",
+      "Fire Fighting",
+      "Hotel Management",
+      "Physical Education",
+      "Disaster Risk Reduction",
+      "Environmental Health & Safety",
+      "Fire Safety & Audit",
+      "GIS & Remote Sensing"
+    ],
   },
   {
     id: "skill-programs",
@@ -1661,10 +1685,10 @@ export default function App() {
                               <div
                                 className={cn(
                                   "transition-all duration-500 ease-in-out",
-                                  cat.id === "skill-programs" ? "max-h-[420px] overflow-y-auto pr-3 py-2 scroll-smooth custom-scrollbar" : ""
+                                  (cat.id === "skill-programs" || cat.id === "pg-diploma") ? "max-h-[420px] overflow-y-auto pr-3 py-2 scroll-smooth custom-scrollbar" : ""
                                 )}
                                 style={
-                                  cat.id === "skill-programs"
+                                  (cat.id === "skill-programs" || cat.id === "pg-diploma")
                                     ? {
                                       scrollbarWidth: "thin",
                                       scrollbarColor: `${cat.accentColor}33 transparent`,
