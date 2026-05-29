@@ -147,8 +147,8 @@ export default function ApplicationsPage() {
         a.applicationStatus,
       );
     if (activeTab === "rejected") return a.applicationStatus === "Rejected";
-    // Active includes Pending Eligibility and Eligible
-    return ["Pending Eligibility", "Eligible", "Completed"].includes(
+    // Active includes Pending Eligibility (REVIEW IN PROGRESS) only
+    return ["Pending Eligibility"].includes(
       a.applicationStatus,
     );
   });
@@ -171,7 +171,13 @@ export default function ApplicationsPage() {
               Applications
             </h1>
             <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">
-              Management & Lifecycle Tracking
+              Enrolled students are moved to{" "}
+              <span
+                onClick={() => navigate("/dashboard/student-management")}
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-500 hover:underline cursor-pointer transition-all normal-case font-extrabold"
+              >
+                My Students
+              </span>
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
@@ -209,7 +215,7 @@ export default function ApplicationsPage() {
                 );
               if (tab.id === "rejected")
                 return a.applicationStatus === "Rejected";
-              return ["Pending Eligibility", "Eligible", "Completed"].includes(
+              return ["Pending Eligibility"].includes(
                 a.applicationStatus,
               );
             }).length;
