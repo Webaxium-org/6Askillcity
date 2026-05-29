@@ -1,7 +1,9 @@
 import { axiosInstance } from "./axiosInstance";
 
-export const getManagementStudents = async () => {
-  const res = await axiosInstance.get("/payments/students");
+export const getManagementStudents = async (search = "") => {
+  const res = await axiosInstance.get("/payments/students", {
+    params: search ? { search } : {}
+  });
   return res.data;
 };
 

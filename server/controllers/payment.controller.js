@@ -36,9 +36,18 @@ cashfree.XApiVersion = "2023-08-01";
 // ─────────────────────────────────────────────
 export const getManagementStudents = async (req, res, next) => {
   try {
+    const { search } = req.query;
     const match = { applicationStatus: "Eligible", deleted: { $ne: true } };
     if (req.user.userType === "partner")
       match.registeredBy = new mongoose.Types.ObjectId(req.user.userId);
+
+    if (search && search.trim().length >= 3) {
+      const searchRegex = { $regex: search.trim(), $options: "i" };
+      match.$or = [
+        { name: searchRegex },
+        { email: searchRegex }
+      ];
+    }
 
     const students = await Student.aggregate([
       { $match: match },

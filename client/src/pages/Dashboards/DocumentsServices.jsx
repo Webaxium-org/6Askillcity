@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { load } from "@cashfreepayments/cashfree-js";
@@ -81,7 +81,6 @@ export default function DocumentsServices() {
   });
   const [applications, setApplications] = useState([]);
   const [services, setServices] = useState([]);
-  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -171,17 +170,15 @@ export default function DocumentsServices() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, appsRes, servicesRes, studentsRes] = await Promise.all([
+      const [statsRes, appsRes, servicesRes] = await Promise.all([
         serviceApi.getServiceDashboardStats(),
         serviceApi.getServiceApplications(),
-        serviceApi.getServiceDefinitions(),
-        getManagementStudents()
+        serviceApi.getServiceDefinitions()
       ]);
 
       if (statsRes.success) setStats(statsRes.data.stats);
       if (appsRes.success) setApplications(appsRes.data);
       if (servicesRes.success) setServices(servicesRes.data);
-      if (studentsRes.success) setStudents(studentsRes.data);
 
       // Fetch partners for filter if admin/manager
       const isPartner = user?.type === "partner" || user?.role === "partner";
@@ -952,7 +949,6 @@ export default function DocumentsServices() {
       >
         <ApplyServiceForm 
           services={services} 
-          students={students}
           onSuccess={() => {
             setShowApplyModal(false);
             fetchData();
@@ -1168,7 +1164,7 @@ const CreateServiceForm = ({ onSuccess }) => {
   );
 };
 
-const ApplyServiceForm = ({ services, students, onSuccess }) => {
+const ApplyServiceForm = ({ services, onSuccess }) => {
   const { user } = useSelector((state) => state.user);
   const isPartner = user?.type === "partner" || user?.role === "partner";
 
@@ -1180,15 +1176,59 @@ const ApplyServiceForm = ({ services, students, onSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
 
+  // States for searchable select
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchedStudents, setSearchedStudents] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedStudentName, setSelectedStudentName] = useState("");
+
+  const dropdownRef = useRef(null);
+
   const selectedService = services.find(s => s._id === formData.serviceId);
 
-  const displayedStudents = isPartner
-    ? students.filter(s => {
-        const regId = s.registeredBy?._id || s.registeredBy;
-        const currentUserId = user?.id || user?._id;
-        return regId && currentUserId && regId.toString() === currentUserId.toString();
-      })
-    : students;
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Debounce and search student database
+  useEffect(() => {
+    if (searchQuery.trim().length < 3) {
+      setSearchedStudents([]);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await getManagementStudents(searchQuery);
+        if (res.success) {
+          // Extra guard to filter for partner center just in case
+          const filtered = isPartner
+            ? res.data.filter(s => {
+                const regId = s.registeredBy?._id || s.registeredBy;
+                const currentUserId = user?.id || user?._id;
+                return regId && currentUserId && regId.toString() === currentUserId.toString();
+              })
+            : res.data;
+          setSearchedStudents(filtered);
+        }
+      } catch (error) {
+        console.error("Error searching students:", error);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, isPartner, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1206,19 +1246,85 @@ const ApplyServiceForm = ({ services, students, onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Search Student</label>
-          <select 
-            required
-            value={formData.studentId}
-            onChange={e => setFormData({...formData, studentId: e.target.value})}
-            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
+        {/* Custom Searchable Student Select */}
+        <div className="space-y-1.5 relative" ref={dropdownRef}>
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+            Search Student
+          </label>
+          
+          {/* Trigger Button */}
+          <div 
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus-within:border-primary hover:border-primary/50 outline-none transition-all font-bold cursor-pointer flex items-center justify-between"
           >
-            <option value="">Select a student...</option>
-            {displayedStudents.map(s => (
-              <option key={s._id} value={s._id}>{s.name} ({s.university?.name})</option>
-            ))}
-          </select>
+            <span className={formData.studentId ? "text-foreground" : "text-muted-foreground font-medium"}>
+              {selectedStudentName || "Select a student..."}
+            </span>
+            <ChevronRight className={cn("w-4 h-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+          </div>
+
+          {/* Dropdown Popover */}
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-0 right-0 mt-2 p-4 bg-card border border-border rounded-[1.5rem] shadow-2xl z-[10005] space-y-3"
+              >
+                {/* Search Input inside Popover */}
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Type at least 3 letters to search student..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-muted/30 focus:border-primary outline-none transition-all text-xs font-bold"
+                  />
+                </div>
+
+                {/* Dropdown Options */}
+                <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                  {searchLoading ? (
+                    <div className="py-8 text-center">
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Searching Database...</p>
+                    </div>
+                  ) : searchQuery.trim().length < 3 ? (
+                    <div className="py-6 text-center text-muted-foreground text-xs font-medium">
+                      Please type 3 or more letters to search.
+                    </div>
+                  ) : searchedStudents.length === 0 ? (
+                    <div className="py-6 text-center text-muted-foreground text-xs font-medium">
+                      No students found.
+                    </div>
+                  ) : (
+                    searchedStudents.map((student) => (
+                      <div
+                        key={student._id}
+                        onClick={() => {
+                          setFormData({ ...formData, studentId: student._id });
+                          setSelectedStudentName(`${student.name} (${student.university?.name || "No University"})`);
+                          setIsOpen(false);
+                          setSearchQuery("");
+                          setSearchedStudents([]);
+                        }}
+                        className="flex flex-col px-4 py-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-all cursor-pointer"
+                      >
+                        <span className="text-xs font-black">{student.name}</span>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {student.email} • {student.university?.name || "No University"}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

@@ -55,6 +55,11 @@ import {
   deleteFollowup,
   updateStudentStatus,
 } from "../../api/student.api";
+import {
+  getServiceApplications,
+  getServiceDefinitions,
+  applyForService,
+} from "../../api/documentsServices.api";
 import { showAlert } from "../../redux/alertSlice";
 import { getTickets } from "../../api/ticket.api";
 import TicketChat from "../Tickets/TicketChat";
@@ -139,6 +144,16 @@ export default function StudentPaymentDetail() {
   const [viewingDoc, setViewingDoc] = useState(null);
   const [activePaymentSubTab, setActivePaymentSubTab] = useState("schedule");
 
+  // Services & Documents states
+  const [serviceApplications, setServiceApplications] = useState([]);
+  const [serviceDefinitions, setServiceDefinitions] = useState([]);
+  const [newServiceData, setNewServiceData] = useState({
+    serviceId: "",
+    subCategory: "",
+    adminRemarks: ""
+  });
+  const [isServiceApplying, setIsServiceApplying] = useState(false);
+
   useEffect(() => {
     fetchData();
     initializeCashfree();
@@ -188,18 +203,22 @@ export default function StudentPaymentDetail() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [studentRes, paymentsRes, schedulesRes, followupsRes] =
+      const [studentRes, paymentsRes, schedulesRes, followupsRes, servicesRes, definitionsRes] =
         await Promise.all([
           getStudentById(id),
           getStudentPayments(id),
           getStudentSchedules(id),
           getFollowups(id),
+          getServiceApplications({ studentId: id }),
+          getServiceDefinitions(),
         ]);
 
       if (studentRes.success) setStudent(studentRes.data);
       if (paymentsRes.success) setPayments(paymentsRes.data);
       if (schedulesRes.success) setSchedules(schedulesRes.data);
       if (followupsRes.success) setFollowups(followupsRes.data);
+      if (servicesRes.success) setServiceApplications(servicesRes.data);
+      if (definitionsRes.success) setServiceDefinitions(definitionsRes.data);
       fetchStudentTickets();
     } catch (error) {
       dispatch(showAlert({ type: "error", message: "Failed to load details" }));
@@ -504,6 +523,7 @@ export default function StudentPaymentDetail() {
     { id: "payment", label: "Payment Overview", icon: CreditCard },
     { id: "profile", label: "Student Profile", icon: User },
     { id: "documents", label: "Documents", icon: FileDigit },
+    { id: "services", label: "Services", icon: Briefcase },
     { id: "tickets", label: "Tickets", icon: MessageSquare },
     { id: "followup", label: "Status", icon: History },
   ].filter((tab) => {
@@ -1504,6 +1524,250 @@ export default function StudentPaymentDetail() {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === "services" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: List of applied services */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm min-h-[500px] flex flex-col">
+                    <div className="mb-8">
+                      <h3 className="text-xl font-black mb-1">Applied Documents & Services</h3>
+                      <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                        Active services and document processes for this student
+                      </p>
+                    </div>
+
+                    <div className="flex-1 space-y-4">
+                      {serviceApplications.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center py-20 text-center space-y-4">
+                          <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto">
+                            <Briefcase className="w-10 h-10 text-muted-foreground opacity-20" />
+                          </div>
+                          <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                            No services applied yet.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {serviceApplications.map((app) => (
+                            <div
+                              key={app._id}
+                              className="p-6 bg-muted/20 rounded-[2rem] border border-border/50 hover:border-primary/20 transition-all flex flex-col justify-between"
+                            >
+                              <div>
+                                <div className="flex justify-between items-start gap-4 mb-4">
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                                      app.status === "Pending Applications"
+                                        ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                        : app.status === "Application On Progress"
+                                        ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                        : app.status === "Documents Received"
+                                        ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20"
+                                        : app.status === "Documents Sent Courier"
+                                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                        : "bg-red-500/10 text-red-600 border-red-500/20"
+                                    }`}
+                                  >
+                                    {app.status}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">
+                                    #{app._id.slice(-6)}
+                                  </span>
+                                </div>
+
+                                <h4 className="text-sm font-black mb-1 text-foreground">
+                                  {app.service?.title || "Document / Service"}
+                                </h4>
+                                <p className="text-[10px] font-black text-primary uppercase tracking-wider mb-3">
+                                  Sub-cat: {app.subCategory || "None"}
+                                </p>
+
+                                {app.adminRemarks && (
+                                  <div className="p-3 bg-card border border-border rounded-xl text-xs text-muted-foreground mb-4">
+                                    <p className="font-bold mb-0.5">Remarks:</p>
+                                    <p className="font-medium italic leading-relaxed">{app.adminRemarks}</p>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="pt-4 border-t border-border/50 flex justify-between items-center mt-4">
+                                <div>
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Fee</p>
+                                  <p className="text-sm font-black">₹{app.feeAmount?.toLocaleString()}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Payment</p>
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                                      app.paymentStatus === "Paid"
+                                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                        : app.paymentStatus === "Partially Paid"
+                                        ? "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                        : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                    }`}
+                                  >
+                                    {app.paymentStatus}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Apply New Service Card */}
+                <div className="lg:col-span-1">
+                  <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm sticky top-24">
+                    <h3 className="text-xl font-black mb-8 flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                        <Plus className="w-5 h-5" />
+                      </div>
+                      Apply for a Service
+                    </h3>
+
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!newServiceData.serviceId) return;
+                        setIsServiceApplying(true);
+                        try {
+                          const res = await applyForService({
+                            studentId: id,
+                            serviceId: newServiceData.serviceId,
+                            subCategory: newServiceData.subCategory,
+                            adminRemarks: newServiceData.adminRemarks,
+                          });
+                          if (res.success) {
+                            dispatch(
+                              showAlert({
+                                type: "success",
+                                message: "Service application initiated successfully!",
+                              })
+                            );
+                            setNewServiceData({
+                              serviceId: "",
+                              subCategory: "",
+                              adminRemarks: "",
+                            });
+                            // Refresh list
+                            const servicesRes = await getServiceApplications({ studentId: id });
+                            if (servicesRes.success) setServiceApplications(servicesRes.data);
+                          }
+                        } catch (error) {
+                          dispatch(
+                            showAlert({
+                              type: "error",
+                              message: error.response?.data?.message || "Failed to apply for service",
+                            })
+                          );
+                        } finally {
+                          setIsServiceApplying(false);
+                        }
+                      }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Service Template
+                        </label>
+                        <select
+                          required
+                          value={newServiceData.serviceId}
+                          onChange={(e) => {
+                            const sId = e.target.value;
+                            setNewServiceData({
+                              ...newServiceData,
+                              serviceId: sId,
+                              subCategory: "",
+                            });
+                          }}
+                          className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-xs font-bold uppercase tracking-wider"
+                        >
+                          <option value="">Select Service...</option>
+                          {serviceDefinitions.map((def) => (
+                            <option key={def._id} value={def._id}>
+                              {def.title} (₹{def.currentFee?.toLocaleString()})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {newServiceData.serviceId && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Sub-Category
+                          </label>
+                          <select
+                            required={
+                              serviceDefinitions.find((s) => s._id === newServiceData.serviceId)
+                                ?.subCategories?.length > 0
+                            }
+                            value={newServiceData.subCategory}
+                            onChange={(e) =>
+                              setNewServiceData({
+                                ...newServiceData,
+                                subCategory: e.target.value,
+                              })
+                            }
+                            className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-xs font-bold uppercase tracking-wider"
+                          >
+                            <option value="">
+                              {serviceDefinitions.find((s) => s._id === newServiceData.serviceId)
+                                ?.subCategories?.length > 0
+                                ? "Select sub-cat..."
+                                : "No sub-categories"}
+                            </option>
+                            {serviceDefinitions
+                              .find((s) => s._id === newServiceData.serviceId)
+                              ?.subCategories?.map((sub, i) => (
+                                <option key={i} value={sub}>
+                                  {sub}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                          Internal Remarks
+                        </label>
+                        <textarea
+                          value={newServiceData.adminRemarks}
+                          onChange={(e) =>
+                            setNewServiceData({
+                              ...newServiceData,
+                              adminRemarks: e.target.value,
+                            })
+                          }
+                          className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-sm h-32 leading-relaxed"
+                          placeholder="Add any specific instructions..."
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isServiceApplying || !newServiceData.serviceId}
+                        className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                      >
+                        {isServiceApplying ? (
+                          <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            Apply Service
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
               </div>
             )}
 
