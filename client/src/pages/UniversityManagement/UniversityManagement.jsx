@@ -65,6 +65,8 @@ const PREDEFINED_CHECKLISTS = [
 const PROGRAM_TYPES = [
   { value: "Bachelors Degree", label: "Bachelors Degree" },
   { value: "Masters Degree", label: "Masters Degree" },
+  { value: "PG Diploma", label: "PG Diploma" },
+  { value: "PG Deploma", label: "PG Deploma" },
   { value: "Skill Programs", label: "Skill Programs" },
   { value: "Skill Test", label: "Skill Test" },
 ];
@@ -893,6 +895,10 @@ export default function UniversityManagement() {
                               ) : prog.programType === "Skill Test" ? (
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20">
                                   Skill Test
+                                </span>
+                              ) : prog.programType === "PG Deploma" || prog.programType === "PG Diploma" ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-500/10 text-pink-600 border border-pink-500/20">
+                                  {prog.programType}
                                 </span>
                               ) : (
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20">

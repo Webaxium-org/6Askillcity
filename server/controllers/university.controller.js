@@ -5,6 +5,7 @@ import ProgramFee from "../models/programFee.js";
 import ActivityLog from "../models/activityLog.js";
 import createError from "http-errors";
 import xlsx from "xlsx";
+import mongoose from "mongoose";
 
 // Helper to log activity
 const logActivity = async (action, details, performedBy, targetType, targetId) => {
@@ -80,9 +81,13 @@ export const updateUniversity = async (req, res, next) => {
 
 export const getPrograms = async (req, res, next) => {
   try {
-    const { universityId } = req.query;
+    const { universityId, programType, isActive } = req.query;
     const filter = {};
     if (universityId) filter.university = universityId;
+    if (programType) filter.programType = programType;
+    if (isActive !== undefined) {
+      filter.isActive = isActive === "true";
+    }
     const programs = await Program.find(filter).populate("university", "name").sort({ name: 1 });
     res.status(200).json({ success: true, data: programs });
   } catch (error) {
@@ -141,7 +146,11 @@ export const getBranches = async (req, res, next) => {
   try {
     const { programId } = req.query;
     const filter = {};
-    if (programId) filter.program = programId;
+    if (programId && mongoose.Types.ObjectId.isValid(programId)) {
+      filter.program = new mongoose.Types.ObjectId(programId);
+    } else if (programId) {
+      filter.program = null;
+    }
 
     // Use aggregation to get branches with their current fees
     const branches = await Branch.aggregate([
@@ -188,7 +197,7 @@ export const createBranch = async (req, res, next) => {
   try {
     console.log("Creating Branch with body:", req.body);
     const { name, program, duration, type, isActive, applicationFee, tuitionFee, totalFee } = req.body;
-    
+
     const branch = new Branch({ name, program, duration, type, isActive });
     await branch.save();
 
@@ -364,6 +373,9 @@ export const importUniversityData = async (req, res, next) => {
       if (n.includes("master") || n.includes("post graduate") || n.includes("m.com") || n.includes("mba") || n.includes("m.ca") || n.includes("m.tech") || n.includes("m.sc") || n.includes("m.a")) {
         return "Masters Degree";
       }
+      if (n.includes("diploma") || n.includes("pgd")) {
+        return "PG Diploma";
+      }
       if (n.includes("skill programs") || n.includes("vocational")) {
         return "Skill Programs";
       }
@@ -469,4 +481,3 @@ export const importUniversityData = async (req, res, next) => {
     next(error);
   }
 };
-

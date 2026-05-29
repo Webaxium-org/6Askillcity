@@ -33,6 +33,7 @@ import DocumentsServices from "./pages/Dashboards/DocumentsServices";
 import PrivacyPolicy from "./pages/Information/PrivacyPolicy";
 import RefundPolicy from "./pages/Information/RefundPolicy";
 import Terms from "./pages/Information/Terms";
+import SpecializationDetails from "./pages/SpecializationDetails";
 
 function App() {
   return (
@@ -129,6 +130,7 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/specialization/:programId" element={<SpecializationDetails />} />
 
             {/* Error Pages */}
             <Route path="/server-error" element={<ServerError />} />

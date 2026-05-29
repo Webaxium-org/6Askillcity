@@ -75,3 +75,15 @@ export const importUniversityExcel = async (universityId, file) => {
   });
   return response.data;
 };
+
+export const getPublicPrograms = async (params) => {
+  const response = await axiosInstance.get("/university-management/public/programs", { params });
+  return response.data;
+};
+
+export const getPublicBranches = async (programId) => {
+  const response = await axiosInstance.get("/university-management/public/branches", {
+    params: { programId },
+  });
+  return response.data;
+};

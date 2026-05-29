@@ -21,7 +21,11 @@ const localUpload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
-// All routes here require authentication
+// Public routes (No authentication required)
+router.get("/public/programs", getPrograms);
+router.get("/public/branches", getBranches);
+
+// All routes below require authentication
 router.use(requireAuth);
 
 // GET routes are accessible by both admins and partners

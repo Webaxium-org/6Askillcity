@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { axiosInstance } from "../../api/axiosInstance";
+import { getPublicPrograms, getPublicBranches } from "../../api/university.api";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
@@ -356,227 +357,170 @@ const LoadingScreen = ({ onFinished }) => {
   );
 };
 
-const programCategories = [
-  {
-    id: "bachelors",
-    title: "Bachelors Degree",
-    subtitle: "Undergraduate Education",
-    count: "5 Programs",
-    icon: GraduationCap,
-    color: "from-blue-600 to-indigo-600",
-    accentColor: "#17468C",
-    shadowColor: "rgba(23,70,140,0.15)",
-    bgLight: "bg-blue-50/50",
-    borderColor: "border-blue-100",
-    description: "Establish a strong professional foundation with our industry-aligned undergraduate programs, delivering rigorous academic theory combined with core practical skills.",
-    programs: [
-      "Bachelor of Commerce (BCom)",
-      "Bachelor of Arts (BA)",
-      "Bachelor of Science (BSc)",
-      "Bachelor of Computer Applications (BCA)",
-      "Bachelor of Business Administration (BBA)",
-    ],
-  },
-  {
-    id: "masters",
-    title: "Masters Degree",
-    subtitle: "Postgraduate Excellence",
-    count: "5 Programs",
-    icon: School,
-    color: "from-[#B82424] to-red-500",
-    accentColor: "#B82424",
-    shadowColor: "rgba(184,36,36,0.15)",
-    bgLight: "bg-red-50/50",
-    borderColor: "border-red-100",
-    description: "Advance your expertise and unlock executive leadership opportunities with our advanced, research-informed postgraduate degrees tailored for modern career demands.",
-    programs: [
-      "Master of Commerce (MCom)",
-      "Master of Arts (MA)",
-      "Master of Science (MSc)",
-      "Master of Computer Applications (MCA)",
-      "Master of Business Administration (MBA)",
-    ],
-  },
-  {
-    id: "pg-diploma",
-    title: "PG Diploma",
-    subtitle: "Specialized Certifications",
-    count: "48 Programs",
-    icon: ShieldCheck,
-    color: "from-indigo-600 to-purple-600",
-    accentColor: "#6366f1",
-    shadowColor: "rgba(99,102,241,0.15)",
-    bgLight: "bg-indigo-50/50",
-    borderColor: "border-indigo-100",
-    description: "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
-    programs: [
-      "Addiction Counselling",
-      "Banking & Finance",
-      "Beauty Therapy",
-      "Business & Marketing",
-      "Business Management",
-      "Child Psychology",
-      "Cognitive Behaviour Therapy",
-      "Computer Application",
-      "Cosmetology",
-      "Counselling Psychology",
-      "Disaster Risk Reduction",
-      "Environmental & Social Governance",
-      "Environmental Health & Safety",
-      "Environmental Management",
-      "Fashion & Creative Makeup",
-      "Finance Management",
-      "Fire & Safety",
-      "Fire Fighting",
-      "Fire Safety & Audit",
-      "Fire Technology & Industrial Safety Operation",
-      "GIS & Remote Sensing",
-      "Hair Dressing",
-      "Health Management",
-      "Hospital & Tourism",
-      "Hospital Management",
-      "Hotel Management",
-      "HR Management",
-      "Industrial Safety",
-      "Industrial Safety & Environment Management",
-      "Journalism & Mass Communication",
-      "Makeup Artistry",
-      "Marketing",
-      "Mass Communication",
-      "Material Management",
-      "Metallurgy",
-      "Nail Technology",
-      "Personal Management",
-      "Personnel Management",
-      "PGDIT",
-      "Physical Education",
-      "Rural Development",
-      "Salon Management",
-      "School Counselling",
-      "Special Effects Makeup",
-      "Special Need",
-      "Styling & Makeup Artistry",
-      "Script Writing & Direction",
-      "Supply Chain Management"
-    ],
-  },
-  {
-    id: "skill-programs",
-    title: "Skill Programs",
-    subtitle: "Skilled & Practical Learning",
-    count: "102 Programs",
-    icon: Sparkles,
-    color: "from-amber-600 to-orange-500",
-    accentColor: "#d97706",
-    shadowColor: "rgba(217,119,6,0.15)",
-    bgLight: "bg-amber-50/50",
-    borderColor: "border-amber-100",
-    description: "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
-    programs: [
-      "CARPET",
-      "AUTOMOTIVE REPAIR",
-      "FABRICATION",
-      "ELECTRONICS",
-      "FASHION DESIGN",
-      "GARMENT MAKING",
-      "GEMS & JEWELLERY",
-      "HOSPITALITY",
-      "BEAUTY CULTURE & HAIR DRESSING",
-      "CHEMICAL",
-      "INFORMATION & COMMUNICATION TECHNOLOGY",
-      "KHADI",
-      "MEDICAL & NURSING",
-      "PRINTING",
-      "PROCESS INSTRUMENTATION",
-      "PRODUCTION & MANUFACTURING",
-      "REFRIGERATION & AIR CONDITIONING",
-      "RETAIL",
-      "TOY MAKING",
-      "INDIAN SWEETS, SNACKS & FOOD",
-      "PAINT",
-      "CONSTRUCTION",
-      "SECURITY",
-      "WOOD WORK",
-      "MEDIA",
-      "FOOD PROCESSING AND PRESERVATION",
-      "LEATHER AND SPORTS GOODS",
-      "TRAVEL AND TOURISM",
-      "COURIER AND LOGISTICS",
-      "INSURANCE AND LOGISTICS",
-      "JUTE SECTOR",
-      "JUTE DIVERSIFIED PRODUCTS SECTOR",
-      "FISHERIES AND ALLIED SECTOR",
-      "FIRE AND SAFETY ENGINEERING",
-      "BUSINESS AND COMMERCE",
-      "MATERIAL MANAGEMENT",
-      "HAND MADE PAPER AND PAPER PRODUCTS",
-      "INDUSTRIAL ELECTRICAL",
-      "TEXTILE - COTTON GINNING",
-      "TEXTILE - COTTON SPINNING",
-      "TEXTILES - DOUBLING",
-      "TEXTILES - WINDING",
-      "TEXTILES - REELING",
-      "TEXTILES - WEAVING PREPARATION",
-      "TEXTILES - WEAVING",
-      "TEXTILES - CHEMICAL PROCESSING",
-      "TEXTILES - QUALITY CONTROL",
-      "TEXTILES - NON - WOVEN",
-      "TEXTILES- WOOL",
-      "TEXTILES - SILK",
-      "TEXTILES - HDPE/PP",
-      "SERICULTURE",
-      "POULTRY",
-      "ANIMAL HUSBANDRY",
-      "GLASSWARE",
-      "APICULTURE",
-      "ELECTRICAL",
-      "ELECTRO-MECHANICAL",
-      "SPA AND WELLNESS",
-      "RENEWABLE ENERGY",
-      "FRAGRANCE, FLAVOUR AND PERFUME",
-      "FILM PRODUCTION",
-      "BAMBOO FABRICATION",
-      "SHIPPING",
-      "AGRICULTURE",
-      "SOFT SKILLS",
-      "HOME DÉCOR - ART BONSAI",
-      "HOME DÉCOR - ART FLOWER",
-      "HOME DÉCOR - ART JEWELLERY",
-      "HOME DÉCOR - ART CERAMIC CRAFT",
-      "HOME DÉCOR - ART PAINTING",
-      "HOME DÉCOR - ART MEHANDI",
-      "HOME DÉCOR - ART WOOD HANDICRAFT",
-      "ANIMAL HUSBANDRY AND MEAT PROCESSING",
-      "HOME DÉCOR - ART WATERFALLS",
-      "TELECOM",
-      "COUNSELLING SKILL",
-      "FISHING SKILLS",
-      "COMPUTER COURSES",
-      "COMMUNICATIVE & SOFT SKILLS",
-      "OFFICE MANAGEMENT EDUCATION",
-      "HOTEL MANAGEMENT & TOURISM",
-      "FASHION DESIGNING COURSES",
-      "TECHNICAL TRAINING EDUCATION",
-      "AVIATION COURSES",
-      "FIRE & SAFETY EDUCATION",
-      "ELECTRICAL & ELECTRONICS",
-      "AUTOMOBILE COURSES",
-      "CIVIL & ARCHITECTURAL EDUCATION",
-      "INTERIOR & EXTERIOR EDUCATION",
-      "ALLIED HEALTH EDUCATION",
-      "AYURVEDA COURSES",
-      "STED BEAUTY SCHOOL",
-      "BUSINESS EDUCATION",
-      "STED MEDIA SCHOOL",
-      "CHILD EDUCATION",
-      "FISHERIES EDUCATION",
-      "TEXTILE EDUCATION",
-      "YOGA AND NATUROGRAPHY COURSES",
-      "AGRICULTURE EDUCATION",
-      "DAIRY EDUCATION",
-      "STED MUSIC SCHOOL"
-    ],
-  },
+const staticBachelors = [
+  "Bachelor of Commerce (BCom)",
+  "Bachelor of Arts (BA)",
+  "Bachelor of Science (BSc)",
+  "Bachelor of Computer Applications (BCA)",
+  "Bachelor of Business Administration (BBA)",
+];
+const staticMasters = [
+  "Master of Commerce (MCom)",
+  "Master of Arts (MA)",
+  "Master of Science (MSc)",
+  "Master of Computer Applications (MCA)",
+  "Master of Business Administration (MBA)",
+];
+const staticPgDiplomas = [
+  "Addiction Counselling",
+  "Banking & Finance",
+  "Beauty Therapy",
+  "Business & Marketing",
+  "Business Management",
+  "Child Psychology",
+  "Cognitive Behaviour Therapy",
+  "Computer Application",
+  "Cosmetology",
+  "Counselling Psychology",
+  "Disaster Risk Reduction",
+  "Environmental & Social Governance",
+  "Environmental Health & Safety",
+  "Environmental Management",
+  "Fashion & Creative Makeup",
+  "Finance Management",
+  "Fire & Safety",
+  "Fire Fighting",
+  "Fire Safety & Audit",
+  "Fire Technology & Industrial Safety Operation",
+  "GIS & Remote Sensing",
+  "Hair Dressing",
+  "Health Management",
+  "Hospital & Tourism",
+  "Hospital Management",
+  "Hotel Management",
+  "HR Management",
+  "Industrial Safety",
+  "Industrial Safety & Environment Management",
+  "Journalism & Mass Communication",
+  "Makeup Artistry",
+  "Marketing",
+  "Mass Communication",
+  "Material Management",
+  "Metallurgy",
+  "Nail Technology",
+  "Personal Management",
+  "Personnel Management",
+  "PGDIT",
+  "Physical Education",
+  "Rural Development",
+  "Salon Management",
+  "School Counselling",
+  "Special Effects Makeup",
+  "Special Need",
+  "Styling & Makeup Artistry",
+  "Script Writing & Direction",
+  "Supply Chain Management"
+];
+const staticSkillPrograms = [
+  "CARPET",
+  "AUTOMOTIVE REPAIR",
+  "FABRICATION",
+  "ELECTRONICS",
+  "FASHION DESIGN",
+  "GARMENT MAKING",
+  "HANDICRAFTS",
+  "LEATHER AND FOOTWEAR",
+  "PRINTING TECHNOLOGY",
+  "POULTRY FARMING",
+  "DAIRYING",
+  "LIVESTOCK BREEDING",
+  "ORGANIC FARMING",
+  "HORTICULTURE AND FORESTRY",
+  "APICULTURE AND SERICULTURE",
+  "AGRICULTURE MACHINERY AND IMPLEMENTS SECTOR",
+  "BEAUTY CULTURE",
+  "HAIR STYLING",
+  "SPA AND WELLNESS SECTOR",
+  "RENEWABLE ENERGY AND POWER SECTOR",
+  "GLASS DIVERSIFIED SECTOR",
+  "CLAY ART SECTOR",
+  "WATER RE-CYCLING AND SEWERAGE TREATMENT SECTOR",
+  "COSMETOLOGY AND TRICHOLOGY SECTOR",
+  "AEROSPACE AND AVIATION SECTOR",
+  "TELECOM SECTOR",
+  "COUNSELLING SKILLS SECTOR",
+  "MARINE AND SHIPPING SECTOR",
+  "HEALTH EDUCATION SECTOR",
+  "REIKI SECTOR",
+  "AYURVEDA SECTOR",
+  "STED BEAUTY SCHOOL SECTOR",
+  "COMPUTER SYSTEM AND APPLICATIONS SECTOR",
+  "BUSINESS AND MANAGEMENT EDUCATION SECTOR",
+  "MUSIC AND MEDIA SECTOR",
+  "ALLIED HEALTH EDUCATION SECTOR",
+  "CREATIVE ART AND CRAFTS SECTOR",
+  "FIRE AND SAFETY SECTOR",
+  "CIVIL ENGINEERING SECTOR",
+  "TEXTILE SECTOR",
+  "INTERIOR DESIGNING SECTOR",
+  "TEXTILE RE-CYCLING SECTOR",
+  "BEAUTY THERAPIST",
+  "BEAUTY CONSULTANT",
+  "FASHION DESIGNER",
+  "SEWING MACHINE OPERATOR",
+  "OFFICE ASSISTANT",
+  "COMPUTER OPERATOR",
+  "TALLY OPERATOR",
+  "LOGISTICS COORDINATOR",
+  "SOLAR TECHNICIAN",
+  "SPINNING TECHNICIAN",
+  "WEAVING TECHNICIAN",
+  "YOGA TEACHER",
+  "FIRE & SAFETY INSPECTOR",
+  "CRAFT INSTRUCTOR",
+  "DENTAL ASSISTANT",
+  "NURSING ASSISTANT",
+  "PHARMACY ASSISTANT",
+  "PANJAKARMA THERAPIST",
+  "SOUND ENGINEER",
+  "VEDIO EDITOR",
+  "PRE-SCHOOL TEACHER",
+  "TAILORING",
+  "REFRIGERATION & AC MECHANIC",
+  "PLUMBER",
+  "ELECTRICIAN",
+  "DRAFTSMAN CIVIL",
+  "DRAFTSMAN MECHANICAL",
+  "HOTEL MANAGEMENT",
+  "TOURIST GUIDE",
+  "CATERING",
+  "FOOD PRODUCTION",
+  "NURSERY MANAGEMENT",
+  "POULTRY FEED TECHNICIAN",
+  "BEEKEEPER",
+  "SILKWORM REARER",
+  "FIBER OPTICS TECHNICIAN",
+  "ROUTING AND SWITCHING",
+  "CALL CENTER EXECUTIVE",
+  "TENT DESIGNER",
+  "EVENT MANAGER",
+  "PHOTOGRAPHER",
+  "GRAPHIC DESIGNER",
+  "WEB DEVELOPER",
+  "APP DEVELOPER",
+  "CYBER SECURITY SPECIALIST",
+  "CLOUDE ARCHITECT",
+  "DATA ANALYST",
+  "AI ENGINEER",
+  "ROBOTIC TECHNICIAN",
+  "3D PRINTING OPERATOR",
+  "CNC MACHINE OPERATOR",
+  "WELDING INSPECTOR",
+  "NCTE APPROVED TRAINER",
+  "PCI VERIFIED PHARMACIST",
+  "BCI ADVOCATE ASSISTANT",
+  "AIU REGISTRATION DESK OFFICER",
+  "UGC COMPLIANCE SPECIALIST"
 ];
 
 export default function App() {
@@ -587,6 +531,118 @@ export default function App() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("bachelors");
   const [highlightInquiry, setHighlightInquiry] = useState(false);
+  const [dbPrograms, setDbPrograms] = useState([]);
+  const [dbBranches, setDbBranches] = useState([]);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const res = await getPublicPrograms({ isActive: "true" });
+        if (res.success) {
+          setDbPrograms(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch programs:", err);
+      }
+    };
+    const fetchBranches = async () => {
+      try {
+        const res = await getPublicBranches();
+        if (res.success) {
+          setDbBranches(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch branches:", err);
+      }
+    };
+    fetchPrograms();
+    fetchBranches();
+  }, []);
+
+  const bachelors = dbPrograms.filter((p) => p.programType === "Bachelors Degree");
+  const bachelorsList = bachelors.length > 0 
+    ? bachelors 
+    : staticBachelors.map((name, i) => ({ _id: `fallback-bach-${i}`, name, isFallback: true }));
+
+  const masters = dbPrograms.filter((p) => p.programType === "Masters Degree");
+  const mastersList = masters.length > 0 
+    ? masters 
+    : staticMasters.map((name, i) => ({ _id: `fallback-mast-${i}`, name, isFallback: true }));
+
+  const pgDiplomaBranches = dbBranches.filter(
+    (b) => b.program && (b.program.programType === "PG Diploma" || b.program.programType === "PG Deploma")
+  );
+  const pgDiplomasList = pgDiplomaBranches.length > 0 
+    ? pgDiplomaBranches.map((b) => ({
+        _id: b.program._id, 
+        name: b.name, 
+        isFallback: false
+      }))
+    : staticPgDiplomas.map((name, i) => ({ _id: `fallback-pgd-${i}`, name, isFallback: true }));
+
+  const skillPrograms = dbPrograms.filter((p) => p.programType === "Skill Programs");
+  const skillProgramsList = skillPrograms.length > 0 
+    ? skillPrograms 
+    : staticSkillPrograms.map((name, i) => ({ _id: `fallback-skill-${i}`, name, isFallback: true }));
+
+  const programCategories = [
+    {
+      id: "bachelors",
+      title: "Bachelors Degree",
+      subtitle: "Undergraduate Education",
+      count: `${bachelorsList.length} Programs`,
+      icon: GraduationCap,
+      color: "from-blue-600 to-indigo-600",
+      accentColor: "#17468C",
+      shadowColor: "rgba(23,70,140,0.15)",
+      bgLight: "bg-blue-50/50",
+      borderColor: "border-blue-100",
+      description: "Establish a strong professional foundation with our industry-aligned undergraduate programs, delivering rigorous academic theory combined with core practical skills.",
+      programs: bachelorsList,
+    },
+    {
+      id: "masters",
+      title: "Masters Degree",
+      subtitle: "Postgraduate Excellence",
+      count: `${mastersList.length} Programs`,
+      icon: School,
+      color: "from-[#B82424] to-red-500",
+      accentColor: "#B82424",
+      shadowColor: "rgba(184,36,36,0.15)",
+      bgLight: "bg-red-50/50",
+      borderColor: "border-red-100",
+      description: "Advance your expertise and unlock executive leadership opportunities with our advanced, research-informed postgraduate degrees tailored for modern career demands.",
+      programs: mastersList,
+    },
+    {
+      id: "pg-diploma",
+      title: "PG Diploma",
+      subtitle: "Specialized Certifications",
+      count: `${pgDiplomasList.length} Programs`,
+      icon: ShieldCheck,
+      color: "from-indigo-600 to-purple-600",
+      accentColor: "#6366f1",
+      shadowColor: "rgba(99,102,241,0.15)",
+      bgLight: "bg-indigo-50/50",
+      borderColor: "border-indigo-100",
+      description: "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
+      programs: pgDiplomasList,
+    },
+    {
+      id: "skill-programs",
+      title: "Skill Programs",
+      subtitle: "Skilled & Practical Learning",
+      count: `${skillProgramsList.length} Programs`,
+      icon: Sparkles,
+      color: "from-amber-600 to-orange-500",
+      accentColor: "#d97706",
+      shadowColor: "rgba(217,119,6,0.15)",
+      bgLight: "bg-amber-50/50",
+      borderColor: "border-amber-100",
+      description: "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
+      programs: skillProgramsList,
+    },
+  ];
 
   useEffect(() => {
     // Handle hash scrolling when the component mounts or hash changes
@@ -1757,11 +1813,19 @@ export default function App() {
                                 <div className="grid sm:grid-cols-2 gap-4">
                                   {cat.programs.map((prog, pIdx) => (
                                     <motion.div
-                                      key={prog}
+                                      key={prog._id}
                                       initial={{ opacity: 0, y: 10 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       transition={{ delay: Math.min(pIdx, 20) * 0.03, duration: 0.3 }}
-                                      className="flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item cursor-default"
+                                      onClick={() => {
+                                        if (!prog.isFallback) {
+                                          navigate(`/specialization/${prog._id}`);
+                                        }
+                                      }}
+                                      className={cn(
+                                        "flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item",
+                                        prog.isFallback ? "cursor-default" : "cursor-pointer hover:border-primary/20 hover:shadow-primary/5"
+                                      )}
                                     >
                                       <div className="flex items-center gap-3">
                                         <CheckCircle
@@ -1770,12 +1834,17 @@ export default function App() {
                                           style={{ color: cat.accentColor }}
                                         />
                                         <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors uppercase">
-                                          {prog}
+                                          {prog.name}
                                         </span>
                                       </div>
                                       <ArrowRight
                                         size={14}
-                                        className="text-muted-foreground/0 group-hover/item:text-muted-foreground/100 group-hover/item:translate-x-0.5 transition-all duration-300"
+                                        className={cn(
+                                          "transition-all duration-300",
+                                          prog.isFallback
+                                            ? "text-muted-foreground/0 group-hover/item:text-muted-foreground/100 group-hover/item:translate-x-0.5"
+                                            : "text-muted-foreground group-hover/item:text-primary group-hover/item:translate-x-0.5"
+                                        )}
                                       />
                                     </motion.div>
                                   ))}
