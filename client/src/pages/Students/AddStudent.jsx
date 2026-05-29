@@ -424,6 +424,7 @@ export default function AddStudent() {
     branches: [],
   });
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
 
   // 3D Tilt Logic
   const x = useMotionValue(0);
@@ -828,6 +829,7 @@ export default function AddStudent() {
     newStatus = null,
     newEnrollmentStatus = null,
   ) => {
+    setSubmitError("");
     if (!formData.name) {
       if (!quiet)
         dispatch(
@@ -930,9 +932,11 @@ export default function AddStudent() {
       }
     } catch (error) {
       console.error("Draft Save Error:", error);
+      const errMsg = error.response?.data?.message || "Failed to save draft.";
+      setSubmitError(errMsg);
       if (!quiet)
         dispatch(
-          showAlert({ type: "error", message: "Failed to save draft." }),
+          showAlert({ type: "error", message: errMsg }),
         );
     } finally {
       setLoading(false);
@@ -1114,6 +1118,7 @@ export default function AddStudent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError("");
 
     // Validation for Final Step (Enrollment Selection)
     if (currentStep === 3) {
@@ -1171,11 +1176,13 @@ export default function AddStudent() {
       navigate("/dashboard/applications");
     } catch (error) {
       console.error("Submission Error:", error);
+      const errMsg =
+        error.response?.data?.message || "Failed to submit application.";
+      setSubmitError(errMsg);
       dispatch(
         showAlert({
           type: "error",
-          message:
-            error.response?.data?.message || "Failed to submit application.",
+          message: errMsg,
         }),
       );
     } finally {
@@ -1971,6 +1978,17 @@ export default function AddStudent() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {submitError && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl border border-rose-500/20 bg-rose-500/5 text-rose-500 text-xs font-bold flex items-center gap-3"
+            >
+              <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              <span>{submitError}</span>
+            </motion.div>
+          )}
 
           <div className="flex items-center justify-between bg-card border border-border rounded-[2rem] p-6 shadow-xl sticky bottom-6 z-50">
             <div className="flex items-center gap-3">

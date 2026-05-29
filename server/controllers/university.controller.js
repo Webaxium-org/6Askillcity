@@ -451,15 +451,6 @@ export const importUniversityData = async (req, res, next) => {
           isActive: true
         });
         await branch.save();
-
-        const defaultFee = new ProgramFee({
-          branch: branch._id,
-          applicationFee: 0,
-          tuitionFee: 0,
-          totalFee: 0,
-          isCurrent: true
-        });
-        await defaultFee.save();
       } else {
         branch.duration = currentDuration || branch.duration;
         await branch.save();
