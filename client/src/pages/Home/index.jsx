@@ -75,7 +75,7 @@ const Button = React.forwardRef(
     };
 
     let finalClass = cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
       variants[variant],
       sizes[size],
       className,
@@ -90,9 +90,9 @@ const Button = React.forwardRef(
       finalClass = finalClass.replace(/font-medium/g, "");
     }
 
-    const hasCustomTextSize = className?.includes("text-base") || className?.includes("text-lg") || className?.includes("text-xl") || className?.includes("text-2xl") || variants[variant]?.includes("text-base") || variants[variant]?.includes("text-lg");
+    const hasCustomTextSize = className?.includes("text-sm") || className?.includes("text-lg") || className?.includes("text-xl") || className?.includes("text-2xl") || variants[variant]?.includes("text-sm") || variants[variant]?.includes("text-lg");
     if (hasCustomTextSize) {
-      finalClass = finalClass.replace(/text-sm/g, "");
+      finalClass = finalClass.replace(/text-base/g, "");
     }
 
     return (
@@ -560,29 +560,29 @@ export default function App() {
   }, []);
 
   const bachelors = dbPrograms.filter((p) => p.programType === "Bachelors Degree");
-  const bachelorsList = bachelors.length > 0 
-    ? bachelors 
+  const bachelorsList = bachelors.length > 0
+    ? bachelors
     : staticBachelors.map((name, i) => ({ _id: `fallback-bach-${i}`, name, isFallback: true }));
 
   const masters = dbPrograms.filter((p) => p.programType === "Masters Degree");
-  const mastersList = masters.length > 0 
-    ? masters 
+  const mastersList = masters.length > 0
+    ? masters
     : staticMasters.map((name, i) => ({ _id: `fallback-mast-${i}`, name, isFallback: true }));
 
   const pgDiplomaBranches = dbBranches.filter(
     (b) => b.program && (b.program.programType === "PG Diploma" || b.program.programType === "PG Deploma")
   );
-  const pgDiplomasList = pgDiplomaBranches.length > 0 
+  const pgDiplomasList = pgDiplomaBranches.length > 0
     ? pgDiplomaBranches.map((b) => ({
-        _id: b.program._id, 
-        name: b.name, 
-        isFallback: false
-      }))
+      _id: b.program._id,
+      name: b.name,
+      isFallback: false
+    }))
     : staticPgDiplomas.map((name, i) => ({ _id: `fallback-pgd-${i}`, name, isFallback: true }));
 
   const skillPrograms = dbPrograms.filter((p) => p.programType === "Skill Programs");
-  const skillProgramsList = skillPrograms.length > 0 
-    ? skillPrograms 
+  const skillProgramsList = skillPrograms.length > 0
+    ? skillPrograms
     : staticSkillPrograms.map((name, i) => ({ _id: `fallback-skill-${i}`, name, isFallback: true }));
 
   const programCategories = [
@@ -783,7 +783,7 @@ export default function App() {
                       variant="brandGradient"
                       size="lg"
                       onClick={() => navigate("/register-admission-point")}
-                      className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-base font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-8 py-5 h-auto"
+                      className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-lg font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-8 py-5 h-auto"
                     >
                       Join Education Network <ArrowRight size={18} className="ml-2.5 stroke-[2]" />
                     </Button>
@@ -791,53 +791,94 @@ export default function App() {
 
                   <motion.div
                     variants={fadeInUp}
-                    className="pt-8 space-y-4"
+                    className="pt-8"
                   >
-                    <div className="flex items-center gap-4">
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground shrink-0">
-                        Recognized By
-                      </p>
-                      <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-                    </div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -30, filter: "blur(5px)" }}
+                      whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{ duration: 0.8, type: "spring", bounce: 0.25 }}
+                      whileHover={{
+                        scale: 1.02,
+                        x: 4,
+                        boxShadow: "0 20px 25px -5px rgba(23, 70, 140, 0.08), 0 8px 10px -6px rgba(23, 70, 140, 0.08)"
+                      }}
+                      className="relative bg-gradient-to-r from-[#17468C]/8 via-[#17468C]/2 to-transparent p-5 rounded-r-2xl max-w-xl flex flex-col sm:flex-row items-center sm:items-start gap-5 hover:from-[#17468C]/12 transition-all duration-300 group cursor-default shadow-sm border border-[#17468C]/10 border-l-0 pl-7 overflow-hidden"
+                    >
+                      {/* Infinite Shifting Gradient Left-Border Line */}
+                      <motion.div
+                        className="absolute left-0 top-0 bottom-0 w-[4px] rounded-l-2xl"
+                        animate={{
+                          background: [
+                            "linear-gradient(to bottom, #17468C, #B82424)",
+                            "linear-gradient(to bottom, #B82424, #17468C)",
+                            "linear-gradient(to bottom, #17468C, #B82424)"
+                          ]
+                        }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                      />
 
-                    <div className="flex flex-wrap gap-4">
-                      {[
-                        {
-                          logo: Ugc,
-                          shortName: "UGC",
-                          fullName: "University Grants Commission",
-                        },
-                        {
-                          logo: Aiu,
-                          shortName: "AIU",
-                          fullName: "Association of Indian Universities",
-                        },
-                        {
-                          logo: Bci,
-                          shortName: "BCI",
-                          fullName: "Bar Council of India",
-                        },
-                      ].map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-3 bg-white/50 backdrop-blur-md border border-border/60 py-2 px-3.5 rounded-xl hover:bg-white hover:shadow-md hover:border-border transition-all duration-300 cursor-default"
-                        >
-                          <img
-                            src={item.logo}
-                            alt={item.shortName}
-                            className="w-8 h-8 object-contain shrink-0"
-                          />
-                          <div className="text-left leading-tight">
-                            <p className="text-xs font-black text-foreground">
-                              {item.shortName}
-                            </p>
-                            <p className="text-[9px] font-semibold text-muted-foreground">
-                              {item.fullName}
-                            </p>
-                          </div>
+                      {/* Floating Institutional Logo container */}
+                      <motion.div
+                        animate={{ y: [0, -3, 0] }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="w-16 h-16 bg-white p-2.5 rounded-xl border border-slate-100 shadow-md shrink-0 flex items-center justify-center group-hover:scale-108 group-hover:rotate-1 transition-all duration-300 relative overflow-hidden"
+                      >
+                        {/* Soft ambient aura behind logo */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-[#17468C]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                        <img
+                          src={Ugc}
+                          alt="UGC Logo"
+                          className="w-full h-full object-contain filter drop-shadow-sm relative z-10"
+                        />
+                      </motion.div>
+
+                      <div className="text-center sm:text-left space-y-2">
+                        <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#17468C]/10 text-[#17468C] border border-[#17468C]/20">
+                            <motion.span
+                              animate={{ rotate: [0, 15, -15, 0] }}
+                              transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                              className="inline-block"
+                            >
+                              <Sparkles size={10} className="stroke-[3]" />
+                            </motion.span>
+                            Recognized by
+                          </span>
+                          <span className="h-3 w-px bg-border hidden sm:block" />
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            Academic Accreditation
+                          </span>
                         </div>
-                      ))}
-                    </div>
+
+                        <p className="text-sm sm:text-base font-extrabold text-foreground leading-snug tracking-tight">
+                          Our partner University Is Recognized By{" "}
+                          <span className="font-black text-[#17468C] relative inline-block">
+                            University Grant's commission India ( UGC )
+                            <motion.span
+                              className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#17468C] to-[#B82424] rounded"
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "100%" }}
+                              viewport={{ once: true }}
+                              transition={{ delay: 0.5, duration: 1.2, ease: "easeOut" }}
+                            />
+                          </span>
+                        </p>
+                      </div>
+                    </motion.div>
                   </motion.div>
                 </motion.div>
 
@@ -901,14 +942,16 @@ export default function App() {
                     <CardHeader className="relative z-10 space-y-2 pb-4 pt-8 px-8">
                       <CardTitle
                         className={cn(
-                          "text-2xl font-bold transition-colors duration-500",
-                          highlightInquiry && "text-[#17468C]",
+                          "text-3xl font-black transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r select-none",
+                          highlightInquiry
+                            ? "from-[#B82424] to-red-500 scale-[1.02]"
+                            : "from-[#17468C] to-[#6366f1]"
                         )}
                       >
-                        Partner Inquiry
+                        Partner Enquiry
                       </CardTitle>
                       <CardDescription>
-                        Quick registration for new partners
+                        Register for admission partnerships now
                       </CardDescription>
                     </CardHeader>
 
@@ -979,7 +1022,7 @@ export default function App() {
                           variant="none"
                           size="none"
                           disabled={isSubmitting}
-                          className="w-full mt-4 py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group tracking-wide text-base h-auto cursor-pointer"
+                          className="w-full mt-4 py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group tracking-wide text-lg h-auto cursor-pointer"
                         >
                           {/* Premium subtle shine overlay */}
                           <div className="animate-shine pointer-events-none" />
@@ -988,12 +1031,12 @@ export default function App() {
                             {isSubmitting ? (
                               <>
                                 <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                                Submitting Inquiry...
+                                Submitting Enquiry...
                               </>
                             ) : (
                               <>
-                                Submit Registration
-                                <ArrowRight size={18} className="ml-2.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-1" />
+                                Submit
+                                <ArrowRight size={18} className="ml-.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-1" />
                               </>
                             )}
                           </span>
@@ -1013,66 +1056,8 @@ export default function App() {
             </div>
           </section>
 
-          {/* CORE STATS */}
-          <section className="py-20 border-y border-border bg-background relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
-            <div className="container mx-auto px-6 relative z-10">
-              <motion.div
-                initial="initial"
-                whileInView="animate"
-                viewport={{ once: true, margin: "-100px" }}
-                variants={staggerContainer}
-                className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 divide-x divide-border"
-              >
-                {[
-                  {
-                    label: "Students Helped",
-                    value: "80K+",
-                    color: "text-[#17468C]",
-                  },
-                  {
-                    label: "Programs",
-                    value: "140+",
-                    color: "text-[#B82424]",
-                  },
-                  {
-                    label: "Recruitment Partners",
-                    value: "65K+",
-                    color: "text-[#17468C]",
-                  },
-                  {
-                    label: "Partner Institutions",
-                    value: "150+",
-                    color: "text-[#B82424]",
-                  },
-                ].map((stat, i) => (
-                  <motion.div
-                    variants={scaleUp}
-                    key={i}
-                    className={cn(
-                      "text-center group cursor-default",
-                      i !== 0 && "pl-8 lg:pl-12",
-                    )}
-                  >
-                    <h4
-                      className={cn(
-                        "text-4xl lg:text-6xl font-black tracking-tighter mb-3 group-hover:scale-110 transition-transform duration-500 origin-bottom",
-                        stat.color,
-                      )}
-                    >
-                      <CountUp value={stat.value} />
-                    </h4>
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
-                      {stat.label}
-                    </p>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </div>
-          </section>
-
           {/* UNIVERSITY CARDS */}
-          <section id="universities" className="py-32 bg-muted relative">
+          <section id="universities" className="pb-32 bg-muted relative">
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-background to-transparent pointer-events-none" />
 
             <div className="container mx-auto px-6 relative z-10">
@@ -1097,7 +1082,7 @@ export default function App() {
                 </div>
                 <Button
                   variant="outline"
-                  className="group rounded-full shadow-sm hover:shadow-md hover:border-border transition-all"
+                  className="group rounded-full shadow-sm hover:shadow-md hover:border-border transition-all text-base font-semibold"
                 >
                   View All Partners{" "}
                   <ArrowRight
@@ -1240,10 +1225,10 @@ export default function App() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
                 {[
                   {
-                    title: "Application Centres",
+                    title: "Application Point",
                     subtitle: "Application Recruitment",
                     description:
-                      "6A Skillcity invites ADMISSION APPLICATION CENTRE from across India to partner and facilitate the admission process for students. Partnering with us allows admission recruiters to streamline the admission process for students, providing them with access to a diverse range of UGC-approved courses.",
+                      "6A Skillcity invites ADMISSION APPLICATION POINT from across India to partner and facilitate the admission process for students. Partnering with us allows admission recruiters to streamline the admission process for students, providing them with access to a diverse range of UGC-approved courses.",
                     color: "text-blue-400",
                     hoverGradient:
                       "from-[#17468C]/20 via-[#17468C]/5 to-transparent",
@@ -1364,14 +1349,14 @@ export default function App() {
                           variant="none"
                           size="none"
                           className={cn(
-                            "w-full py-5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 border-transparent text-base h-auto",
+                            "w-full py-5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 border-transparent text-lg h-auto",
                             path.buttonClass
                           )}
                           onClick={() => navigate("/register-admission-point")}
                         >
                           <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
                           <span className="relative z-10 flex items-center justify-center gap-2">
-                            Become a Partner
+                            Be a Partner
                             <ArrowRight size={18} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
                           </span>
                         </Button>
@@ -1413,7 +1398,7 @@ export default function App() {
                         The Global University, India, Arunachal Pradesh
                       </span>{" "}
                       handling all admission affairs. The foundation connects
-                      admission application centers and skill education
+                      admission application point and skill education
                       centers with The
                       Global University.
                     </p>
@@ -1425,7 +1410,7 @@ export default function App() {
                       The Global University’s diverse range of programs.
                     </p>
                     <p className="text-lg text-muted-foreground leading-relaxed italic border-l-4 border-[#B82424] pl-6 py-2">
-                      "As an academic partner, 6A Skillcity contributes to the
+                      "As an admission partner, 6A Skillcity contributes to the
                       advancement of education by promoting collaboration and
                       synergy between educational institutions and{" "}
                       {/* Bir
@@ -1555,7 +1540,6 @@ export default function App() {
                       <ul className="space-y-3.5 pt-2">
                         {[
                           "Provide nationwide access to premium UGC-approved degree pathways.",
-                          "Foster collaborative networks of training and certification centers.",
                           "Equip learners with employment-ready skills matching global standards.",
                           "Bridge the critical gap between traditional academia and modern industries."
                         ].map((point, idx) => (
@@ -1722,7 +1706,7 @@ export default function App() {
                 </div>
 
                 {/* Right Side: Tab Panel Content Card */}
-                <div className="lg:col-span-8">
+                <div className="lg:col-span-8 w-full min-w-0">
                   <AnimatePresence mode="wait">
                     {programCategories.map((cat) => {
                       if (activeCategory !== cat.id) return null;
@@ -1735,7 +1719,7 @@ export default function App() {
                           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                           exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
                           transition={{ duration: 0.4 }}
-                          className="bg-card/85 backdrop-blur-xl border border-border shadow-2xl shadow-foreground/5 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden"
+                          className="bg-card/85 backdrop-blur-xl border border-border shadow-2xl shadow-foreground/5 rounded-[2.5rem] p-6 sm:p-8 md:p-10 relative overflow-hidden"
                         >
                           {/* Corner ambient glow inside panel */}
                           <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br opacity-[0.03] rounded-bl-full pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, transparent)` }} />
@@ -1743,7 +1727,7 @@ export default function App() {
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/60 mb-8">
                             <div className="flex items-center gap-4">
                               <div
-                                className="p-4 rounded-2xl text-white shadow-lg"
+                                className="p-4 rounded-2xl text-white shadow-lg shrink-0"
                                 style={{
                                   background: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
                                   boxShadow: `0 8px 25px ${cat.shadowColor}`
@@ -1762,7 +1746,7 @@ export default function App() {
                             </div>
 
                             <Badge
-                              className="px-4 py-1.5 text-xs font-bold text-white border-transparent"
+                              className="px-4 py-1.5 text-xs font-bold text-white border-transparent self-start md:self-auto w-fit"
                               style={{
                                 background: `linear-gradient(to right, ${cat.accentColor}, ${cat.accentColor}cc)`
                               }}
@@ -1823,24 +1807,24 @@ export default function App() {
                                         }
                                       }}
                                       className={cn(
-                                        "flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item",
+                                        "flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item min-w-0",
                                         prog.isFallback ? "cursor-default" : "cursor-pointer hover:border-primary/20 hover:shadow-primary/5"
                                       )}
                                     >
-                                      <div className="flex items-center gap-3">
+                                      <div className="flex items-center gap-3 min-w-0 mr-2">
                                         <CheckCircle
                                           size={18}
-                                          className="transition-colors duration-300"
+                                          className="transition-colors duration-300 shrink-0"
                                           style={{ color: cat.accentColor }}
                                         />
-                                        <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors uppercase">
+                                        <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors uppercase text-sm sm:text-base tracking-tight truncate break-words">
                                           {prog.name}
                                         </span>
                                       </div>
                                       <ArrowRight
                                         size={14}
                                         className={cn(
-                                          "transition-all duration-300",
+                                          "transition-all duration-300 shrink-0",
                                           prog.isFallback
                                             ? "text-muted-foreground/0 group-hover/item:text-muted-foreground/100 group-hover/item:translate-x-0.5"
                                             : "text-muted-foreground group-hover/item:text-primary group-hover/item:translate-x-0.5"
@@ -1856,13 +1840,13 @@ export default function App() {
                               <Button
                                 variant="none"
                                 size="none"
-                                className="px-8 py-5 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-base h-auto"
+                                className="px-8 py-5 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-lg h-auto w-full sm:w-auto"
                                 onClick={() => {
                                   const el = document.getElementById("contact");
                                   if (el) el.scrollIntoView({ behavior: "smooth" });
                                 }}
                               >
-                                Inquire About {cat.title}
+                                Enquire Now
                                 <ArrowRight size={18} className="transition-transform duration-300 hover:translate-x-1" />
                               </Button>
                             </div>
@@ -1951,7 +1935,7 @@ export default function App() {
                   <div className="grid sm:grid-cols-2 gap-6">
                     {[
                       {
-                        title: "UGC Approved Course Certificate",
+                        title: "UGC Approved Courses",
                         desc: "Our partner institution courses are approved by the University Grants Commission (UGC), guaranteeing quality education and recognized certifications.",
                         color: "from-red-50 to-red-100/50",
                         textColor: "text-[#B82424]",
@@ -1975,32 +1959,8 @@ export default function App() {
                         image: Aiu,
                       },
                       {
-                        title: "National Council for Teacher Education",
-                        desc: "Approval for teacher education programs across the network.",
-                        color: "from-slate-50 to-slate-100/50",
-                        textColor: "text-slate-800",
-                        borderColor: "border-slate-200",
-                        image: Ncte,
-                      },
-                      {
-                        title: "Bar Council of India (BCI)",
-                        desc: "Legal education programs approved by BCI standards.",
-                        color: "from-rose-50 to-rose-100/50",
-                        textColor: "text-rose-700",
-                        borderColor: "border-rose-200",
-                        image: Bci,
-                      },
-                      {
-                        title: "Pharmacy Council of India (PCI)",
-                        desc: "Pharmacy courses recognized by PCI for excellence.",
-                        color: "from-sky-50 to-sky-100/50",
-                        textColor: "text-sky-700",
-                        borderColor: "border-sky-200",
-                        image: Pci,
-                      },
-                      {
                         title: "Expanded Reach",
-                        desc: "Partnering with us allows centers to expand their reach and attract more students globally.",
+                        desc: "Partnering with us allows admission point to expand their reach and attract more students globally.",
                         color: "from-pink-50 to-pink-100/50",
                         textColor: "text-pink-700",
                         borderColor: "border-pink-200",
@@ -2130,7 +2090,7 @@ export default function App() {
                       className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider text-white border border-white/30 bg-white/10 backdrop-blur-md inline-flex items-center gap-2 shadow-inner"
                     >
                       <Sparkles size={14} className="text-white animate-pulse" />
-                      PARTNER INVITATION 2026
+                      PARTNER INVITATION {new Date().getFullYear()}
                     </Badge>
 
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight">
@@ -2151,7 +2111,7 @@ export default function App() {
 
                       <div className="relative z-10 space-y-4 text-left flex-grow">
                         <h4 className="text-2xl font-bold text-white tracking-tight">
-                          Become a Partner
+                          Be a Partner
                         </h4>
                         <p className="text-white/70 text-sm leading-relaxed">
                           Submit your complete center details and launch your official collaboration.
@@ -2173,51 +2133,51 @@ export default function App() {
                             </span>
                           </Button>
                         </div>
- 
-                         <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
-                           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                           Applications Active
-                         </div>
-                       </div>
-                     </motion.div>
- 
-                     {/* Card 2: Partner Inquiry (Enquire Now) */}
-                     <motion.div
-                       whileHover={{ y: -6, rotate: -0.5 }}
-                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                       className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
-                     >
-                       <div className="absolute -inset-1 bg-gradient-to-r from-[#B82424] to-[#17468C] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
- 
-                       <div className="relative z-10 space-y-4 text-left flex-grow">
-                         <h4 className="text-2xl font-bold text-white tracking-tight">
-                           Partner Inquiry
-                         </h4>
-                         <p className="text-white/70 text-sm leading-relaxed">
-                           Have quick questions? Submit an inquiry and our partner team will reach out.
-                         </p>
-                       </div>
- 
-                       <div className="relative z-10 pt-6 space-y-4">
-                         <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 hover:-translate-y-1 group/btnWrapper cursor-pointer">
-                           <Button
-                             variant="none"
-                             size="none"
-                             className="w-full py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#e60000] to-[#990000] text-white shadow-2xl shadow-[#e60000]/25 hover:shadow-[#e60000]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto border-transparent"
-                             onClick={() => {
-                               const el = document.getElementById("partner-inquiry-form");
-                               if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                               setHighlightInquiry(true);
-                               setTimeout(() => setHighlightInquiry(false), 2000);
-                             }}
-                           >
-                             <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
-                             <span className="relative z-10 flex items-center justify-center gap-2 text-white">
-                               Enquire Now
-                               <ArrowRight size={18} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
-                             </span>
-                           </Button>
-                         </div>
+
+                        <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                          Applications Active
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Card 2: Partner Inquiry (Enquire Now) */}
+                    <motion.div
+                      whileHover={{ y: -6, rotate: -0.5 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
+                    >
+                      <div className="absolute -inset-1 bg-gradient-to-r from-[#B82424] to-[#17468C] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
+
+                      <div className="relative z-10 space-y-4 text-left flex-grow">
+                        <h4 className="text-2xl font-bold text-white tracking-tight">
+                          Partner Inquiry
+                        </h4>
+                        <p className="text-white/70 text-sm leading-relaxed">
+                          Have quick questions? Submit an inquiry and our partner team will reach out.
+                        </p>
+                      </div>
+
+                      <div className="relative z-10 pt-6 space-y-4">
+                        <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 hover:-translate-y-1 group/btnWrapper cursor-pointer">
+                          <Button
+                            variant="none"
+                            size="none"
+                            className="w-full py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#e60000] to-[#990000] text-white shadow-2xl shadow-[#e60000]/25 hover:shadow-[#e60000]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto border-transparent"
+                            onClick={() => {
+                              const el = document.getElementById("partner-inquiry-form");
+                              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                              setHighlightInquiry(true);
+                              setTimeout(() => setHighlightInquiry(false), 2000);
+                            }}
+                          >
+                            <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
+                            <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                              Enquire Now
+                              <ArrowRight size={18} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
+                            </span>
+                          </Button>
+                        </div>
 
                         <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />

@@ -590,7 +590,7 @@ export const submitPartnerInquiry = async (req, res, next) => {
       throw createError(400, "All fields are required");
     }
 
-    const adminEmailsStr = process.env.ADMIN_EMAILS || "shafi.sd@webaxium.com, webapps@webaxium.com";
+    const adminEmailsStr = process.env.ADMIN_EMAILS || "partner@6askillcity.com";
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
