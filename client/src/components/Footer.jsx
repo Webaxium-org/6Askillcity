@@ -215,7 +215,7 @@ export default function Footer() {
                   className="shrink-0 text-muted-foreground/60 mt-0.5"
                 />
                 <span className="leading-relaxed">
-                  Grace Tower, First Floor, Cabin No.C1 Door No. 67/1382,
+                  Grace Tower, First Floor, Cabin No.C1 Door No. 67/1392,
                   St. Vincent Road, Kacheripady, Ernakulam North,
                   Kerala, India - 682018
                 </span>
