@@ -22,7 +22,6 @@ const ProgramSchema = new mongoose.Schema(
         "Bachelors Degree",
         "Masters Degree",
         "PG Diploma",
-        "PG Deploma",
         "Skill Programs",
         "Skill Test",
       ],

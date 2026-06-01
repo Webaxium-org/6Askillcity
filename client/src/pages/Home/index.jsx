@@ -7,7 +7,7 @@ import {
   Mail,
   Phone,
   Globe,
-  ArrowRight,
+  MoveRight,
   School,
   Sparkles,
   ShieldCheck,
@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Target,
   Eye,
+  Handshake,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -70,12 +71,12 @@ const Button = React.forwardRef(
     const sizes = {
       default: "h-10 px-4 py-2",
       sm: "h-9 rounded-md px-3",
-      lg: "h-11 rounded-md px-8",
+      lg: "h-11 rounded-md px-4",
       icon: "h-10 w-10",
     };
 
     let finalClass = cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md text-[20px] font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
       variants[variant],
       sizes[size],
       className,
@@ -85,15 +86,10 @@ const Button = React.forwardRef(
       finalClass = finalClass.replace(/rounded-md/g, "");
     }
 
-    const hasCustomWeight = className?.includes("font-semibold") || className?.includes("font-bold") || className?.includes("font-extrabold") || className?.includes("font-black");
-    if (hasCustomWeight) {
-      finalClass = finalClass.replace(/font-medium/g, "");
-    }
-
-    const hasCustomTextSize = className?.includes("text-sm") || className?.includes("text-lg") || className?.includes("text-xl") || className?.includes("text-2xl") || variants[variant]?.includes("text-sm") || variants[variant]?.includes("text-lg");
-    if (hasCustomTextSize) {
-      finalClass = finalClass.replace(/text-base/g, "");
-    }
+    // Force font size 20px and font weight 500 (font-medium) by stripping other classes
+    finalClass = finalClass
+      .replace(/\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)\b/g, "")
+      .replace(/\bfont-(thin|extralight|light|normal|semibold|bold|extrabold|black)\b/g, "");
 
     return (
       <button
@@ -714,6 +710,57 @@ export default function App() {
     }
   };
 
+  const [partnerForm, setPartnerForm] = useState({
+    fullName: "",
+    email: "",
+    mobile: "",
+    coursesLooking: "",
+    comments: "",
+  });
+  const [isSubmittingPartner, setIsSubmittingPartner] = useState(false);
+
+  const handlePartnerSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmittingPartner(true);
+    try {
+      const response = await axiosInstance.post("/admission-points/partner-inquiry", {
+        fullName: partnerForm.fullName,
+        email: partnerForm.email,
+        phone: partnerForm.mobile,
+        coursesLooking: partnerForm.coursesLooking,
+        comments: partnerForm.comments,
+      });
+
+      if (response.data?.success) {
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Submission successful! Our partnership team will contact you shortly.",
+          })
+        );
+        setPartnerForm({
+          fullName: "",
+          email: "",
+          mobile: "",
+          coursesLooking: "",
+          comments: "",
+        });
+      } else {
+        throw new Error(response.data?.message || "Failed to submit partner details.");
+      }
+    } catch (error) {
+      console.error("Partner submission error:", error);
+      dispatch(
+        showAlert({
+          type: "destructive",
+          message: error.response?.data?.message || error.message || "Failed to submit. Please try again.",
+        })
+      );
+    } finally {
+      setIsSubmittingPartner(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-background font-sans selection:bg-[#B82424] selection:text-white overflow-x-hidden">
       <AnimatePresence mode="wait">
@@ -783,9 +830,9 @@ export default function App() {
                       variant="brandGradient"
                       size="lg"
                       onClick={() => navigate("/register-admission-point")}
-                      className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-lg font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-8 py-5 h-auto"
+                      className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-lg font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-6 py-3 h-auto"
                     >
-                      Join Education Network <ArrowRight size={18} className="ml-2.5 stroke-[2]" />
+                      Join Education Network <MoveRight size={24} className="ml-2.5 stroke-[2]" />
                     </Button>
                   </motion.div>
 
@@ -1022,7 +1069,7 @@ export default function App() {
                           variant="none"
                           size="none"
                           disabled={isSubmitting}
-                          className="w-full mt-4 py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group tracking-wide text-lg h-auto cursor-pointer"
+                          className="w-full mt-4 py-3 px-6 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group tracking-wide text-lg h-auto cursor-pointer"
                         >
                           {/* Premium subtle shine overlay */}
                           <div className="animate-shine pointer-events-none" />
@@ -1036,7 +1083,7 @@ export default function App() {
                             ) : (
                               <>
                                 Submit
-                                <ArrowRight size={18} className="ml-.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-1" />
+                                <MoveRight size={24} className="ml-.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-1" />
                               </>
                             )}
                           </span>
@@ -1080,16 +1127,6 @@ export default function App() {
                     Commission.
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  className="group rounded-full shadow-sm hover:shadow-md hover:border-border transition-all text-base font-semibold"
-                >
-                  View All Partners{" "}
-                  <ArrowRight
-                    size={16}
-                    className="ml-2 group-hover:translate-x-1 transition-transform"
-                  />
-                </Button>
               </motion.div>
 
               <div className="max-w-6xl mx-auto">
@@ -1275,7 +1312,7 @@ export default function App() {
                     bgBadge:
                       "bg-[#10b981]/20 text-emerald-300 border border-[#10b981]/30",
                     buttonClass:
-                      "bg-gradient-to-r from-[#0a3382] via-[#63163a] to-[#bd0808] shadow-[#bd0808]/25 hover:shadow-[#bd0808]/40 border-transparent",
+                      "bg-gradient-to-r from-[#1570ff] to-[#0949d0] shadow-[#1570ff]/25 hover:shadow-[#1570ff]/40 border-transparent",
                     points: [
                       "Partner with universities to test and evaluate candidates' existing practical skills.",
                       "Facilitate formal UGC-approved certification for experienced individuals.",
@@ -1349,7 +1386,7 @@ export default function App() {
                           variant="none"
                           size="none"
                           className={cn(
-                            "w-full py-5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 border-transparent text-lg h-auto",
+                            "w-full py-3 px-6 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 border-transparent text-lg h-auto",
                             path.buttonClass
                           )}
                           onClick={() => navigate("/register-admission-point")}
@@ -1357,7 +1394,7 @@ export default function App() {
                           <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
                           <span className="relative z-10 flex items-center justify-center gap-2">
                             Be a Partner
-                            <ArrowRight size={18} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+                            <MoveRight size={24} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
                           </span>
                         </Button>
                       </CardFooter>
@@ -1821,7 +1858,7 @@ export default function App() {
                                           {prog.name}
                                         </span>
                                       </div>
-                                      <ArrowRight
+                                      <MoveRight
                                         size={14}
                                         className={cn(
                                           "transition-all duration-300 shrink-0",
@@ -1840,14 +1877,14 @@ export default function App() {
                               <Button
                                 variant="none"
                                 size="none"
-                                className="px-8 py-5 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-lg h-auto w-full sm:w-auto"
+                                className="py-3 px-6 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-lg h-auto w-full sm:w-auto"
                                 onClick={() => {
                                   const el = document.getElementById("contact");
                                   if (el) el.scrollIntoView({ behavior: "smooth" });
                                 }}
                               >
                                 Enquire Now
-                                <ArrowRight size={18} className="transition-transform duration-300 hover:translate-x-1" />
+                                <MoveRight size={24} className="transition-transform duration-300 hover:translate-x-1" />
                               </Button>
                             </div>
                           </div>
@@ -1922,7 +1959,7 @@ export default function App() {
                     <Button
                       variant="primary"
                       size="lg"
-                      className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
+                      className="rounded-full w-full px-6 py-3 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
                       onClick={() => (window.location.href = "#contact")}
                     >
                       Contact Us Now
@@ -2033,7 +2070,7 @@ export default function App() {
 
                           <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors duration-300">
                             Know more{" "}
-                            <ArrowRight
+                            <MoveRight
                               size={14}
                               className="group-hover:translate-x-1 transition-transform"
                             />
@@ -2053,7 +2090,7 @@ export default function App() {
                     <Button
                       variant="primary"
                       size="lg"
-                      className="w-full rounded-xl py-6 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
+                      className="rounded-full w-full px-6 py-3 text-lg font-bold shadow-xl shadow-[#17468C]/20 hover:-translate-y-1 transition-all"
                       onClick={() => (window.location.href = "#contact")}
                     >
                       Contact Us Now
@@ -2099,90 +2136,112 @@ export default function App() {
                     </h2>
                   </div>
 
-                  {/* Right Column: Two Responsive CTA Cards */}
-                  <div className="lg:col-span-8 grid md:grid-cols-2 gap-6 w-full">
-                    {/* Card 1: Become a Partner */}
+                  {/* Right Column: Single Premium Be a Partner Card */}
+                  <div className="lg:col-span-8 w-full max-w-xl mx-auto lg:mr-0">
+                    {/* Card 1: Be a Partner Form */}
                     <motion.div
-                      whileHover={{ y: -6, rotate: 0.5 }}
+                      whileHover={{ y: -4 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
+                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group w-full"
                     >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
+                      <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[2rem] blur-xl opacity-20 pointer-events-none" />
 
-                      <div className="relative z-10 space-y-4 text-left flex-grow">
-                        <h4 className="text-2xl font-bold text-white tracking-tight">
-                          Be a Partner
-                        </h4>
-                        <p className="text-white/70 text-sm leading-relaxed">
-                          Submit your complete center details and launch your official collaboration.
-                        </p>
-                      </div>
-
-                      <div className="relative z-10 pt-6 space-y-4">
-                        <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 hover:-translate-y-1 group/btnWrapper cursor-pointer">
-                          <Button
-                            variant="none"
-                            size="none"
-                            className="w-full py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto"
-                            onClick={() => navigate("/register-admission-point")}
-                          >
-                            <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
-                            <span className="relative z-10 flex items-center justify-center gap-2 text-white">
-                              Register Now
-                              <ArrowRight size={18} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
-                            </span>
-                          </Button>
+                      <div className="relative z-10 flex items-center gap-4 text-left mb-6">
+                        <div className="p-3 bg-white/10 rounded-2xl border border-white/20 shadow-inner shrink-0">
+                          <Handshake size={36} className="text-white" />
                         </div>
-
-                        <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                          Applications Active
+                        <div>
+                          <h4 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                            Be a Partner
+                          </h4>
+                          <p className="text-white/70 text-xs md:text-sm leading-relaxed mt-1">
+                            Submit your complete center details and launch your official collaboration.
+                          </p>
                         </div>
                       </div>
-                    </motion.div>
 
-                    {/* Card 2: Partner Inquiry (Enquire Now) */}
-                    <motion.div
-                      whileHover={{ y: -6, rotate: -0.5 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group flex flex-col justify-between h-full"
-                    >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-[#B82424] to-[#17468C] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none" />
-
-                      <div className="relative z-10 space-y-4 text-left flex-grow">
-                        <h4 className="text-2xl font-bold text-white tracking-tight">
-                          Partner Inquiry
-                        </h4>
-                        <p className="text-white/70 text-sm leading-relaxed">
-                          Have quick questions? Submit an inquiry and our partner team will reach out.
-                        </p>
-                      </div>
-
-                      <div className="relative z-10 pt-6 space-y-4">
-                        <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 hover:-translate-y-1 group/btnWrapper cursor-pointer">
-                          <Button
-                            variant="none"
-                            size="none"
-                            className="w-full py-5 px-8 rounded-full font-bold bg-gradient-to-r from-[#e60000] to-[#990000] text-white shadow-2xl shadow-[#e60000]/25 hover:shadow-[#e60000]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto border-transparent"
-                            onClick={() => {
-                              const el = document.getElementById("partner-inquiry-form");
-                              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                              setHighlightInquiry(true);
-                              setTimeout(() => setHighlightInquiry(false), 2000);
-                            }}
-                          >
-                            <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
-                            <span className="relative z-10 flex items-center justify-center gap-2 text-white">
-                              Enquire Now
-                              <ArrowRight size={18} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
-                            </span>
-                          </Button>
+                      <form onSubmit={handlePartnerSubmit} className="relative z-10 space-y-4 text-left">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="partnerFullName" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Full name :</Label>
+                          <Input
+                            id="partnerFullName"
+                            required
+                            placeholder="Enter your full name"
+                            value={partnerForm.fullName}
+                            onChange={(e) => setPartnerForm({ ...partnerForm, fullName: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                          />
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-white/50 font-bold uppercase tracking-wider">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                          Quick Response Team
+                        <div className="space-y-1.5">
+                          <Label htmlFor="partnerEmailId" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Email id :</Label>
+                          <Input
+                            id="partnerEmailId"
+                            required
+                            type="email"
+                            placeholder="Enter your email ID"
+                            value={partnerForm.email}
+                            onChange={(e) => setPartnerForm({ ...partnerForm, email: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                          />
                         </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="partnerMobileNumber" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Mobile number :</Label>
+                          <Input
+                            id="partnerMobileNumber"
+                            required
+                            placeholder="Enter your mobile number"
+                            value={partnerForm.mobile}
+                            onChange={(e) => setPartnerForm({ ...partnerForm, mobile: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="partnerCourses" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Courses are Looking :</Label>
+                          <Input
+                            id="partnerCourses"
+                            placeholder="e.g. Masters, Bachelors, Skill Programs"
+                            value={partnerForm.coursesLooking}
+                            onChange={(e) => setPartnerForm({ ...partnerForm, coursesLooking: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="partnerComments" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Comments :</Label>
+                          <Textarea
+                            id="partnerComments"
+                            placeholder="Write your comments or center address here"
+                            value={partnerForm.comments}
+                            onChange={(e) => setPartnerForm({ ...partnerForm, comments: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl resize-none min-h-[80px] text-base"
+                          />
+                        </div>
+
+                        <div className="pt-4">
+                          <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 group/btnWrapper cursor-pointer">
+                            <Button
+                              type="submit"
+                              variant="none"
+                              size="none"
+                              disabled={isSubmittingPartner}
+                              className="w-full py-3 px-6 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto"
+                            >
+                              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
+                              <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                                {isSubmittingPartner ? "Submitting..." : "Submit"}
+                                <MoveRight size={24} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
+                              </span>
+                            </Button>
+                          </div>
+                        </div>
+                      </form>
+
+                      <div className="flex items-center justify-start gap-2 text-xs text-white/50 font-bold uppercase tracking-wider mt-6 pl-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        Applications Active
                       </div>
                     </motion.div>
                   </div>

@@ -66,7 +66,6 @@ const PROGRAM_TYPES = [
   { value: "Bachelors Degree", label: "Bachelors Degree" },
   { value: "Masters Degree", label: "Masters Degree" },
   { value: "PG Diploma", label: "PG Diploma" },
-  { value: "PG Deploma", label: "PG Deploma" },
   { value: "Skill Programs", label: "Skill Programs" },
   { value: "Skill Test", label: "Skill Test" },
 ];

@@ -584,52 +584,67 @@ export const generateAdminAccessToken = async (req, res, next) => {
 
 export const submitPartnerInquiry = async (req, res, next) => {
   try {
-    const { centerName, contactName, phone, email, address } = req.body;
+    const { centerName, contactName, phone, email, address, fullName, coursesLooking, comments } = req.body;
 
-    if (!centerName || !contactName || !phone || !email || !address) {
-      throw createError(400, "All fields are required");
+    const nameVal = fullName || contactName || centerName;
+    const emailVal = email;
+    const phoneVal = phone || req.body.mobile || req.body.phoneNumber || req.body.mobileNumber;
+    const coursesVal = coursesLooking || "N/A";
+    const commentsVal = comments || address || "N/A";
+
+    if (!nameVal || !emailVal || !phoneVal) {
+      throw createError(400, "Full name, email, and mobile/phone number are required");
     }
 
     const adminEmailsStr = process.env.ADMIN_EMAILS || "partner@6askillcity.com";
 
+    const fieldsToDisplay = {
+      "Full Name": nameVal,
+      "Email Address": emailVal,
+      "Mobile Number": phoneVal,
+      "Courses Looking For": coursesVal,
+      "Comments / Message": commentsVal,
+    };
+
+    if (centerName && centerName !== nameVal) {
+      fieldsToDisplay["Center Name"] = centerName;
+    }
+    if (address && address !== commentsVal) {
+      fieldsToDisplay["Office Address"] = address;
+    }
+
+    let rowsHtml = "";
+    let idx = 0;
+    for (const [key, value] of Object.entries(fieldsToDisplay)) {
+      const bgColor = idx % 2 === 0 ? "#f8f9fa" : "#ffffff";
+      rowsHtml += `
+        <tr style="background-color: ${bgColor};">
+          <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; width: 35%; color: #333;">${key}</td>
+          <td style="padding: 10px; border: 1px solid #e9ecef; color: #555; line-height: 1.4;">${value}</td>
+        </tr>
+      `;
+      idx++;
+    }
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-        <h2 style="color: #17468C; margin-top: 0; border-bottom: 2px solid #17468C; padding-bottom: 8px;">New Partner Inquiry</h2>
-        <p style="font-size: 15px; color: #555; line-height: 1.5;">A new partner has submitted an inquiry on 6A Skillcity. Below are the details:</p>
-        
-        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-          <tr style="background-color: #f8f9fa;">
-            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; width: 35%; color: #333;">Center Name</td>
-            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;">${centerName}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Contact Name</td>
-            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;">${contactName}</td>
-          </tr>
-          <tr style="background-color: #f8f9fa;">
-            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Phone Number</td>
-            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;">${phone}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Email Address</td>
-            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555;"><a href="mailto:${email}" style="color: #B82424; text-decoration: none;">${email}</a></td>
-          </tr>
-          <tr style="background-color: #f8f9fa;">
-            <td style="padding: 10px; border: 1px solid #e9ecef; font-weight: bold; color: #333;">Office Address</td>
-            <td style="padding: 10px; border: 1px solid #e9ecef; color: #555; line-height: 1.4;">${address}</td>
-          </tr>
-        </table>
-        
-        <div style="margin-top: 24px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 16px;">
-          This inquiry was sent automatically from the 6A Skillcity portal.
-        </div>
+         <h2 style="color: #17468C; margin-top: 0; border-bottom: 2px solid #17468C; padding-bottom: 8px;">New Partner/Admission Inquiry</h2>
+         <p style="font-size: 15px; color: #555; line-height: 1.5;">A new partner has submitted an inquiry on 6A Skillcity. Below are the details:</p>
+         
+         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+           ${rowsHtml}
+         </table>
+         
+         <div style="margin-top: 24px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 16px;">
+           This inquiry was sent automatically from the 6A Skillcity portal.
+         </div>
       </div>
     `;
 
     await sendEmail({
       email: adminEmailsStr,
-      subject: `New Partner Inquiry - ${centerName}`,
-      message: `New Partner Inquiry: Center: ${centerName}, Contact: ${contactName}, Phone: ${phone}, Email: ${email}, Address: ${address}`,
+      subject: `New Partner Inquiry - ${nameVal}`,
+      message: `New Partner Inquiry: Name: ${nameVal}, Phone: ${phoneVal}, Email: ${emailVal}, Courses: ${coursesVal}`,
       html: emailHtml,
     });
 
