@@ -640,7 +640,7 @@ export const getPendingEligibility = async (req, res, next) => {
 export const updateApplicationStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { action, admin_remarks } = req.body;
+    const { action, admin_remarks, courseCategory, semester, isCreditTransfer } = req.body;
 
     if (!["approve", "reject"].includes(action)) {
       throw createError(400, "Invalid action. Use 'approve' or 'reject'.");
@@ -661,6 +661,15 @@ export const updateApplicationStatus = async (req, res, next) => {
       student.admin_remarks = "";
       student.eligibilityApprovalDate = new Date();
       student.eligibilityApprovedBy = req.user?.userId;
+
+      student.isCreditTransfer = isCreditTransfer === true || isCreditTransfer === "true";
+      if (student.isCreditTransfer) {
+        if (courseCategory) student.courseCategory = courseCategory;
+        if (semester) student.semester = Number(semester);
+      } else {
+        student.courseCategory = undefined;
+        student.semester = undefined;
+      }
 
       // Verify all uploaded documents
       if (student.idProof?.path) student.idProof.status = "Verified";

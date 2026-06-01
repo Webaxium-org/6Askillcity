@@ -56,12 +56,12 @@ const cardVariants = {
     },
   },
   hover: {
-    y: -8,
-    scale: 1.015,
+    y: -3,
+    scale: 1,
     transition: {
       type: "spring",
-      stiffness: 350,
-      damping: 25
+      stiffness: 300,
+      damping: 20
     }
   }
 };
@@ -130,7 +130,7 @@ export default function Footer() {
 
   return (
     <footer
-      className="pt-24 pb-10 bg-background border-t border-border"
+      className="pt-24 pb-10 bg-slate-50/50 border-t border-slate-100"
       id="contact"
     >
       <div className="container mx-auto px-6">
@@ -139,7 +139,7 @@ export default function Footer() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-border"
+          className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-slate-200"
         >
           <motion.div variants={itemVariants} className="lg:col-span-4 space-y-6">
             <div className="flex items-center gap-2">
@@ -147,17 +147,17 @@ export default function Footer() {
                 <img src={Logo} alt="Logo" className="w-28 hover:opacity-90 transition-opacity" />
               </Link>
             </div>
-            <p className="text-muted-foreground text-base leading-relaxed max-w-xs">
+            <p className="text-slate-500 text-base leading-relaxed max-w-xs font-medium">
               Managing global academic affairs with precision, integrity,
               and a commitment to student success.
             </p>
           </motion.div>
 
           <motion.div variants={itemVariants} className="lg:col-span-2 space-y-5">
-            <h5 className="text-lg font-extrabold text-foreground tracking-tight">
+            <h5 className="text-lg font-extrabold text-slate-800 tracking-tight">
               Navigation
             </h5>
-            <ul className="space-y-3.5 text-base font-medium text-muted-foreground">
+            <ul className="space-y-3.5 text-base font-semibold text-slate-500">
               <li>
                 <a
                   href="/#mission-vision"
@@ -201,7 +201,7 @@ export default function Footer() {
 
           <motion.div variants={itemVariants} className="lg:col-span-3 space-y-5 text-left">
             <div className="space-y-2">
-              <h5 className="text-lg font-extrabold text-foreground tracking-tight">
+              <h5 className="text-lg font-extrabold text-slate-800 tracking-tight">
                 Official Hub
               </h5>
               <p className="text-sm font-black text-[#17468C] uppercase tracking-wider leading-none">
@@ -209,10 +209,10 @@ export default function Footer() {
               </p>
             </div>
             <div className="space-y-4">
-              <div className="flex gap-3 text-base text-muted-foreground">
+              <div className="flex gap-3 text-base text-slate-500 font-medium">
                 <MapPin
                   size={20}
-                  className="shrink-0 text-muted-foreground/60 mt-0.5"
+                  className="shrink-0 text-slate-400 mt-0.5"
                 />
                 <span className="leading-relaxed">
                   Grace Tower, First Floor, Cabin No.C1 Door No. 67/1392,
@@ -224,7 +224,7 @@ export default function Footer() {
           </motion.div>
 
           <motion.div variants={itemVariants} className="lg:col-span-3 space-y-5">
-            <h5 className="text-lg font-extrabold text-foreground tracking-tight">
+            <h5 className="text-lg font-extrabold text-slate-800 tracking-tight">
               Newsletter
             </h5>
             <form onSubmit={handleSubscribe} className="flex gap-2">
@@ -234,7 +234,7 @@ export default function Footer() {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 disabled={subscribed}
-                className="h-11 px-3 py-2 rounded-lg bg-muted text-base border border-input focus:outline-none focus:ring-1 focus:ring-primary w-full transition-all"
+                className="h-11 px-3 py-2 rounded-lg bg-slate-100 text-slate-800 text-base border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary w-full transition-all font-medium"
               />
               <motion.button
                 whileHover="hover"
@@ -254,7 +254,7 @@ export default function Footer() {
                 Thank you for subscribing!
               </p>
             )}
-            <p className="text-sm text-muted-foreground font-medium">
+            <p className="text-sm text-slate-400 font-semibold">
               By subscribing, you agree to our privacy protocols.
             </p>
           </motion.div>
@@ -272,181 +272,161 @@ export default function Footer() {
             {
               id: "01",
               title: "Partner Enquiry",
-              description: "For new academic collaborations and university tie-ups",
-              mob: "+91 9633331014",
+              description: "For new academic collaborations and university tie-ups.",
+              mob: "+91 963 33 31 014",
               mobHref: "tel:+919633331014",
               land: "0484 461 4539",
               landHref: "tel:04844614539",
               email: "partner@6askillcity.com",
               emailHref: "mailto:partner@6askillcity.com",
-              badgeColor: "bg-[#B82424]/10 text-[#B82424] border-[#B82424]/20",
-              glowColor: "group-hover:shadow-[0_20px_40px_-15px_rgba(184,36,36,0.12)]",
-              cardColor: "border-[#B82424]/10 hover:border-[#B82424]/40 hover:bg-gradient-to-b hover:from-white hover:to-[#B82424]/[0.02]",
-              linkHover: "hover:text-[#B82424]",
-              iconBg: "bg-[#B82424]/5 text-[#B82424]"
+              blueWord: "Partner",
+              redWord: "Enquiry",
+              borderGradient: "from-[#17468C] to-[#B82424]"
             },
             {
               id: "02",
               title: "Finance",
-              description: "Billing enquiries, fee reconciliation, and ledger statements",
-              mob: "+91 99954 53322",
+              description: "Billing enquiries, fee reconciliation, and ledger statements.",
+              mob: "+91 999 54 53 322",
               mobHref: "tel:+919995453322",
               land: "",
               landHref: "",
               email: "accounts@6askillcity.com",
               emailHref: "mailto:accounts@6askillcity.com",
-              badgeColor: "bg-[#6366f1]/10 text-[#6366f1] border-[#6366f1]/20",
-              glowColor: "group-hover:shadow-[0_20px_40px_-15px_rgba(99,102,241,0.12)]",
-              cardColor: "border-[#6366f1]/10 hover:border-[#6366f1]/40 hover:bg-gradient-to-b hover:from-white hover:to-[#6366f1]/[0.02]",
-              linkHover: "hover:text-[#6366f1]",
-              iconBg: "bg-[#6366f1]/5 text-[#6366f1]"
+              blueWord: "Finance",
+              redWord: "",
+              borderGradient: "from-[#B82424] to-[#17468C]"
             },
             {
               id: "03",
               title: "IT Team",
-              description: "Technical support, portal issues, and API integrations",
-              mob: "+91 73560 75454",
+              description: "Technical support, portal issues, and API integrations.",
+              mob: "+91 735 60 75 454",
               mobHref: "tel:+917356075454",
               land: "",
               landHref: "",
               email: "partner@6askillcity.com",
               emailHref: "mailto:partner@6askillcity.com",
-              badgeColor: "bg-[#17468C]/10 text-[#17468C] border-[#17468C]/20",
-              glowColor: "group-hover:shadow-[0_20px_40px_-15px_rgba(23,70,140,0.12)]",
-              cardColor: "border-[#17468C]/10 hover:border-[#17468C]/40 hover:bg-gradient-to-b hover:from-white hover:to-[#17468C]/[0.02]",
-              linkHover: "hover:text-[#17468C]",
-              iconBg: "bg-[#17468C]/5 text-[#17468C]"
+              blueWord: "IT",
+              redWord: "Team",
+              borderGradient: "from-[#17468C] to-[#B82424]"
             },
           ].map((dept, idx) => (
             <motion.div
               key={idx}
               variants={cardVariants}
               whileHover="hover"
-              className={`relative overflow-hidden p-6 rounded-3xl bg-card border shadow-sm transition-all duration-500 space-y-6 text-left group ${dept.cardColor} ${dept.glowColor}`}
+              className={`p-[1px] rounded-[2rem] bg-gradient-to-r ${idx === 1 ? "from-[#B82424] to-[#17468C]" : "from-[#17468C] to-[#B82424]"} shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgb(0,0,0,0.08)] transition-all duration-500`}
             >
-              {/* Decorative Number Badge in Background */}
-              <div className="absolute right-4 top-2 text-7xl font-black text-muted/20 select-none pointer-events-none group-hover:scale-110 group-hover:text-muted/30 transition-all duration-500 font-sans">
-                {dept.id}
-              </div>
-
-              {/* Card Header */}
-              <div className="space-y-2 relative z-10">
-                <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${dept.badgeColor}`}>
-                    {dept.title}
-                  </span>
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
+              <div className="bg-white rounded-[1.95rem] p-8 space-y-6 text-left w-full h-full relative group">
+                {/* Card Header */}
+                <div className="space-y-2 relative z-10">
+                  <h3 className="text-3xl font-black tracking-tight pb-1">
+                    <span 
+                      style={{
+                        backgroundImage: "linear-gradient(to right, #17468C, #B82424)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                        display: "inline-block"
+                      }}
+                    >
+                      {dept.title}
+                    </span>
+                  </h3>
+                  <p className="text-sm font-semibold text-slate-500 leading-snug">
+                    {dept.description}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground leading-snug max-w-[85%]">
-                  {dept.description}
-                </p>
-              </div>
 
-              {/* Dynamic Divider */}
-              <div className="h-[1px] w-full bg-gradient-to-r from-border/80 via-border/30 to-transparent" />
+                {/* Dynamic Divider */}
+                <div className="h-[1px] w-full bg-slate-200" />
 
-              {/* Contact Details Stack */}
-              <div className="space-y-4 relative z-10">
-                {/* Phone Item */}
-                <motion.div
-                  whileHover="hover"
-                  className="flex items-start gap-4 p-2.5 rounded-2xl hover:bg-muted/40 transition-colors duration-300 cursor-pointer"
-                >
-                  <div className={`p-2.5 rounded-xl shrink-0 ${dept.iconBg}`}>
-                    <MotionPhone size={18} variants={phoneIconVariants} />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">Call Hotline</span>
-                    <div className="flex flex-wrap items-center gap-x-2">
+                {/* Contact Details Stack */}
+                <div className="space-y-4 relative z-10">
+                  {/* Phone Item */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-[#17468C] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#17468C]/15">
+                      <Phone size={16} />
+                    </div>
+                    <div className="space-y-0.5">
                       <a
                         href={dept.mobHref}
-                        className={`text-[15px] font-extrabold text-foreground transition-colors ${dept.linkHover} flex items-center gap-1`}
+                        className="block text-base font-black text-slate-800 hover:text-[#17468C] transition-colors"
                       >
                         {dept.mob}
                       </a>
                       {dept.land && (
-                        <>
-                          <span className="text-muted-foreground/30 font-medium">|</span>
-                          <a
-                            href={dept.landHref}
-                            className={`text-[14px] font-medium text-muted-foreground transition-colors ${dept.linkHover}`}
-                          >
-                            {dept.land}
-                          </a>
-                        </>
+                        <a
+                          href={dept.landHref}
+                          className="block text-sm font-bold text-slate-500 hover:text-[#17468C] transition-colors"
+                        >
+                          {dept.land}
+                        </a>
                       )}
                     </div>
                   </div>
-                </motion.div>
 
-                {/* Email Item */}
-                <motion.div
-                  whileHover="hover"
-                  className="flex items-start gap-4 p-2.5 rounded-2xl hover:bg-muted/40 transition-colors duration-300 cursor-pointer"
-                >
-                  <div className={`p-2.5 rounded-xl shrink-0 ${dept.iconBg}`}>
-                    <MotionMail size={18} variants={mailIconVariants} />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Address</span>
+                  {/* Email Item */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-[#B82424] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#B82424]/15">
+                      <Mail size={16} />
+                    </div>
                     <a
                       href={dept.emailHref}
-                      className={`text-[15px] font-extrabold text-foreground break-all transition-colors ${dept.linkHover} flex items-center gap-1`}
+                      className="text-base font-black text-slate-800 hover:text-[#B82424] transition-colors truncate"
                     >
                       {dept.email}
                     </a>
                   </div>
-                </motion.div>
-              </div>
-
-              {/* Visual Action Indicator Footer inside Card */}
-              <div className="flex items-center justify-between pt-2 text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 tracking-wide">
-                  Get in touch now
-                </span>
-                <div className="p-1.5 rounded-full bg-muted group-hover:bg-foreground group-hover:text-background transition-all duration-300">
-                  <MotionArrowUpRight size={14} variants={arrowVariants} />
                 </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
+        <div 
+          className="w-24 h-[1.5px] bg-slate-300 mx-auto mt-12 mb-8" 
+          style={{ backgroundColor: "#cbd5e1", width: "96px", height: "1.5px" }}
+        />
+
+        <div
+          className="flex flex-col items-center justify-center gap-4 text-center"
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", textAlign: "center", opacity: 1, visibility: "visible" }}
         >
-          <p className="text-base font-bold text-muted-foreground">
-            © {new Date().getFullYear()} 6A Skillcity Foundation. All
-            rights reserved.
+          <p 
+            className="text-sm font-extrabold text-slate-800"
+            style={{ color: "#1e293b", fontSize: "14px", fontWeight: 800 }}
+          >
+            © {new Date().getFullYear()} 6A Skillcity. All rights reserved.
           </p>
-          <div className="flex gap-6 text-base font-bold text-muted-foreground">
+          <div 
+            className="flex justify-center flex-wrap gap-x-8 gap-y-2 text-xs font-black text-slate-600"
+            style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", columnGap: "32px", rowGap: "8px", fontSize: "12px", fontWeight: 900 }}
+          >
             <Link
               to="/privacy-policy"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-[#17468C] transition-colors"
+              style={{ color: "#64748b", textDecoration: "none" }}
             >
-              Privacy Policy
+              Privacy policy
             </Link>
             <Link
               to="/refund-policy"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-[#17468C] transition-colors"
+              style={{ color: "#64748b", textDecoration: "none" }}
             >
-              Refund Policy
+              Refund policy
             </Link>
             <Link
               to="/terms"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-[#17468C] transition-colors"
+              style={{ color: "#64748b", textDecoration: "none" }}
             >
               Terms & Conditions
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </footer>
   );

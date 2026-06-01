@@ -43,10 +43,11 @@ export const getPendingEligibility = async (params = {}) => {
 };
 
 // Admin: Approve or reject an application
-export const reviewApplication = async (id, action, admin_remarks = "") => {
+export const reviewApplication = async (id, action, admin_remarks = "", extraFields = {}) => {
   const response = await axiosInstance.patch(`/students/${id}/review`, {
     action,
     admin_remarks,
+    ...extraFields,
   });
   return response.data;
 };

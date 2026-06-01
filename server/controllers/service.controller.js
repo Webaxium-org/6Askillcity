@@ -33,31 +33,37 @@ cashfree.XApiVersion = "2023-08-01";
 
 export const createServiceDefinition = async (req, res, next) => {
   try {
-    const { title, description, subCategories, currentFee, icon } = req.body;
+    const { title, description, currentFee, icon, documentType, categories } = req.body;
+
+    const resolvedFee = Number(currentFee || 0);
 
     const service = new ServiceDefinition({
       title,
       description,
-      subCategories,
-      currentFee,
+      currentFee: resolvedFee,
       icon,
+      documentType,
+      categories,
       createdBy: req.user.id
     });
 
     const feeRecord = new ServiceFee({
       service: service._id,
-      amount: currentFee,
+      amount: resolvedFee,
       updatedBy: req.user.id,
       remarks: "Initial fee setup"
     });
 
+    await feeRecord.save();
     service.currentFeeRef = feeRecord._id;
 
-    await Promise.all([service.save(), feeRecord.save()]);
+    await service.save();
+    // Reload to populate currentFeeRef if applicable
+    const populatedService = await ServiceDefinition.findById(service._id).populate("currentFeeRef");
 
     res.status(201).json({
       success: true,
-      data: service
+      data: populatedService || service
     });
   } catch (error) {
     next(error);
@@ -108,19 +114,38 @@ export const updateServiceFee = async (req, res, next) => {
 export const updateServiceDefinition = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, subCategories, icon } = req.body;
+    const { title, description, icon, documentType, categories, currentFee } = req.body;
 
-    const service = await ServiceDefinition.findByIdAndUpdate(
-      id,
-      { title, description, subCategories, icon },
-      { new: true, runValidators: true }
-    );
-
+    const service = await ServiceDefinition.findById(id);
     if (!service) return next(createError(404, "Service not found"));
+
+    service.title = title;
+    service.description = description;
+    service.icon = icon;
+    service.documentType = documentType;
+    service.categories = categories;
+
+    const resolvedFee = Number(currentFee || 0);
+    service.currentFee = resolvedFee;
+
+    const lastFee = await ServiceFee.findOne({ service: id }).sort({ createdAt: -1 });
+    if (!lastFee || Number(lastFee.amount) !== Number(resolvedFee)) {
+      const feeRecord = new ServiceFee({
+        service: id,
+        amount: resolvedFee,
+        updatedBy: req.user.id,
+        remarks: "Fee updated during definition edit"
+      });
+      await feeRecord.save();
+      service.currentFeeRef = feeRecord._id;
+    }
+
+    await service.save();
+    const populatedService = await ServiceDefinition.findById(id).populate("currentFeeRef");
 
     res.status(200).json({
       success: true,
-      data: service
+      data: populatedService || service
     });
   } catch (error) {
     next(error);
@@ -133,7 +158,7 @@ export const updateServiceDefinition = async (req, res, next) => {
 
 export const applyForService = async (req, res, next) => {
   try {
-    const { studentId, serviceId, subCategory, adminRemarks } = req.body;
+    const { studentId, serviceId, adminRemarks } = req.body;
 
     const [student, service] = await Promise.all([
       Student.findById(studentId),
@@ -147,12 +172,14 @@ export const applyForService = async (req, res, next) => {
       return next(createError(403, "You are not authorized to apply for this student"));
     }
 
+    const resolvedFee = service.currentFee;
+    const resolvedFeeRef = service.currentFeeRef?._id;
+
     const application = new ServiceApplication({
       student: studentId,
       service: serviceId,
-      subCategory,
-      feeAmount: service.currentFee,
-      feeRef: service.currentFeeRef._id,
+      feeAmount: resolvedFee,
+      feeRef: resolvedFeeRef,
       adminRemarks,
       createdBy: req.user.userId,
       createdByType: req.user.userType === "partner" ? "AdmissionPoint" : "User",

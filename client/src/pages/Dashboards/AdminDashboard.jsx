@@ -160,10 +160,10 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEligibilityApprove = async (id) => {
+  const handleEligibilityApprove = async (id, extraFields = {}) => {
     setApprovingId(id);
     try {
-      const res = await reviewApplication(id, "approve");
+      const res = await reviewApplication(id, "approve", "", extraFields);
       if (res.success) {
         setPendingApplications((prev) => prev.filter((a) => a._id !== id));
         setIsReviewModalOpen(false);

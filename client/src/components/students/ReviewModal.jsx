@@ -39,6 +39,33 @@ export const ReviewModal = ({
   const { user } = useSelector((state) => state.user);
   const isPartner = user?.type === "partner";
 
+  const [isCreditTransfer, setIsCreditTransfer] = React.useState("");
+  const [selectedCategory, setSelectedCategory] = React.useState("");
+  const [selectedSemester, setSelectedSemester] = React.useState("");
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setIsCreditTransfer("");
+      setSelectedCategory("");
+      setSelectedSemester("");
+    }
+  }, [isOpen, app]);
+
+  const getSemesterOptions = (category) => {
+    switch (category) {
+      case "Degree":
+        return [1, 2, 3, 4, 5, 6];
+      case "Pg":
+        return [1, 2, 3, 4];
+      case "Btech":
+        return [1, 2, 3, 4, 5, 6, 7, 8];
+      case "Pg diploma":
+        return [1, 2];
+      default:
+        return [];
+    }
+  };
+
   if (!app) return null;
 
   const isApproving = approvingId === app._id;
@@ -566,27 +593,98 @@ export const ReviewModal = ({
 
             {/* Footer Actions */}
             {!isPartner && (
-              <div className="px-8 py-6 border-t border-border bg-muted/30 flex gap-4 shrink-0">
-                <button
-                  onClick={() => onReject(app)}
-                  className="flex-1 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
-                >
-                  <XCircle className="w-5 h-5" /> Reject
-                </button>
-                <button
-                  onClick={() => onApprove(app._id)}
-                  disabled={isApproving}
-                  className="flex-[2] py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
-                >
-                  {isApproving ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5" />
-                      Approve
-                    </>
-                  )}
-                </button>
+              <div className="px-8 py-6 border-t border-border bg-muted/30 flex flex-col gap-4 shrink-0">
+                {/* Credit Transfer Toggle */}
+                <div className="space-y-1.5 text-left w-full md:max-w-xs">
+                  <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">Is this a credit transfer student? <span className="text-red-500">*</span></label>
+                  <select
+                    value={isCreditTransfer}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setIsCreditTransfer(val);
+                      if (val !== "true") {
+                        setSelectedCategory("");
+                        setSelectedSemester("");
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-primary outline-none text-sm transition-all font-semibold"
+                  >
+                    <option value="">Select Option</option>
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+
+                {/* Categorization Form Fields - Shown ONLY if Credit Transfer is YES */}
+                {isCreditTransfer === "true" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">Course Category <span className="text-red-500">*</span></label>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => {
+                          setSelectedCategory(e.target.value);
+                          setSelectedSemester("");
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-primary outline-none text-sm transition-all font-semibold"
+                      >
+                        <option value="">Select Category</option>
+                        <option value="Degree">Degree</option>
+                        <option value="Pg">Pg</option>
+                        <option value="Btech">Btech</option>
+                        <option value="Pg diploma">Pg diploma</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">Semester entry <span className="text-red-500">*</span></label>
+                      <select
+                        value={selectedSemester}
+                        onChange={(e) => setSelectedSemester(e.target.value)}
+                        disabled={!selectedCategory}
+                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-primary outline-none text-sm transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select Semester</option>
+                        {getSemesterOptions(selectedCategory).map((sem) => (
+                          <option key={sem} value={sem}>
+                            Semester {sem}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => onReject(app)}
+                    className="flex-1 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" /> Reject
+                  </button>
+                  <button
+                    onClick={() => onApprove(app._id, {
+                      isCreditTransfer: isCreditTransfer === "true",
+                      courseCategory: selectedCategory,
+                      semester: selectedSemester
+                    })}
+                    disabled={
+                      isApproving ||
+                      isCreditTransfer === "" ||
+                      (isCreditTransfer === "true" && (!selectedCategory || !selectedSemester))
+                    }
+                    className="flex-[2] py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                  >
+                    {isApproving ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        Approve
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </motion.div>

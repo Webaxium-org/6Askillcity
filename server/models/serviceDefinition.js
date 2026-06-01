@@ -9,13 +9,19 @@ const ServiceDefinitionSchema = new mongoose.Schema({
   description: { 
     type: String 
   },
-  subCategories: [{ 
-    type: String 
-  }],
   currentFee: { 
-    type: Number, 
-    required: [true, "Service fee is required"] 
+    type: Number,
+    default: 0
   },
+  documentType: {
+    type: String,
+    enum: ["Optional", "Mandatory"],
+    default: "Optional"
+  },
+  categories: [{
+    type: String,
+    trim: true
+  }],
   currentFeeRef: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "ServiceFee"

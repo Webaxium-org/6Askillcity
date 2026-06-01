@@ -196,10 +196,10 @@ export default function EligibilityQueuePage() {
     }
   }, [fetchData, isPartner]);
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id, extraFields = {}) => {
     setApprovingId(id);
     try {
-      const res = await reviewApplication(id, "approve");
+      const res = await reviewApplication(id, "approve", "", extraFields);
       if (res.success) {
         setApplications((prev) => prev.filter((a) => a._id !== id));
         setIsReviewModalOpen(false);

@@ -38,10 +38,10 @@ import IncreasedAdmission from "../../assets/empower.webp";
 import Holistic from "../../assets/Holistic.webp";
 import PartnershipIllustration from "../../assets/partnership_illustration.png";
 import GlobalUniversityLogo from "../../assets/global_university_logo.png";
-import TguImg1 from "../../assets/tgu/tgu-img-1.jpeg";
+import TguImg1 from "../../assets/tgu/tgu5232.jpg";
 import TguImg2 from "../../assets/tgu/tgu_university.webp";
-import TguImg3 from "../../assets/tgu/tgu-img-3.jpeg";
-import TguWebp from "../../assets/tgu/tgu.webp";
+import TguImg3 from "../../assets/tgu/tgu63.webp";
+import TguImg4 from "../../assets/tgu/library.webp";
 
 /**
  * UTILITIES
@@ -1186,41 +1186,36 @@ export default function App() {
                       </div>
 
                       {/* Right: Campus Grid */}
-                      <div className="lg:col-span-5 relative">
-                        <div className="grid grid-cols-4 grid-rows-2 gap-3 h-64 md:h-80">
-                          {/* Large Image (Left, 2x2) */}
-                          <div className="col-span-2 row-span-2 relative rounded-2xl overflow-hidden group shadow-md border border-border/50">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent group-hover:opacity-0 transition-opacity duration-500 z-10 pointer-events-none" />
-                            <img
-                              src={TguWebp}
-                              alt="Campus View 1"
-                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                            />
-                          </div>
-                          {/* Medium Wide Image (Top Right, 2x1) */}
-                          <div className="col-span-2 row-span-1 relative rounded-2xl overflow-hidden group shadow-sm border border-border/50">
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                      <div className="lg:col-span-5 relative space-y-3">
+                        {/* Top Large Wide Image */}
+                        <div className="relative rounded-[2rem] overflow-hidden group shadow-md border border-border/50 h-52 md:h-72">
+                          <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent group-hover:opacity-0 transition-opacity duration-500 z-10 pointer-events-none" />
+                          <img
+                            src={TguImg1}
+                            alt="Campus Main View"
+                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                          />
+                        </div>
+                        {/* Bottom Row of 3 Images */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="relative rounded-2xl overflow-hidden group shadow-sm border border-border/50 h-24 md:h-32">
                             <img
                               src={TguImg2}
-                              alt="Campus View 2"
+                              alt="Campus Gate"
                               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                             />
                           </div>
-                          {/* Small Image (Bottom Right 1, 1x1) */}
-                          <div className="col-span-1 row-span-1 relative rounded-2xl overflow-hidden group shadow-sm border border-border/50">
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
-                            <img
-                              src={TguImg1}
-                              alt="Campus View 3"
-                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                            />
-                          </div>
-                          {/* Small Image (Bottom Right 2, 1x1) */}
-                          <div className="col-span-1 row-span-1 relative rounded-2xl overflow-hidden group shadow-sm border border-border/50">
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10 pointer-events-none" />
+                          <div className="relative rounded-2xl overflow-hidden group shadow-sm border border-border/50 h-24 md:h-32">
                             <img
                               src={TguImg3}
-                              alt="Campus View 4"
+                              alt="Classroom"
+                              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                            />
+                          </div>
+                          <div className="relative rounded-2xl overflow-hidden group shadow-sm border border-border/50 h-24 md:h-32">
+                            <img
+                              src={TguImg4}
+                              alt="Library"
                               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                             />
                           </div>
@@ -1312,7 +1307,7 @@ export default function App() {
                     bgBadge:
                       "bg-[#10b981]/20 text-emerald-300 border border-[#10b981]/30",
                     buttonClass:
-                      "bg-gradient-to-r from-[#1570ff] to-[#0949d0] shadow-[#1570ff]/25 hover:shadow-[#1570ff]/40 border-transparent",
+                      "bg-gradient-to-r from-[#008F35] to-[#008F35] shadow-[#10b981]/25 hover:shadow-[#10b981]/40 border-transparent",
                     points: [
                       "Partner with universities to test and evaluate candidates' existing practical skills.",
                       "Facilitate formal UGC-approved certification for experienced individuals.",

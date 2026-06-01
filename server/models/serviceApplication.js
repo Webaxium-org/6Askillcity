@@ -11,9 +11,6 @@ const ServiceApplicationSchema = new mongoose.Schema({
     ref: "ServiceDefinition", 
     required: true 
   },
-  subCategory: { 
-    type: String
-  },
   feeAmount: { 
     type: Number, 
     required: true 

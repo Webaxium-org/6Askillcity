@@ -57,6 +57,16 @@ const ICON_MAP = {
 };
 
 const ICON_OPTIONS = Object.keys(ICON_MAP);
+
+const CATEGORY_OPTIONS = [
+  "Academic Documents",
+  "Overseas Education Documents",
+  "Job Overseas Documents",
+  "Working In India Documents",
+  "Studying In India Documents",
+  "Embassy Attestion Services",
+  "Study Abroad services"
+];
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -290,13 +300,6 @@ export default function DocumentsServices() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setShowApplyModal(true)}
-              className="px-6 py-4 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
-            >
-              <PlusCircle size={18} />
-              Apply for Student
-            </button>
             {user?.type !== "partner" && user?.role !== "partner" && (
               <button 
                 onClick={() => setShowCreateModal(true)}
@@ -890,15 +893,7 @@ export default function DocumentsServices() {
                 <h3 className="text-xl font-black mb-2">{service.title}</h3>
                 <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{service.description}</p>
                 
-                <div className="space-y-2 mb-8">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-3">Sub-Categories</p>
-                  {service.subCategories?.map((sub, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs font-medium text-foreground/80 bg-muted/30 p-2 rounded-xl">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
-                      {sub}
-                    </div>
-                  ))}
-                </div>
+
                 
                 <button 
                   onClick={() => setShowEditModal(service)}
@@ -1031,8 +1026,9 @@ const CreateServiceForm = ({ onSuccess }) => {
     title: "",
     description: "",
     currentFee: "",
-    subCategories: [""],
-    icon: "Layers"
+    icon: "Layers",
+    documentType: "Optional",
+    categories: []
   });
   const [loading, setLoading] = useState(false);
 
@@ -1040,10 +1036,16 @@ const CreateServiceForm = ({ onSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await serviceApi.createServiceDefinition({
-        ...formData,
-        subCategories: formData.subCategories.filter(s => s.trim() !== "")
-      });
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        icon: formData.icon,
+        documentType: formData.documentType,
+        categories: formData.categories,
+        currentFee: Number(formData.currentFee || 0)
+      };
+
+      const res = await serviceApi.createServiceDefinition(payload);
       if (res.success) {
         onSuccess();
       }
@@ -1057,28 +1059,110 @@ const CreateServiceForm = ({ onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Title</label>
-            <input 
-              required
-              value={formData.title}
-              onChange={e => setFormData({...formData, title: e.target.value})}
-              placeholder="e.g., Optional Certificates"
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
-            />
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Title</label>
+          <input 
+            required
+            value={formData.title}
+            onChange={e => setFormData({...formData, title: e.target.value})}
+            placeholder="e.g., Optional Certificates"
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Categories (Select Multiple)</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-muted/20 border border-border rounded-[2rem] max-h-[190px] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 pr-2">
+            {CATEGORY_OPTIONS.map((cat, idx) => {
+              const isSelected = formData.categories.includes(cat);
+              const Icon = {
+                "Academic Documents": GraduationCap,
+                "Overseas Education Documents": Globe,
+                "Job Overseas Documents": Briefcase,
+                "Working In India Documents": Building2,
+                "Studying In India Documents": ClipboardCheck,
+                "Embassy Attestion Services": Stamp,
+                "Study Abroad services": Plane
+              }[cat] || Layers;
+
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    const newCats = isSelected
+                      ? formData.categories.filter(c => c !== cat)
+                      : [...formData.categories, cat];
+                    setFormData({ ...formData, categories: newCats });
+                  }}
+                  className={cn(
+                    "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group hover:scale-[1.02] active:scale-95",
+                    isSelected
+                      ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5"
+                      : "bg-card border-border text-muted-foreground hover:bg-muted hover:border-primary/20"
+                  )}
+                >
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                  )}>
+                    <Icon size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className={cn("text-xs font-black uppercase tracking-wider truncate", isSelected ? "text-primary" : "text-foreground")}>
+                      {cat.replace(" Documents", "").replace(" Document", "")}
+                    </p>
+                    <p className="text-[9px] font-bold text-muted-foreground truncate uppercase tracking-wide mt-0.5">
+                      {cat.includes("India") ? "Domestic Fulfillment" : "Overseas Fulfillment"}
+                    </p>
+                  </div>
+                  {isSelected && (
+                    <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                      <CheckCircle2 size={12} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Base Fee (₹)</label>
-            <input 
-              required
-              type="number"
-              value={formData.currentFee}
-              onChange={e => setFormData({...formData, currentFee: e.target.value})}
-              placeholder="2000"
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
-            />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Is this service / document mandatory?</label>
+          <div className="flex gap-4 p-1 bg-muted/20 border border-border rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setFormData({...formData, documentType: "Optional"})}
+              className={cn(
+                "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                formData.documentType === "Optional" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              Optional
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({...formData, documentType: "Mandatory"})}
+              className={cn(
+                "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                formData.documentType === "Mandatory" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              Mandatory
+            </button>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Base Fee (₹)</label>
+          <input 
+            required
+            type="number"
+            value={formData.currentFee}
+            onChange={e => setFormData({...formData, currentFee: e.target.value})}
+            placeholder="2000"
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
+          />
         </div>
         
         <div className="space-y-1.5">
@@ -1116,42 +1200,6 @@ const CreateServiceForm = ({ onSuccess }) => {
             })}
           </div>
         </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sub-Categories</label>
-            <button 
-              type="button" 
-              onClick={() => setFormData({...formData, subCategories: [...formData.subCategories, ""]})}
-              className="text-[10px] font-black uppercase text-primary hover:underline"
-            >
-              + Add Another
-            </button>
-          </div>
-          {formData.subCategories.map((sub, idx) => (
-            <div key={idx} className="flex gap-2">
-              <input 
-                value={sub}
-                onChange={e => {
-                  const newSubs = [...formData.subCategories];
-                  newSubs[idx] = e.target.value;
-                  setFormData({...formData, subCategories: newSubs});
-                }}
-                placeholder={`Sub-category ${idx + 1}`}
-                className="flex-1 px-5 py-3 rounded-xl bg-muted/30 border border-border focus:border-primary outline-none transition-all text-sm font-bold"
-              />
-              {formData.subCategories.length > 1 && (
-                <button 
-                  type="button"
-                  onClick={() => setFormData({...formData, subCategories: formData.subCategories.filter((_, i) => i !== idx)})}
-                  className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                >
-                  <Trash2 size={18} />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
       </div>
 
       <button 
@@ -1171,7 +1219,6 @@ const ApplyServiceForm = ({ services, onSuccess }) => {
   const [formData, setFormData] = useState({
     studentId: "",
     serviceId: "",
-    subCategory: "",
     adminRemarks: ""
   });
   const [loading, setLoading] = useState(false);
@@ -1327,36 +1374,19 @@ const ApplyServiceForm = ({ services, onSuccess }) => {
           </AnimatePresence>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Template</label>
-            <select 
-              required
-              value={formData.serviceId}
-              onChange={e => setFormData({...formData, serviceId: e.target.value, subCategory: ""})}
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
-            >
-              <option value="">Select service...</option>
-              {services.map(s => (
-                <option key={s._id} value={s._id}>{s.title}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sub-Category</label>
-            <select 
-              required={selectedService?.subCategories?.length > 0}
-              disabled={!selectedService}
-              value={formData.subCategory}
-              onChange={e => setFormData({...formData, subCategory: e.target.value})}
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none disabled:opacity-50"
-            >
-              <option value="">{selectedService?.subCategories?.length > 0 ? "Select sub-cat..." : "No sub-categories"}</option>
-              {selectedService?.subCategories.map((sub, i) => (
-                <option key={i} value={sub}>{sub}</option>
-              ))}
-            </select>
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Template</label>
+          <select 
+            required
+            value={formData.serviceId}
+            onChange={e => setFormData({...formData, serviceId: e.target.value})}
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
+          >
+            <option value="">Select service...</option>
+            {services.map(s => (
+              <option key={s._id} value={s._id}>{s.title}</option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-1.5">
@@ -1374,7 +1404,9 @@ const ApplyServiceForm = ({ services, onSuccess }) => {
         <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Active Fee Locked</p>
-            <p className="text-xl font-black text-primary">₹{selectedService.currentFee?.toLocaleString()}</p>
+            <p className="text-xl font-black text-primary">
+              ₹{(selectedService.currentFee || 0).toLocaleString()}
+            </p>
           </div>
           <ShieldCheck className="text-primary opacity-20" size={40} />
         </div>
@@ -1528,8 +1560,9 @@ const EditServiceForm = ({ service, onSuccess }) => {
     title: service?.title || "",
     description: service?.description || "",
     currentFee: service?.currentFee || "",
-    subCategories: service?.subCategories?.length > 0 ? [...service.subCategories] : [""],
-    icon: service?.icon || "Layers"
+    icon: service?.icon || "Layers",
+    documentType: service?.documentType || "Optional",
+    categories: service?.categories || (service?.category ? [service.category] : [])
   });
   const [loading, setLoading] = useState(false);
 
@@ -1537,6 +1570,15 @@ const EditServiceForm = ({ service, onSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        icon: formData.icon,
+        documentType: formData.documentType,
+        categories: formData.categories,
+        currentFee: Number(formData.currentFee || 0)
+      };
+
       // If fee changed, update fee separately
       if (Number(formData.currentFee) !== Number(service.currentFee)) {
         await serviceApi.updateServiceFee(service._id, { 
@@ -1545,10 +1587,7 @@ const EditServiceForm = ({ service, onSuccess }) => {
         });
       }
 
-      const res = await serviceApi.updateServiceDefinition(service._id, {
-        ...formData,
-        subCategories: formData.subCategories.filter(s => s.trim() !== "")
-      });
+      const res = await serviceApi.updateServiceDefinition(service._id, payload);
       if (res.success) onSuccess();
     } catch (error) {
       console.error(error);
@@ -1560,28 +1599,110 @@ const EditServiceForm = ({ service, onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Title</label>
-            <input 
-              required
-              value={formData.title}
-              onChange={e => setFormData({...formData, title: e.target.value})}
-              placeholder="e.g., Optional Certificates"
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
-            />
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Service Title</label>
+          <input 
+            required
+            value={formData.title}
+            onChange={e => setFormData({...formData, title: e.target.value})}
+            placeholder="e.g., Optional Certificates"
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Categories (Select Multiple)</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-muted/20 border border-border rounded-[2rem] max-h-[190px] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 pr-2">
+            {CATEGORY_OPTIONS.map((cat, idx) => {
+              const isSelected = formData.categories.includes(cat);
+              const Icon = {
+                "Academic Documents": GraduationCap,
+                "Overseas Education Documents": Globe,
+                "Job Overseas Documents": Briefcase,
+                "Working In India Documents": Building2,
+                "Studying In India Documents": ClipboardCheck,
+                "Embassy Attestion Services": Stamp,
+                "Study Abroad services": Plane
+              }[cat] || Layers;
+
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    const newCats = isSelected
+                      ? formData.categories.filter(c => c !== cat)
+                      : [...formData.categories, cat];
+                    setFormData({ ...formData, categories: newCats });
+                  }}
+                  className={cn(
+                    "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group hover:scale-[1.02] active:scale-95",
+                    isSelected
+                      ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5"
+                      : "bg-card border-border text-muted-foreground hover:bg-muted hover:border-primary/20"
+                  )}
+                >
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                  )}>
+                    <Icon size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className={cn("text-xs font-black uppercase tracking-wider truncate", isSelected ? "text-primary" : "text-foreground")}>
+                      {cat.replace(" Documents", "").replace(" Document", "")}
+                    </p>
+                    <p className="text-[9px] font-bold text-muted-foreground truncate uppercase tracking-wide mt-0.5">
+                      {cat.includes("India") ? "Domestic Fulfillment" : "Overseas Fulfillment"}
+                    </p>
+                  </div>
+                  {isSelected && (
+                    <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                      <CheckCircle2 size={12} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Base Fee (₹)</label>
-            <input 
-              required
-              type="number"
-              value={formData.currentFee}
-              onChange={e => setFormData({...formData, currentFee: e.target.value})}
-              placeholder="2000"
-              className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
-            />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Is this service / document mandatory?</label>
+          <div className="flex gap-4 p-1 bg-muted/20 border border-border rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setFormData({...formData, documentType: "Optional"})}
+              className={cn(
+                "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                formData.documentType === "Optional" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              Optional
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({...formData, documentType: "Mandatory"})}
+              className={cn(
+                "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                formData.documentType === "Mandatory" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              Mandatory
+            </button>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Base Fee (₹)</label>
+          <input 
+            required
+            type="number"
+            value={formData.currentFee}
+            onChange={e => setFormData({...formData, currentFee: e.target.value})}
+            placeholder="2000"
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
+          />
         </div>
         
         <div className="space-y-1.5">
@@ -1618,40 +1739,6 @@ const EditServiceForm = ({ service, onSuccess }) => {
               );
             })}
           </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sub-Categories</label>
-            <button 
-              type="button" 
-              onClick={() => setFormData({...formData, subCategories: [...formData.subCategories, ""]})}
-              className="text-[10px] font-black uppercase text-primary hover:underline"
-            >
-              + Add Another
-            </button>
-          </div>
-          {formData.subCategories.map((sub, idx) => (
-            <div key={idx} className="flex gap-2">
-              <input 
-                value={sub}
-                onChange={e => {
-                  const newSubs = [...formData.subCategories];
-                  newSubs[idx] = e.target.value;
-                  setFormData({...formData, subCategories: newSubs});
-                }}
-                placeholder={`Sub-category ${idx + 1}`}
-                className="flex-1 px-5 py-3 rounded-xl bg-muted/30 border border-border focus:border-primary outline-none transition-all text-sm font-bold"
-              />
-              <button 
-                type="button"
-                onClick={() => setFormData({...formData, subCategories: formData.subCategories.filter((_, i) => i !== idx)})}
-                className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))}
         </div>
       </div>
 

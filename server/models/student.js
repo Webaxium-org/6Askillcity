@@ -331,6 +331,18 @@ const StudentSchema = new mongoose.Schema(
       enum: ["Plus Two", "Bachelors", "Masters"],
       default: "Plus Two",
     },
+    courseCategory: {
+      type: String,
+      enum: ["Degree", "Pg", "Btech", "Pg diploma"],
+    },
+    semester: {
+      type: Number,
+    },
+    isCreditTransfer: {
+      type: Boolean,
+      default: false,
+      index:true
+    },
     deleted: {
       type: Boolean,
       default: false,
