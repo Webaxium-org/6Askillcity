@@ -43,7 +43,65 @@ import {
 } from "../../redux/notificationSlice";
 import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
-import notificationSound from "../../assets/sounds/notification.mp3";
+// Text-to-speech helper — speaks the notification title aloud in a female voice
+const speakNotification = (title) => {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const phrases = [
+    `Heads up! ${title}`,
+    `Just in — ${title}`,
+    `New update: ${title}`,
+    `Hey, attention please — ${title}`,
+    `You've got a new alert: ${title}`,
+  ];
+  const text = phrases[Math.floor(Math.random() * phrases.length)];
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.9;
+  utterance.volume = 1;
+
+  const applyVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
+
+    // Step 1: explicit "female" tag in voice name
+    let chosen = voices.find((v) => /female/i.test(v.name));
+
+    // Step 2: well-known female voice names across Windows / macOS / Android / Linux
+    if (!chosen) {
+      chosen = voices.find((v) =>
+        /zira|heera|hazel|eva|susan|paulina|sabina|amelie|anna|ioana|joana|helena|nora|sara|vigdis|satu|tessa|samantha|victoria|karen|moira|fiona|google\s+uk\s+english\s+female|google\s+us\s+english/i.test(v.name)
+      );
+    }
+
+    // Step 3: any English voice whose name contains a known-female cue
+    if (!chosen) {
+      chosen = voices.find((v) => v.lang.startsWith("en") && /ira|ella|amy|emma|lisa|nina|alice|aria|jenny/i.test(v.name));
+    }
+
+    if (chosen) {
+      console.log("✅ Using voice:", chosen.name);
+      utterance.voice = chosen;
+      utterance.pitch = 1.2;
+    } else {
+      // No named female voice found — force a high pitch so it sounds clearly feminine
+      console.warn("⚠️ No female voice found, using default with high pitch");
+      utterance.pitch = 1.8;
+    }
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // getVoices() loads asynchronously on first page load
+  if (window.speechSynthesis.getVoices().length > 0) {
+    applyVoice();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.onvoiceschanged = null;
+      applyVoice();
+    };
+  }
+};
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -488,7 +546,6 @@ export const DashboardLayout = ({ children, title }) => {
   const { items: notifications, unreadCount } = useSelector(
     (state) => state.notifications,
   );
-  const audioRef = React.useRef(new Audio(notificationSound));
 
   React.useEffect(() => {
     dispatch(fetchNotifications());
@@ -500,13 +557,8 @@ export const DashboardLayout = ({ children, title }) => {
     const handleNotification = (data) => {
       dispatch(addLiveNotification(data));
 
-      // Play notification sound
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch((err) => {
-          console.warn("Notification sound blocked:", err);
-        });
-      }
+      // Speak the notification title aloud
+      speakNotification(data.title);
 
       dispatch(
         showAlert({
