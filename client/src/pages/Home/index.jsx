@@ -989,10 +989,10 @@ export default function App() {
                     <CardHeader className="relative z-10 space-y-2 pb-4 pt-8 px-8">
                       <CardTitle
                         className={cn(
-                          "text-3xl font-black transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r select-none",
+                          "text-4xl font-extrabold tracking-tight leading-none transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r select-none",
                           highlightInquiry
                             ? "from-[#B82424] to-red-500 scale-[1.02]"
-                            : "from-[#17468C] to-[#6366f1]"
+                            : "from-[#0a3382] via-[#63163a] to-[#bd0808]"
                         )}
                       >
                         Partner Enquiry
