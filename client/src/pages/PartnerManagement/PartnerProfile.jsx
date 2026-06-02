@@ -24,7 +24,9 @@ import {
   Key,
   Copy,
   Check,
-  GitBranch
+  GitBranch,
+  Search,
+  ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -58,10 +60,14 @@ export default function PartnerProfile() {
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [permissionType, setPermissionType] = useState("university");
   const [selectedId, setSelectedId] = useState("");
+  const [permissionSearchQuery, setPermissionSearchQuery] = useState("");
+  const [isPermissionSelectOpen, setIsPermissionSelectOpen] = useState(false);
 
   // Auto-switch permission type when opening modal if university is already assigned
   useEffect(() => {
     if (isPermissionModalOpen) {
+      setPermissionSearchQuery("");
+      setIsPermissionSelectOpen(false);
       const hasUniversity = permissions.some(p => p.type === "university");
       if (hasUniversity) {
         setPermissionType("program");
@@ -711,7 +717,7 @@ export default function PartnerProfile() {
                     <div className="grid grid-cols-3 gap-2 bg-muted p-1 rounded-2xl">
                       <button 
                         type="button" 
-                        onClick={() => { setPermissionType("university"); setSelectedId(""); }}
+                        onClick={() => { setPermissionType("university"); setSelectedId(""); setPermissionSearchQuery(""); setIsPermissionSelectOpen(false); }}
                         className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                           permissionType === "university" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                         }`}
@@ -720,7 +726,7 @@ export default function PartnerProfile() {
                       </button>
                       <button 
                         type="button" 
-                        onClick={() => { setPermissionType("program"); setSelectedId(""); }}
+                        onClick={() => { setPermissionType("program"); setSelectedId(""); setPermissionSearchQuery(""); setIsPermissionSelectOpen(false); }}
                         className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                           permissionType === "program" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                         }`}
@@ -729,7 +735,7 @@ export default function PartnerProfile() {
                       </button>
                       <button 
                         type="button" 
-                        onClick={() => { setPermissionType("branch"); setSelectedId(""); }}
+                        onClick={() => { setPermissionType("branch"); setSelectedId(""); setPermissionSearchQuery(""); setIsPermissionSelectOpen(false); }}
                         className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                           permissionType === "branch" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                         }`}
@@ -739,51 +745,141 @@ export default function PartnerProfile() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-muted-foreground tracking-widest ml-1">
-                      Select {permissionType === "university" ? "University" : permissionType === "program" ? "Program" : "Branch"}
-                    </label>
-                    <select 
-                      value={selectedId}
-                      onChange={(e) => setSelectedId(e.target.value)}
-                      required 
-                      className="w-full px-5 py-3.5 rounded-2xl border border-input bg-background outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-semibold"
-                    >
-                      <option value="">Choose one...</option>
-                      {permissionType === "university" ? (
-                        universities
+                  {(() => {
+                    const options = (() => {
+                      if (permissionType === "university") {
+                        return universities
                           .filter(u => !permissions.some(perm => perm.type === "university" && perm.universityId?._id === u._id))
-                          .map(u => <option key={u._id} value={u._id}>{u.name}</option>)
-                      ) : permissionType === "program" ? (
-                        programs
+                          .map(u => ({ id: u._id, name: u.name }));
+                      } else if (permissionType === "program") {
+                        return programs
                           .filter(p => 
                             permissions.some(perm => perm.type === "university" && perm.universityId?._id === p.university?._id) &&
                             !permissions.some(perm => perm.type === "program" && perm.programId?._id === p._id)
                           )
-                          .map(p => <option key={p._id} value={p._id}>{p.name} ({p.university?.name})</option>)
-                      ) : (
-                        branches
+                          .map(p => ({ id: p._id, name: p.name, sub: p.university?.name }));
+                      } else {
+                        return branches
                           .filter(b => 
                             permissions.some(perm => perm.type === "university" && perm.universityId?._id === b.program?.university?._id) &&
                             permissions.some(perm => perm.type === "program" && perm.programId?._id === b.program?._id) &&
                             !permissions.some(perm => perm.type === "branch" && perm.branchId?._id === b._id)
                           )
-                          .map(b => <option key={b._id} value={b._id}>{b.name} ({b.program?.name})</option>)
-                      )}
-                    </select>
-                  </div>
+                          .map(b => ({ id: b._id, name: b.name, sub: b.program?.name }));
+                      }
+                    })();
+
+                    const filteredOptions = options.filter(opt => 
+                      opt.name.toLowerCase().includes(permissionSearchQuery.toLowerCase()) ||
+                      (opt.sub && opt.sub.toLowerCase().includes(permissionSearchQuery.toLowerCase()))
+                    );
+
+                    const selectedOption = options.find(opt => opt.id === selectedId);
+
+                    return (
+                      <div className="space-y-2 relative">
+                        <label className="text-xs font-black uppercase text-muted-foreground tracking-widest ml-1">
+                          Select {permissionType === "university" ? "University" : permissionType === "program" ? "Program" : "Branch"}
+                        </label>
+
+                        {/* Styled Dropdown Trigger */}
+                        <div 
+                          onClick={() => setIsPermissionSelectOpen(!isPermissionSelectOpen)}
+                          className="w-full px-5 py-3.5 rounded-2xl border border-input bg-card hover:border-primary/50 outline-none transition-all text-sm font-semibold cursor-pointer flex items-center justify-between shadow-sm select-none"
+                        >
+                          <span className={selectedId ? "text-foreground font-semibold" : "text-muted-foreground font-medium"}>
+                            {selectedOption 
+                              ? `${selectedOption.name}${selectedOption.sub ? ` (${selectedOption.sub})` : ''}` 
+                              : "Choose one..."}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isPermissionSelectOpen ? "rotate-180" : ""}`} />
+                        </div>
+
+                        {/* Searchable Options Popover */}
+                        <AnimatePresence>
+                          {isPermissionSelectOpen && (
+                            <>
+                              {/* Close overlay on click outside */}
+                              <div 
+                                className="fixed inset-0 z-[1000] cursor-default"
+                                onClick={() => setIsPermissionSelectOpen(false)}
+                              />
+
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute left-0 right-0 mt-2 p-4 bg-card border border-border rounded-[1.5rem] shadow-2xl z-[1001] space-y-3"
+                              >
+                                {/* Search Box */}
+                                <div className="relative">
+                                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    placeholder="Type to search..."
+                                    value={permissionSearchQuery}
+                                    onChange={(e) => setPermissionSearchQuery(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-muted/30 focus:border-primary outline-none transition-all text-xs font-semibold text-foreground bg-transparent"
+                                  />
+                                </div>
+
+                                {/* Options List */}
+                                <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                  {filteredOptions.length === 0 ? (
+                                    <div className="py-6 text-center text-muted-foreground text-xs font-medium">
+                                      No options found
+                                    </div>
+                                  ) : (
+                                    filteredOptions.map((opt) => {
+                                      const isSelected = opt.id === selectedId;
+                                      return (
+                                        <div
+                                          key={opt.id}
+                                          onClick={() => {
+                                            setSelectedId(opt.id);
+                                            setIsPermissionSelectOpen(false);
+                                            setPermissionSearchQuery("");
+                                          }}
+                                          className={`flex items-center justify-between px-4 py-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-all cursor-pointer ${
+                                            isSelected ? "bg-primary/5 text-primary" : ""
+                                          }`}
+                                        >
+                                          <div className="flex flex-col text-left">
+                                            <span className="text-xs font-bold">{opt.name}</span>
+                                            {opt.sub && (
+                                              <span className="text-[10px] text-muted-foreground font-semibold">
+                                                {opt.sub}
+                                              </span>
+                                            )}
+                                          </div>
+                                          {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })()}
 
                   <div className="flex gap-4 pt-4">
                     <button 
                       type="button" 
                       onClick={() => setIsPermissionModalOpen(false)} 
-                      className="flex-1 py-3.5 rounded-2xl border border-border hover:bg-muted font-bold transition-all"
+                      className="flex-1 py-3.5 rounded-2xl border border-border hover:bg-muted font-bold transition-all text-foreground bg-transparent"
                     >
                       Cancel
                     </button>
                     <button 
                       type="submit" 
-                      className="flex-1 py-3.5 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-xl shadow-primary/20"
+                      disabled={!selectedId}
+                      className="flex-1 py-3.5 rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Grant Access
                     </button>
