@@ -39,6 +39,13 @@ import {
   HelpCircle,
   MinusCircle,
   Hourglass,
+  ArrowUpDown,
+  Layers,
+  Globe,
+  Stamp,
+  Plane,
+  ShieldCheck,
+  Upload,
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
@@ -66,6 +73,10 @@ import {
   getServiceApplications,
   getServiceDefinitions,
   applyForService,
+  updateApplicationStatus,
+  recordServicePayment,
+  createServiceCashfreeOrder,
+  verifyServiceCashfreePayment,
 } from "../../api/documentsServices.api";
 import { showAlert } from "../../redux/alertSlice";
 import { getTickets } from "../../api/ticket.api";
@@ -161,6 +172,7 @@ export default function StudentPaymentDetail() {
     adminRemarks: ""
   });
   const [isServiceApplying, setIsServiceApplying] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(null); // application object for document services
 
   useEffect(() => {
     fetchData();
@@ -1700,6 +1712,18 @@ export default function StudentPaymentDetail() {
                         </button>
                       </div>
                     )}
+
+                    {app && (
+                      <div className="mt-4 pt-4 border-t border-border/50">
+                        <button
+                          onClick={() => setShowStatusModal(app)}
+                          className="w-full py-3 bg-muted hover:bg-primary hover:text-primary-foreground rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all text-muted-foreground"
+                        >
+                          <ArrowUpDown size={12} />
+                          Update Status / Pay
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               };
@@ -2490,6 +2514,446 @@ export default function StudentPaymentDetail() {
         payment={selectedInvoice}
         student={student}
       />
+
+      {/* Service Status & Payment Modal */}
+      <ServiceModal 
+        show={!!showStatusModal} 
+        onClose={() => setShowStatusModal(null)}
+        title="Update Application Status"
+      >
+        <ServiceUpdateStatusForm 
+          application={showStatusModal}
+          onSuccess={async () => {
+            setShowStatusModal(null);
+            const servicesRes = await getServiceApplications({ studentId: id });
+            if (servicesRes.success) setServiceApplications(servicesRes.data);
+          }} 
+          cashfree={cashfree}
+        />
+      </ServiceModal>
     </DashboardLayout>
   );
 }
+
+// ─────────────────────────────────────────────
+// Document Services Modal & Form Helpers
+// ─────────────────────────────────────────────
+
+const ServiceModal = ({ show, onClose, title, children }) => {
+  if (!show) return null;
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
+        />
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          className="relative bg-card border border-border w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden text-foreground"
+        >
+          <div className="p-8 border-b border-border flex items-center justify-between">
+            <h3 className="text-2xl font-black tracking-tight">{title}</h3>
+            <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-all"><X /></button>
+          </div>
+          <div className="p-8 max-h-[80vh] overflow-y-auto">
+            {children}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+};
+
+const ServiceUpdateStatusForm = ({ application, onSuccess, cashfree }) => {
+  const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner" || user?.role === "partner";
+
+  const [formData, setFormData] = useState({
+    status: application?.status || "",
+    remarks: ""
+  });
+  const [loading, setLoading] = useState(false);
+
+  const isUnpaid = application?.paymentStatus !== "Paid";
+
+  const statusOrder = [
+    "Waiting for Payment",
+    "Pending Applications",
+    "Application On Progress",
+    "Documents Received",
+    "Documents Sent Courier"
+  ];
+
+  const currentIdx = statusOrder.indexOf(application?.status);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await updateApplicationStatus(application._id, formData);
+      if (res.success) onSuccess();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isUnpaid) {
+    return (
+      <div className="space-y-6">
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-bold flex items-center gap-3">
+          <AlertCircle size={18} />
+          {isPartner 
+            ? "Payment Required: You must pay or record the service fee to process this application."
+            : "Payment Required: You must record the service fee before processing this application."
+          }
+        </div>
+        <ServiceRecordPaymentForm application={application} onSuccess={onSuccess} cashfree={cashfree} />
+      </div>
+    );
+  }
+
+  if (isPartner) {
+    return (
+      <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 text-center space-y-3">
+        <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-500" />
+        <p className="text-sm font-black uppercase tracking-widest text-emerald-600">Payment Completed</p>
+        <p className="text-xs text-muted-foreground font-medium">
+          This application fee has been successfully paid. Platform administrators will review the documents and advance the pipeline status accordingly.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Current Status</label>
+          <div className="grid grid-cols-2 gap-2">
+            {statusOrder.slice(1).map(s => {
+              const targetIdx = statusOrder.indexOf(s);
+              const isDisabled = targetIdx <= currentIdx;
+              
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => setFormData({...formData, status: s})}
+                  className={cn(
+                    "p-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                    formData.status === s 
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                      : isDisabled 
+                        ? "bg-muted/10 border-border/50 text-muted-foreground/30 cursor-not-allowed"
+                        : "bg-muted/30 border-border text-muted-foreground hover:bg-muted hover:border-primary/30"
+                  )}
+                >
+                  {s.replace(" Applications", "")}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Update Remarks</label>
+          <textarea 
+            required
+            rows={3}
+            value={formData.remarks}
+            onChange={e => setFormData({...formData, remarks: e.target.value})}
+            placeholder="Describe the action taken (e.g., Courier tracking number)..."
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-medium"
+          />
+        </div>
+      </div>
+
+      <button 
+        disabled={loading}
+        className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+      >
+        {loading ? "Updating..." : "Commit Status Change"}
+      </button>
+
+      <div className="p-6 rounded-3xl bg-muted/30 border border-border">
+        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-4">Historical Audit Trail</p>
+        <div className="space-y-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+          {application?.history?.map((h, i) => (
+            <div key={i} className="flex gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+              <div>
+                <p className="text-[10px] font-black uppercase text-foreground">{h.status}</p>
+                <p className="text-[10px] font-medium text-muted-foreground">{new Date(h.updatedAt).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground/80 mt-1">{h.remarks}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </form>
+  );
+};
+
+const ServiceRecordPaymentForm = ({ application, onSuccess, cashfree }) => {
+  const remainingBalance = application.feeAmount - (application.paidAmount || 0);
+  
+  const [paymentMethodTab, setPaymentMethodTab] = useState("online");
+  const [formData, setFormData] = useState({
+    amount: remainingBalance,
+    method: "Offline / Cash",
+    transactionId: "",
+    remarks: ""
+  });
+  const [receipt, setReceipt] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    if (!formData.method) {
+      dispatch(showAlert({ type: "error", message: "Please specify the payment method." }));
+      return;
+    }
+    if (!formData.transactionId) {
+      dispatch(showAlert({ type: "error", message: "Please specify the Transaction ID." }));
+      return;
+    }
+    if (!receipt) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please attach a receipt for offline payment.",
+        })
+      );
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = new FormData();
+      data.append("amount", formData.amount);
+      data.append("method", formData.method);
+      data.append("transactionId", formData.transactionId);
+      data.append("remarks", formData.remarks);
+      if (receipt) {
+        data.append("receipt", receipt);
+      }
+
+      const res = await recordServicePayment(application._id, data);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: "Payment submitted for verification!" }));
+        onSuccess();
+      }
+    } catch (error) {
+      dispatch(showAlert({ type: "error", message: error.response?.data?.message || "Payment recording failed" }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayOnline = async (e) => {
+    e.preventDefault();
+    if (!formData.amount || formData.amount <= 0) return;
+
+    if (Number(formData.amount) > remainingBalance) {
+      dispatch(showAlert({ type: "error", message: "Amount exceeds remaining balance" }));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await createServiceCashfreeOrder(application._id, {
+        amount: formData.amount,
+        remarks: formData.remarks,
+      });
+      if (res.success && cashfree) {
+        const checkoutOptions = {
+          paymentSessionId: res.payment_session_id,
+          redirectTarget: "_self",
+        };
+        cashfree.checkout(checkoutOptions);
+      }
+    } catch (error) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: error.response?.data?.message || "Failed to initiate online payment",
+        })
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={paymentMethodTab === "online" ? handlePayOnline : handlePayment} className="space-y-6">
+      <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Balance Due</p>
+            <p className="text-3xl font-black text-primary">₹{remainingBalance.toLocaleString()}</p>
+          </div>
+          <CreditCard className="text-primary opacity-20" size={48} />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-primary/10">
+          <div>
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total Fee</p>
+            <p className="text-sm font-bold">₹{application.feeAmount?.toLocaleString()}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Paid So Far</p>
+            <p className="text-sm font-bold text-emerald-500">₹{(application.paidAmount || 0).toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex bg-muted p-1 rounded-2xl mb-6">
+        <button
+          type="button"
+          onClick={() => setPaymentMethodTab("online")}
+          className={cn(
+            "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+            paymentMethodTab === "online"
+              ? "bg-card shadow-sm text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Pay Online
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentMethodTab("offline")}
+          className={cn(
+            "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+            paymentMethodTab === "offline"
+              ? "bg-card shadow-sm text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Upload Receipt
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Amount to Pay (₹)</label>
+          <input 
+            required
+            type="number"
+            max={remainingBalance}
+            min={1}
+            value={formData.amount}
+            onChange={e => {
+              const val = e.target.value;
+              if (Number(val) > remainingBalance) {
+                setFormData({...formData, amount: remainingBalance.toString()});
+              } else {
+                setFormData({...formData, amount: val});
+              }
+            }}
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-black text-lg text-primary"
+          />
+        </div>
+
+        {paymentMethodTab === "offline" ? (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Method</label>
+                <select 
+                  required
+                  value={formData.method}
+                  onChange={e => setFormData({...formData, method: e.target.value})}
+                  className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
+                >
+                  <option value="Offline / Cash">Offline / Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Google Pay">Google Pay</option>
+                  <option value="PhonePe">PhonePe</option>
+                  <option value="UPI">Other UPI</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Transaction ID (Required)</label>
+                <input 
+                  required
+                  value={formData.transactionId}
+                  onChange={e => setFormData({...formData, transactionId: e.target.value})}
+                  placeholder="e.g., T230415..."
+                  className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
+                />
+              </div>
+            </div>
+
+            {/* Receipt Upload */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Receipt (Required)</label>
+              <div className="relative">
+                <input 
+                  type="file"
+                  id="service-receipt"
+                  className="hidden"
+                  onChange={(e) => setReceipt(e.target.files[0])}
+                  accept="image/*,.pdf"
+                />
+                <label 
+                  htmlFor="service-receipt"
+                  className={cn(
+                    "w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-dashed cursor-pointer transition-all",
+                    receipt ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Upload size={18} className={receipt ? "text-emerald-500" : "text-muted-foreground"} />
+                    <span className="text-xs font-bold truncate max-w-[200px]">
+                      {receipt ? receipt.name : "Attach proof of payment..."}
+                    </span>
+                  </div>
+                  {receipt && (
+                    <CheckCircle2 size={16} className="text-emerald-500" />
+                  )}
+                </label>
+              </div>
+              <p className="text-[9px] font-medium text-muted-foreground ml-1 italic">JPG, PNG or PDF. Max 5MB.</p>
+            </div>
+          </>
+        ) : null}
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Remarks</label>
+          <textarea 
+            rows={2}
+            value={formData.remarks}
+            onChange={e => setFormData({...formData, remarks: e.target.value})}
+            placeholder="Any additional payment details..."
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-medium"
+          />
+        </div>
+      </div>
+
+      <button 
+        disabled={loading || formData.amount > remainingBalance}
+        className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+      >
+        {loading ? (
+          <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+        ) : paymentMethodTab === "online" ? (
+          "Pay Online"
+        ) : formData.amount < remainingBalance ? (
+          "Record Partial Payment"
+        ) : (
+          "Record Full Payment & Process"
+        )}
+      </button>
+    </form>
+  );
+};

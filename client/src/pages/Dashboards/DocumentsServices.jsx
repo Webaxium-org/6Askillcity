@@ -109,6 +109,7 @@ export default function DocumentsServices() {
   const [showEditModal, setShowEditModal] = useState(null); // service object
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(null); // application object
+  const [selectedManageCategory, setSelectedManageCategory] = useState("all");
 
   const [cashfree, setCashfree] = useState(null);
 
@@ -868,52 +869,152 @@ export default function DocumentsServices() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service, idx) => (
-              <motion.div 
-                key={service._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="bg-card border border-border rounded-3xl p-6 shadow-sm hover:shadow-md transition-all group flex flex-col"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="p-3 rounded-2xl bg-primary/5 text-primary group-hover:scale-110 transition-transform">
-                    {(() => {
-                      const Icon = ICON_MAP[service.icon] || Layers;
-                      return <Icon size={24} />;
-                    })()}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Base Fee</p>
-                    <p className="text-lg font-black text-primary">₹{service.currentFee?.toLocaleString()}</p>
+          (() => {
+            const servicesByCategory = CATEGORY_OPTIONS.reduce((acc, cat) => {
+              const filtered = services.filter(s => s.categories?.includes(cat) || s.category === cat);
+              if (filtered.length > 0) {
+                acc[cat] = filtered;
+              }
+              return acc;
+            }, {});
+
+            const uncategorizedServices = services.filter(s => 
+              (!s.categories || s.categories.length === 0) && !s.category
+            );
+            if (uncategorizedServices.length > 0) {
+              servicesByCategory["Uncategorized Services"] = uncategorizedServices;
+            }
+
+            return (
+              <div className="space-y-8 w-full">
+                {/* Category Filter Pills */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide border-b border-border/50">
+                  <button
+                    onClick={() => setSelectedManageCategory("all")}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0",
+                      selectedManageCategory === "all"
+                        ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10"
+                        : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
+                    )}
+                  >
+                    <Layers size={12} />
+                    All ({services.length})
+                  </button>
+                  {Object.entries(servicesByCategory).map(([cat, list]) => {
+                    const CategoryIcon = {
+                      "Academic Documents": GraduationCap,
+                      "Overseas Education Documents": Globe,
+                      "Job Overseas Documents": Briefcase,
+                      "Working In India Documents": Building2,
+                      "Studying In India Documents": ClipboardCheck,
+                      "Embassy Attestion Services": Stamp,
+                      "Study Abroad services": Plane,
+                      "Uncategorized Services": Layers
+                    }[cat] || Layers;
+
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedManageCategory(cat)}
+                        className={cn(
+                          "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0",
+                          selectedManageCategory === cat
+                            ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10"
+                            : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
+                        )}
+                      >
+                        <CategoryIcon size={12} />
+                        {cat.replace(" Documents", "").replace(" Services", "")} ({list.length})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Render Category Sections */}
+                <div className="space-y-12">
+                  {Object.entries(servicesByCategory)
+                    .filter(([cat]) => selectedManageCategory === "all" || selectedManageCategory === cat)
+                    .map(([cat, list]) => {
+                      const CategoryIcon = {
+                        "Academic Documents": GraduationCap,
+                        "Overseas Education Documents": Globe,
+                        "Job Overseas Documents": Briefcase,
+                        "Working In India Documents": Building2,
+                        "Studying In India Documents": ClipboardCheck,
+                        "Embassy Attestion Services": Stamp,
+                        "Study Abroad services": Plane,
+                        "Uncategorized Services": Layers
+                      }[cat] || Layers;
+
+                      return (
+                        <div key={cat} className="space-y-6">
+                          <div className="flex items-center justify-between border-b border-border/40 pb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <CategoryIcon size={20} />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-black uppercase tracking-tight text-foreground">{cat}</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{list.length} {list.length === 1 ? "Service" : "Services"} Available</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {list.map((service, idx) => (
+                              <motion.div 
+                                key={service._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.05 }}
+                                className="bg-card border border-border rounded-3xl p-6 shadow-sm hover:shadow-md hover:border-primary/20 transition-all group flex flex-col"
+                              >
+                                <div className="flex items-center justify-between mb-6">
+                                  <div className="p-3 rounded-2xl bg-primary/5 text-primary group-hover:scale-110 transition-transform">
+                                    {(() => {
+                                      const Icon = ICON_MAP[service.icon] || Layers;
+                                      return <Icon size={24} />;
+                                    })()}
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Base Fee</p>
+                                    <p className="text-lg font-black text-primary">₹{service.currentFee?.toLocaleString()}</p>
+                                  </div>
+                                </div>
+                                
+                                <h3 className="text-xl font-black mb-2">{service.title}</h3>
+                                <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{service.description}</p>
+                                
+                                <button 
+                                  onClick={() => setShowEditModal(service)}
+                                  className="w-full py-4 rounded-2xl border border-border/50 bg-muted/20 text-xs font-black uppercase tracking-[0.2em] hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all mt-auto"
+                                >
+                                  Edit Definition
+                                </button>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  {/* Define New Service Button always available */}
+                  <div className="pt-6 border-t border-border/40 flex justify-center">
+                    <button 
+                      onClick={() => setShowCreateModal(true)}
+                      className="px-8 py-5 border-2 border-dashed border-border rounded-3xl flex items-center gap-4 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Plus size={20} />
+                      </div>
+                      <p className="font-black uppercase tracking-widest text-xs">Define New Service</p>
+                    </button>
                   </div>
                 </div>
-                
-                <h3 className="text-xl font-black mb-2">{service.title}</h3>
-                <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{service.description}</p>
-                
-
-                
-                <button 
-                  onClick={() => setShowEditModal(service)}
-                  className="w-full py-4 rounded-2xl border border-border/50 bg-muted/20 text-xs font-black uppercase tracking-[0.2em] hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all mt-auto"
-                >
-                  Edit Definition
-                </button>
-              </motion.div>
-            ))}
-            
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="border-2 border-dashed border-border rounded-3xl p-6 flex flex-col items-center justify-center gap-4 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus size={32} />
               </div>
-              <p className="font-black uppercase tracking-widest text-xs">Define New Service</p>
-            </button>
-          </div>
+            );
+          })()
         )}
 
       </div>
