@@ -305,7 +305,7 @@ export default function PartnerProfile() {
                     ) : (
                       <Key className="w-4 h-4" />
                     )}
-                    Generate Admin Token
+                    Generate Access Token
                   </button>
                 )}
                 <button
@@ -914,7 +914,10 @@ export default function PartnerProfile() {
                 <div className="relative group mb-10">
                   <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
                   <div className="relative flex items-center bg-card border-2 border-border/50 p-6 rounded-2xl">
-                    <code className="flex-1 text-2xl font-black tracking-wider text-primary select-all">
+                    <code 
+                      className="flex-1 text-xs sm:text-sm md:text-base font-black tracking-wider text-primary select-all break-all pr-2"
+                      style={{ wordBreak: "break-all" }}
+                    >
                       {generatedToken}
                     </code>
                     <button
