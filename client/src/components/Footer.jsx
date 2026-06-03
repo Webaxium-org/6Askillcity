@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import { Phone, Mail, Globe, MapPin, Send, ArrowUpRight } from "lucide-react";
+import { Phone, Mail, MapPin, ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Logo from "../assets/logo.png";
 
@@ -62,7 +62,6 @@ const cardVariants = {
 const MotionPhone = motion(Phone);
 const MotionMail = motion(Mail);
 const MotionArrowUpRight = motion(ArrowUpRight);
-const MotionSend = motion(Send);
 
 const phoneIconVariants = {
   hover: {
@@ -98,29 +97,7 @@ const arrowVariants = {
   },
 };
 
-const sendIconVariants = {
-  hover: {
-    x: [0, 4, -2, 0],
-    y: [0, -3, 1, 0],
-    transition: {
-      duration: 0.5,
-      ease: "easeInOut",
-    },
-  },
-};
-
 export default function Footer() {
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (!newsletterEmail) return;
-    setSubscribed(true);
-    setNewsletterEmail("");
-    setTimeout(() => setSubscribed(false), 3000);
-  };
-
   return (
     <footer
       className="pt-24 pb-10 bg-slate-50/50 border-t border-slate-100"
@@ -234,41 +211,32 @@ export default function Footer() {
 
           <motion.div
             variants={itemVariants}
-            className="lg:col-span-3 space-y-5"
+            className="lg:col-span-3 space-y-3"
           >
             <h5 className="text-lg font-extrabold text-slate-800 tracking-tight">
-              Newsletter
+              Find Us
             </h5>
-            <form onSubmit={handleSubscribe} className="flex gap-2">
-              <input
-                type="email"
-                placeholder={subscribed ? "Subscribed!" : "Enter email"}
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                disabled={subscribed}
-                className="h-11 px-3 py-2 rounded-lg bg-slate-100 text-slate-800 text-base border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary w-full transition-all font-medium"
+            <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+              <iframe
+                title="6A Skill City Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d306.0195221702145!2d76.28417995249599!3d9.989655529909237!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b080d1634917ba9%3A0xf37e1e0c5e57d97b!2sEduAcharya%20Institute%20of%20Advanced%20Management%20%26%20Technology%20Pvt%20Ltd!5e1!3m2!1sen!2sin!4v1780476110309!5m2!1sen!2sin"
+                width="100%"
+                height="180"
+                style={{ border: 0, display: "block" }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
               />
-              <motion.button
-                whileHover="hover"
-                whileTap={{ scale: 0.95 }}
-                variants={{
-                  hover: { scale: 1.05 },
-                }}
-                type="submit"
-                disabled={subscribed}
-                className="shrink-0 h-11 w-11 flex items-center justify-center rounded-lg shadow-md shadow-primary/20 bg-[#17468C] text-white hover:bg-[#17468C]/90 hover:-translate-y-0.5 transition-all cursor-pointer"
-              >
-                <MotionSend size={16} variants={sendIconVariants} />
-              </motion.button>
-            </form>
-            {subscribed && (
-              <p className="text-sm text-emerald-600 font-bold animate-pulse">
-                Thank you for subscribing!
-              </p>
-            )}
-            <p className="text-sm text-slate-400 font-semibold">
-              By subscribing, you agree to our privacy protocols.
-            </p>
+            </div>
+            <a
+              href="https://maps.google.com/?q=Grace+Tower,+St.+Vincent+Road,+Kacheripady,+Ernakulam,+Kerala+682018"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#17468C] hover:underline"
+            >
+              <MapPin size={13} />
+              Open in Google Maps
+            </a>
           </motion.div>
         </motion.div>
 
