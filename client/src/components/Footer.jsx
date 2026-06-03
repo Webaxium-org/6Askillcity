@@ -219,7 +219,7 @@ export default function Footer() {
             <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
               <iframe
                 title="6A Skill City Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d306.0195221702145!2d76.28417995249599!3d9.989655529909237!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b080d1634917ba9%3A0xf37e1e0c5e57d97b!2sEduAcharya%20Institute%20of%20Advanced%20Management%20%26%20Technology%20Pvt%20Ltd!5e1!3m2!1sen!2sin!4v1780476110309!5m2!1sen!2sin"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d353.56040350065024!2d76.28409987070272!3d9.98972836681259!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b080d29910d7d43%3A0x2fde9beb35d3b209!2s6A%20SKILLCITY%20(OPC)%20PRIVATE%20LIMITED!5e1!3m2!1sen!2sin!4v1780488359305!5m2!1sen!2sin"
                 width="100%"
                 height="180"
                 style={{ border: 0, display: "block" }}
