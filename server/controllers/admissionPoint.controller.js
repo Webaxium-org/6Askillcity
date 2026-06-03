@@ -8,6 +8,16 @@ import path from "path";
 import { s3, bucketName } from "../utils/s3Config.js";
 import { generateStrongPassword } from "../helper/index.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import { Cashfree, CFEnvironment } from "cashfree-pg";
+
+// Smart detection of Cashfree environment based on key prefix
+const cleanAppId = process.env.CASHFREE_APP_ID?.trim().replace(/"/g, "") || "";
+const cleanSecretKey = process.env.CASHFREE_SECRET_KEY?.trim().replace(/"/g, "") || "";
+const isProdKey = cleanAppId.startsWith("PROD") || cleanSecretKey.startsWith("cfsk_ma_prod");
+const cashfreeEnvironment = isProdKey ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+
+const cashfree = new Cashfree(cashfreeEnvironment, cleanAppId, cleanSecretKey);
+cashfree.XApiVersion = "2023-08-01";
 
 // S3 Storage Configuration
 const storage = multerS3({
@@ -19,14 +29,14 @@ const storage = multerS3({
   },
   key: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const partnerId = req.partnerId || "unknown";
+    const partnerId = req.partnerId || req.user?.userId || "unknown";
     cb(null, `partners/${partnerId}/${file.fieldname}-${uuidv4()}${ext}`);
   },
 });
 
 const uploadParams = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per file limit
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB per file limit to support large videos
 }).any(); // Allow any field names for flexibility
 
 import AdmissionPoint from "../models/admissionPoint.js";
@@ -36,6 +46,7 @@ import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
 import Branch from "../models/branch.js";
 import Program from "../models/program.js";
+import { sendToAdmins } from "../services/notification.service.js";
 
 // Helper to log activity
 const logActivity = async (
@@ -112,7 +123,7 @@ export const createAdmissionPoint = async (req, res, next) => {
       centerName: data.centerName,
       licenseeName: data.licenseeName,
       licenseeEmail: data.licenseeEmail,
-      licenseeContactNumber: data.licenseeContactNumber || "N/A", // Keep fallback if not in form
+      licenseeContactNumber: data.contactPersonPhone || "N/A", // Keep fallback if not in form
 
       contactPerson: {
         name: data.contactPersonName,
@@ -143,6 +154,14 @@ export const createAdmissionPoint = async (req, res, next) => {
     });
 
     await admissionPoint.save();
+
+    await sendToAdmins({
+      title: "New Admission Point Registration",
+      message: `${admissionPoint.centerName} has applied to become a partner.`,
+      type: "new_partner_application",
+      relatedId: admissionPoint._id,
+      link: `/dashboard/partner-management`
+    });
 
     res.status(201).json({
       success: true,
@@ -198,13 +217,13 @@ export const updateAdmissionPointStatus = async (req, res, next) => {
     let plainPassword = null;
 
     if (status === "approved") {
-      // plainPassword = generateStrongPassword();
-      plainPassword = "2424";
+      plainPassword = generateStrongPassword();
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
       updateData.password = hashedPassword;
+      updateData.onboardingState = "fee_pending";
     }
 
     const admissionPoint = await AdmissionPoint.findByIdAndUpdate(
@@ -227,10 +246,498 @@ export const updateAdmissionPointStatus = async (req, res, next) => {
       throw createError(404, "Admission point not found");
     }
 
+    // Send email with credentials if approved
+    if (status === "approved" && plainPassword) {
+      const subject = "6A Skillcity - Partnership Application Approved (Authorisation Is on Review)";
+      const message = `Dear ${admissionPoint.licenseeName},\n\nCongratulations! Your application to become an Admission Partner with 6A Skillcity has been approved.\n\nYour account status is now 'Authorisation Is on Review'.\n\nLogin credentials:\nUsername (Email): ${admissionPoint.licenseeEmail}\nPassword: ${plainPassword}\n\nPlease proceed to complete your onboarding steps on the partner dashboard:\n1. Pay the Inspection Fee.\n2. Complete the Online / Physical Inspection.\n\nPortal: ${process.env.CLIENT_URL || "http://localhost:5173"}\n\nBest regards,\n6A Skillcity Administration`;
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #1e3a8a; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">6A Skillcity</h2>
+            <p style="color: #6b7280; font-size: 13px; margin: 5px 0 0 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;">Partner Portal</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px; border-radius: 12px; color: #ffffff; margin-bottom: 30px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700;">Application Approved!</h3>
+            <p style="margin: 0; font-size: 15px; opacity: 0.9; line-height: 1.5;">Dear ${admissionPoint.licenseeName || 'Partner'}, your application has been successfully reviewed. Your onboarding protocol is now initialized under: <strong>Authorisation Is on Review</strong>.</p>
+          </div>
+
+          <p style="color: #374151; font-size: 15px; line-height: 1.6; margin-bottom: 25px;">
+            To access your partner dashboard, add students, and register applications, please log in to the Partner Portal using the official credentials generated for you below:
+          </p>
+
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 6px 0; font-size: 13px; color: #64748b; font-weight: 700; text-transform: uppercase;">Username (Email)</td>
+              </tr>
+              <tr>
+                <td style="padding: 0 0 15px 0; font-size: 16px; color: #0f172a; font-weight: 700;">${admissionPoint.licenseeEmail}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-size: 13px; color: #64748b; font-weight: 700; text-transform: uppercase;">Generated Password</td>
+              </tr>
+              <tr>
+                <td style="padding: 0 0 5px 0; font-size: 18px; color: #1e3a8a; font-weight: 800; letter-spacing: 0.5px;">${plainPassword}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 25px; margin-bottom: 30px;">
+            <h4 style="margin: 0 0 12px 0; color: #0f172a; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Onboarding Protocol Requirements:</h4>
+            <p style="color: #374151; font-size: 14px; line-height: 1.5; margin: 0 0 10px 0;">Upon your first login, you will be guided to complete these two mandatory steps:</p>
+            <ol style="color: #374151; font-size: 14px; line-height: 1.6; padding-left: 20px; margin: 0;">
+              <li style="margin-bottom: 8px;"><strong>Pay Inspection Fee:</strong> A secure fee payment of ₹5,000 via our portal.</li>
+              <li><strong>Online / Physical Inspection:</strong> Once paid, our audit team will complete your inspection and grant full dashboard access and your formal <strong>Authorisation Letter</strong>.</li>
+            </ol>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 30px;">
+            <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; padding: 14px 30px; background-color: #1e3a8a; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; transition: background-color 0.2s;">Login to Portal</a>
+          </div>
+
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} 6A Skillcity. All rights reserved.</p>
+          </div>
+        </div>
+      `;
+
+      try {
+        await sendEmail({
+          email: admissionPoint.licenseeEmail,
+          subject,
+          message,
+          html,
+        });
+      } catch (err) {
+        console.error("Failed to send approval email:", err);
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: `Admission point status updated to ${status} successfully`,
       data: admissionPoint,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createInspectionFeeOrder = async (req, res, next) => {
+  try {
+    const partnerId = req.user.userId;
+    const partner = await AdmissionPoint.findById(partnerId);
+    
+    if (!partner) {
+      throw createError(404, "Partner profile not found.");
+    }
+
+    if (partner.onboardingState !== "fee_pending") {
+      throw createError(400, "Inspection fee has already been paid or onboarding completed.");
+    }
+
+    const amount = Number(process.env.INSPECTION_FEE) || 5000;
+    const orderId = `INS_FEE_${partnerId}_${Date.now().toString().slice(-6)}`;
+
+    // Format phone number to be valid for Cashfree
+    let rawPhone = partner.licenseeContactNumber || partner.contactPerson?.phone || "";
+    let cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      cleanPhone = "9999999999";
+    }
+
+    // Create Cashfree Order
+    const request = {
+      order_amount: amount,
+      order_currency: "INR",
+      order_id: orderId,
+      customer_details: {
+        customer_id: partnerId.toString(),
+        customer_phone: cleanPhone,
+        customer_email: partner.licenseeEmail,
+        customer_name: partner.licenseeName,
+      },
+      order_meta: {
+        return_url: `${process.env.CLIENT_URL}/dashboard?onboarding_status=fee_paid&order_id={order_id}&payment_status={payment_status}`,
+      },
+    };
+
+    cashfree
+      .PGCreateOrder(request)
+      .then((response) => {
+        res.status(200).json({
+          success: true,
+          payment_session_id: response.data.payment_session_id,
+          order_id: response.data.order_id,
+        });
+      })
+      .catch((error) => {
+        console.error("[Cashfree Error] Partner order creation failed:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        next(
+          createError(
+            500,
+            error.response?.data?.message || "Failed to create Cashfree order",
+          ),
+        );
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyInspectionFeePayment = async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+    const partnerId = req.user.userId;
+
+    if (!orderId) {
+      throw createError(400, "Order ID is required.");
+    }
+
+    cashfree
+      .PGOrderFetchPayments(orderId)
+      .then(async (response) => {
+        const successfulPayment = response.data.find(
+          (p) => p.payment_status === "SUCCESS",
+        );
+
+        const partner = await AdmissionPoint.findById(partnerId);
+        if (!partner) {
+          throw createError(404, "Partner not found.");
+        }
+
+        if (partner.onboardingState !== "fee_pending") {
+          return res.status(200).json({
+            success: true,
+            message: "Payment already processed",
+            data: partner,
+          });
+        }
+
+        if (successfulPayment) {
+          partner.onboardingState = "inspection_pending";
+          partner.inspectionFeePaid = true;
+          partner.inspectionFeePaymentDetails = successfulPayment;
+          await partner.save();
+
+          await logActivity(
+            "PARTNER_FEE_PAID",
+            `Partner ${partner.centerName} successfully paid the inspection fee of ₹${successfulPayment.payment_amount}`,
+            partner._id,
+            "AdmissionPoint",
+            partner._id
+          );
+
+          await sendToAdmins({
+            title: "Onboarding Fee Paid",
+            message: `${partner.centerName} has paid their onboarding fee (Online).`,
+            type: "partner_fee_paid",
+            relatedId: partner._id,
+            link: `/dashboard/partner-management/${partner._id}`
+          });
+
+          res.status(200).json({
+            success: true,
+            message: "Payment successfully verified!",
+            data: partner,
+          });
+        } else {
+          res.status(400).json({
+            success: false,
+            message: "Payment failed or is pending at gateway",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("[Cashfree Error] Onboarding payment verification failed:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        next(
+          createError(
+            500,
+            error.response?.data?.message || "Failed to verify Cashfree payment",
+          ),
+        );
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const recordOfflineOnboardingFee = async (req, res, next) => {
+  try {
+    const { partnerId, amount, method, transactionId, remarks } = req.body;
+    // For partner calling this, we can optionally use req.user.userId,
+    // but allowing partnerId via body lets admin do it too.
+    const targetPartnerId = partnerId || req.user.userId;
+
+    const partner = await AdmissionPoint.findById(targetPartnerId);
+    if (!partner) {
+      throw createError(404, "Partner not found.");
+    }
+
+    if (partner.onboardingState !== "fee_pending") {
+      throw createError(400, "Partner fee has already been paid or state is invalid.");
+    }
+
+    if (!req.file) {
+      throw createError(400, "Please upload the payment receipt.");
+    }
+
+    const receiptUrl = req.file.location || req.file.path;
+
+    partner.onboardingState = "inspection_pending";
+    partner.inspectionFeePaid = true;
+    partner.inspectionFeePaymentDetails = {
+      amount: Number(amount),
+      method,
+      transactionId,
+      remarks,
+      receipt: receiptUrl,
+      paymentDate: new Date(),
+      status: "SUCCESS"
+    };
+
+    await partner.save();
+
+    await logActivity(
+      "PARTNER_OFFLINE_FEE_PAID",
+      `Offline inspection fee recorded for ${partner.centerName} (Amount: ₹${amount}, Method: ${method}, TXN: ${transactionId})`,
+      req.user.userId,
+      "AdmissionPoint",
+      partner._id
+    );
+
+    await sendToAdmins({
+      title: "Onboarding Fee Paid",
+      message: `${partner.centerName} has paid their onboarding fee (Offline).`,
+      type: "partner_fee_paid",
+      relatedId: partner._id,
+      link: `/dashboard/partner-management/${partner._id}`
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Offline payment receipt uploaded and verified successfully!",
+      data: partner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadOfficeVideo = async (req, res, next) => {
+  try {
+    const partnerId = req.user.userId;
+    const partner = await AdmissionPoint.findById(partnerId);
+
+    if (!partner) {
+      throw createError(404, "Partner not found.");
+    }
+
+    if (!req.files || req.files.length === 0) {
+      throw createError(400, "Please upload at least one media file.");
+    }
+
+    if (!partner.documents) {
+      partner.documents = {};
+    }
+    if (!partner.documents.officeVideo) partner.documents.officeVideo = [];
+    if (!partner.documents.officePhotos) partner.documents.officePhotos = [];
+
+    // Save all uploaded media
+    req.files.forEach((file) => {
+      const url = file.location || file.path;
+      if (file.fieldname === "video") {
+        partner.documents.officeVideo.push(url);
+      } else if (file.fieldname === "photos") {
+        partner.documents.officePhotos.push(url);
+      }
+    });
+
+    // Reset inspection status in case it was previously rejected
+    partner.inspectionStatus = "pending";
+    partner.inspectionRejectionReason = "";
+    
+    await partner.save();
+
+    await logActivity(
+      "PARTNER_INSPECTION_MEDIA_UPLOADED",
+      `Inspection media uploaded for ${partner.centerName}.`,
+      partnerId,
+      "AdmissionPoint",
+      partner._id
+    );
+
+    await sendToAdmins({
+      title: "Onboarding Media Uploaded",
+      message: `${partner.centerName} has uploaded their online/physical inspection media.`,
+      type: "partner_media_uploaded",
+      relatedId: partner._id,
+      link: `/dashboard/partner-management`
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Inspection media uploaded successfully!",
+      data: partner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectPartnerInspection = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      throw createError(400, "Rejection reason is required.");
+    }
+
+    const partner = await AdmissionPoint.findById(id);
+    if (!partner) {
+      throw createError(404, "Partner not found.");
+    }
+
+    // Set status to rejected and clear the media so they must re-upload
+    partner.inspectionStatus = "rejected";
+    partner.inspectionRejectionReason = reason;
+    
+    if (partner.documents) {
+      partner.documents.officeVideo = [];
+      partner.documents.officePhotos = [];
+    }
+
+    await partner.save();
+
+    await logActivity(
+      "PARTNER_INSPECTION_REJECTED",
+      `Inspection rejected for ${partner.centerName}. Reason: ${reason}`,
+      req.user.userId,
+      "AdmissionPoint",
+      partner._id
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Partner inspection rejected successfully.",
+      data: partner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const completePartnerInspection = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const partner = await AdmissionPoint.findById(id);
+    if (!partner) {
+      throw createError(404, "Partner not found.");
+    }
+
+    if (partner.onboardingState === "completed") {
+      throw createError(400, "Inspection and onboarding has already been completed.");
+    }
+
+    partner.onboardingState = "completed";
+    partner.inspectionStatus = "approved";
+    partner.inspectionCompleted = true;
+    partner.inspectionCompletedAt = new Date();
+    partner.authorisationLetterIssuedAt = new Date();
+    await partner.save();
+
+    await logActivity(
+      "PARTNER_INSPECTION_COMPLETED",
+      `Online/Physical inspection completed for ${partner.centerName}. Account fully activated.`,
+      req.user.userId,
+      "AdmissionPoint",
+      partner._id
+    );
+
+    const subject = "6A Skillcity - Partnership Authorisation Letter & Account Activation";
+    const letterDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const message = `Dear ${partner.licenseeName},\n\nCongratulations! We are pleased to inform you that your Online / Physical Inspection has been successfully completed, and your 6A Skillcity Admission Point is now fully authorized.\n\nYour account is now active, and you have full access to your partner dashboard, courses, and student registration.\n\nAttached to your account is your official Authorisation Letter.\n\nBest regards,\n6A Skillcity Director`;
+
+    const html = `
+      <div style="font-family: 'Times New Roman', Georgia, serif; max-width: 650px; margin: 0 auto; padding: 40px; border: 2px double #1e3a8a; background-color: #ffffff; color: #1f2937; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 4px;">
+        <div style="text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px;">
+          <h1 style="color: #1e3a8a; font-size: 28px; margin: 0; font-weight: bold; font-family: 'Helvetica Neue', Arial, sans-serif;">6A SKILLCITY</h1>
+          <p style="color: #6b7280; font-size: 11px; margin: 5px 0 0 0; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">National Skill Development & Education Network</p>
+          <p style="color: #374151; font-size: 11px; margin: 2px 0 0 0; font-style: italic;">Authorized Admission and Learning Resource Point Protocol</p>
+        </div>
+
+        <table style="width: 100%; margin-bottom: 30px; font-size: 13px;">
+          <tr>
+            <td><strong>Ref No:</strong> 6A-AP/L-AUTH-${partner._id.toString().slice(-6).toUpperCase()}</td>
+            <td style="text-align: right;"><strong>Date:</strong> ${letterDate}</td>
+          </tr>
+        </table>
+
+        <h2 style="text-align: center; color: #1e3a8a; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 30px; font-family: 'Helvetica Neue', Arial, sans-serif; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;">LETTER OF AUTHORISATION</h2>
+
+        <p style="font-size: 14px; line-height: 1.8; text-align: justify; margin-bottom: 20px;">
+          This is to certify that <strong>${partner.centerName}</strong>, under the leadership of Licensee/Director <strong>${partner.licenseeName}</strong>, located at <em>${partner.location.address}, ${partner.location.city}, ${partner.location.state} - ${partner.location.pincode}</em>, is formally designated as an <strong>Authorized Admission & Learning Resource Point</strong> of <strong>6A Skillcity</strong>.
+        </p>
+
+        <p style="font-size: 14px; line-height: 1.8; text-align: justify; margin-bottom: 25px;">
+          Following a successful physical/online inspection of the facility and verification of operational criteria, the designated point has been assigned Center Code <strong>6A-AP-${partner._id.toString().slice(-4).toUpperCase()}</strong>.
+        </p>
+
+        <p style="font-size: 14px; line-height: 1.8; text-align: justify; margin-bottom: 30px;">
+          As an Authorized Point, ${partner.centerName} is permitted to guide candidates, facilitate admissions, register students for skill development programs, and access the official University networks and courses mapped to the 6A Skillcity portal, subject to the terms of the Partnership Agreement.
+        </p>
+
+        <table style="width: 100%; margin-top: 50px;">
+          <tr>
+            <td style="width: 50%; font-size: 12px; color: #6b7280; vertical-align: bottom;">
+              <div style="border-top: 1px solid #cbd5e1; width: 150px; padding-top: 5px;">
+                Verification Seal<br />
+                6A Skillcity Audit Division
+              </div>
+            </td>
+            <td style="width: 50%; text-align: right; font-size: 13px; font-weight: bold; color: #1e3a8a;">
+              <div style="margin-bottom: 10px; font-style: italic;">Digital Signature Verified</div>
+              <div style="border-top: 1px solid #1e3a8a; display: inline-block; padding-top: 5px; width: 180px; text-align: center;">
+                Director of Operations<br />
+                <span style="font-size: 11px; font-weight: normal; color: #6b7280;">6A Skillcity Network</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 15px; text-align: center; font-size: 10px; color: #9ca3af; font-family: sans-serif;">
+          This is a digitally issued and verified certificate. For any verification, please query with Center Code on 6A Skillcity Portal.
+        </div>
+      </div>
+    `;
+
+    try {
+      await sendEmail({
+        email: partner.licenseeEmail,
+        subject,
+        message,
+        html,
+      });
+    } catch (err) {
+      console.error("Failed to send authorisation email:", err);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Inspection marked completed and Authorisation Letter successfully issued!",
+      data: partner,
     });
   } catch (error) {
     next(error);

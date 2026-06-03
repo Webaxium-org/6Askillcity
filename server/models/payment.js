@@ -42,6 +42,12 @@ const PaymentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "ServiceApplication",
     },
+    serviceApplications: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ServiceApplication",
+      },
+    ],
     approvalStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],

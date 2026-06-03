@@ -108,6 +108,7 @@ const AdmissionPointSchema = new mongoose.Schema(
       businessLicense: [{ type: String }],
       ownershipRentalAgreement: [{ type: String }],
       officePhotos: [{ type: String }],
+      officeVideo: [{ type: String }],
     },
 
     isActive: {
@@ -118,6 +119,37 @@ const AdmissionPointSchema = new mongoose.Schema(
     registrationDate: {
       type: Date,
       default: Date.now,
+    },
+
+    onboardingState: {
+      type: String,
+      enum: ["fee_pending", "inspection_pending", "completed"],
+      default: "fee_pending",
+    },
+    inspectionFeePaid: {
+      type: Boolean,
+      default: false,
+    },
+    inspectionFeePaymentDetails: {
+      type: mongoose.Schema.Types.Mixed,
+    },
+    inspectionCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    inspectionStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    inspectionRejectionReason: {
+      type: String,
+    },
+    inspectionCompletedAt: {
+      type: Date,
+    },
+    authorisationLetterIssuedAt: {
+      type: Date,
     },
   },
   { timestamps: true },

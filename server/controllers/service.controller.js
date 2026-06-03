@@ -168,6 +168,10 @@ export const applyForService = async (req, res, next) => {
     if (!student) return next(createError(404, "Student not found"));
     if (!service) return next(createError(404, "Service not found"));
 
+    if (req.user?.userType !== "partner" && req.user?.role !== "partner") {
+      return next(createError(403, "Only partners are authorized to apply for student services."));
+    }
+
     if (req.user?.userType === "partner" && student.registeredBy.toString() !== req.user.userId.toString()) {
       return next(createError(403, "You are not authorized to apply for this student"));
     }
@@ -261,6 +265,10 @@ export const updateApplicationStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, remarks } = req.body;
 
+    if (req.user?.userType === "partner" || req.user?.role === "partner") {
+      return next(createError(403, "Partners are not authorized to update application status. Only platform administrators can advance fulfillment."));
+    }
+
     const application = await ServiceApplication.findById(id);
     if (!application) return next(createError(404, "Application not found"));
 
@@ -308,6 +316,10 @@ export const recordServicePayment = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { amount, method, transactionId, remarks } = req.body;
+
+    if (req.user?.userType !== "partner" && req.user?.role !== "partner") {
+      return next(createError(403, "Only partners can pay or record payments for student services."));
+    }
 
     const application = await ServiceApplication.findById(id).populate("student");
     if (!application) return next(createError(404, "Application not found"));
@@ -382,6 +394,89 @@ export const recordServicePayment = async (req, res, next) => {
   }
 };
 
+export const recordBulkServicePayment = async (req, res, next) => {
+  try {
+    let { applicationIds, amount, method, transactionId, remarks } = req.body;
+    
+    if (applicationIds && !Array.isArray(applicationIds)) {
+      applicationIds = [applicationIds];
+    }
+
+    if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+      return next(createError(400, "Application IDs array is required."));
+    }
+
+    if (req.user?.userType !== "partner" && req.user?.role !== "partner") {
+      return next(createError(403, "Only partners can pay or record payments for student services."));
+    }
+
+    const applications = await ServiceApplication.find({ _id: { $in: applicationIds } }).populate("student");
+    if (applications.length !== applicationIds.length) {
+      return next(createError(404, "One or more applications not found."));
+    }
+
+    let totalRemaining = 0;
+    for (const app of applications) {
+      if (app.paymentStatus === "Paid") {
+        return next(createError(400, `Application for ${app.student.name} is already fully paid.`));
+      }
+      totalRemaining += (app.feeAmount - (app.paidAmount || 0));
+    }
+
+    const payAmount = Number(amount);
+    if (!payAmount || payAmount <= 0) return next(createError(400, "Invalid payment amount"));
+
+    if (payAmount > totalRemaining) {
+      return next(createError(400, `Payment exceeds total balance. Max allowed: ₹${totalRemaining}`));
+    }
+
+    const partnerId = req.user.userType === "partner" ? req.user.userId : applications[0].student.registeredBy;
+    const receiptUrl = req.file ? req.file.location : undefined;
+
+    if (!receiptUrl) {
+      return next(createError(400, "Receipt file is required for offline payments."));
+    }
+    if (!method) {
+      return next(createError(400, "Payment method is required."));
+    }
+    if (!transactionId) {
+      return next(createError(400, "Transaction ID is required."));
+    }
+
+    const payment = new Payment({
+      student: applications[0].student._id,
+      partner: partnerId,
+      amount: payAmount,
+      method: method,
+      transactionId: transactionId,
+      invoiceId: `INV-${Date.now().toString().slice(-6)}`,
+      remarks: remarks || "Bulk payment of mandatory documents",
+      type: "Documents & Services",
+      serviceApplications: applicationIds,
+      receipt: receiptUrl,
+      approvalStatus: "pending"
+    });
+
+    await payment.save();
+
+    const { sendToAdmins } = await import("../services/notification.service.js");
+    await sendToAdmins({
+      title: "New Bulk Service Payment Verification",
+      message: `A bulk payment of ₹${payAmount.toLocaleString()} for ${applications.length} documents (Student: ${applications[0].student.name}) requires verification.`,
+      type: "payment_completed",
+      relatedId: payment._id,
+      link: "/dashboard/payment-management",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Bulk payment submitted for verification.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getServiceDashboardStats = async (req, res, next) => {
   try {
     const isPartner = req.user?.userType === "partner";
@@ -436,6 +531,10 @@ export const createServiceCashfreeOrder = async (req, res, next) => {
   try {
     const { id } = req.params; // Application ID
     const { amount, remarks } = req.body;
+    if (req.user?.userType !== "partner" && req.user?.role !== "partner") {
+      throw createError(403, "Only partners can pay or record payments for student services.");
+    }
+
     const partnerId = req.user.userId;
 
     if (!amount || amount <= 0)
@@ -611,6 +710,182 @@ export const verifyServiceCashfreePayment = async (req, res, next) => {
               "Failed to verify Cashfree payment",
           ),
         );
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// Bulk Cashfree Order Creation for Services
+// ─────────────────────────────────────────────
+export const createBulkServiceCashfreeOrder = async (req, res, next) => {
+  try {
+    const { applicationIds, remarks } = req.body;
+    if (req.user?.userType !== "partner" && req.user?.role !== "partner") {
+      throw createError(403, "Only partners can pay or record payments for student services.");
+    }
+
+    if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+      throw createError(400, "Invalid application IDs.");
+    }
+
+    const partnerId = req.user.userId;
+    let totalAmount = 0;
+    let studentId = null;
+
+    const applications = await ServiceApplication.find({ _id: { $in: applicationIds } }).populate("student");
+    if (applications.length !== applicationIds.length) {
+      throw createError(404, "One or more applications not found.");
+    }
+
+    for (const app of applications) {
+      if (!studentId) studentId = app.student._id;
+      else if (studentId.toString() !== app.student._id.toString()) {
+        throw createError(400, "All applications must belong to the same student.");
+      }
+      
+      const remaining = app.feeAmount - (app.paidAmount || 0);
+      if (remaining <= 0) {
+        throw createError(400, `Application for ${app.subCategory || "Service"} is already fully paid.`);
+      }
+      totalAmount += remaining;
+    }
+
+    const payment = new Payment({
+      student: studentId,
+      partner: partnerId,
+      amount: totalAmount,
+      method: "Online",
+      remarks: remarks || `Bulk payment for ${applications.length} services`,
+      type: "Documents & Services",
+      serviceApplications: applicationIds,
+      transactionId: `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
+      invoiceId: `INV-${Date.now().toString().slice(-6)}`,
+      approvalStatus: "pending",
+    });
+    await payment.save();
+
+    const request = {
+      order_amount: totalAmount,
+      order_currency: "INR",
+      order_id: payment._id.toString(),
+      customer_details: {
+        customer_id: studentId.toString(),
+        customer_phone: applications[0].student.phone || "9999999999",
+      },
+      order_meta: {
+        return_url: `${process.env.CLIENT_URL}/dashboard/documents-services?order_id={order_id}&payment_status={payment_status}&type=bulk`,
+      },
+    };
+
+    cashfree
+      .PGCreateOrder(request)
+      .then((response) => {
+        res.status(200).json({
+          success: true,
+          payment_session_id: response.data.payment_session_id,
+          order_id: response.data.order_id,
+        });
+      })
+      .catch((error) => {
+        console.error("[Cashfree Error] Bulk service order creation failed:", {
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+        next(createError(500, error.response?.data?.message || "Failed to create Cashfree order"));
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────
+// Bulk Cashfree Verification
+// ─────────────────────────────────────────────
+export const verifyBulkServiceCashfreePayment = async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+
+    cashfree
+      .PGOrderFetchPayments(orderId)
+      .then(async (response) => {
+        const successfulPayment = response.data.find(
+          (p) => p.payment_status === "SUCCESS",
+        );
+
+        const paymentRecord = await Payment.findById(orderId).populate("student");
+        if (!paymentRecord) throw createError(404, "Payment record not found.");
+
+        if (paymentRecord.approvalStatus === "approved") {
+          return res.status(200).json({ success: true, message: "Already approved" });
+        }
+
+        if (successfulPayment) {
+          paymentRecord.approvalStatus = "approved";
+          paymentRecord.approvedBy = req.user.userId;
+          paymentRecord.approvalDate = new Date();
+          paymentRecord.gatewayData = successfulPayment;
+
+          if (successfulPayment.cf_payment_id) {
+            paymentRecord.transactionId = successfulPayment.cf_payment_id.toString();
+          }
+          if (successfulPayment.payment_group) {
+            paymentRecord.method = `Online - ${successfulPayment.payment_group.toUpperCase()}`;
+          }
+
+          await paymentRecord.save();
+
+          // Update Service Applications
+          if (paymentRecord.serviceApplications && paymentRecord.serviceApplications.length > 0) {
+            const applications = await ServiceApplication.find({ _id: { $in: paymentRecord.serviceApplications } });
+            for (const application of applications) {
+              const remaining = application.feeAmount - (application.paidAmount || 0);
+              application.paidAmount += remaining; // Assumes full payment is made
+
+              application.paymentStatus = "Paid";
+              if (application.status === "Waiting for Payment") {
+                application.status = "Pending Applications";
+                application.pendingDate = new Date();
+                application.history.push({
+                  status: "Pending Applications",
+                  updatedBy: req.user.userId,
+                  remarks: "Full payment confirmed via bulk online gateway.",
+                });
+              } else {
+                application.history.push({
+                  status: application.status,
+                  updatedBy: req.user.userId,
+                  remarks: `Remaining payment completed via bulk online gateway.`,
+                });
+              }
+              await application.save();
+            }
+          }
+
+          const { sendToAdmins } = await import("../services/notification.service.js");
+          await sendToAdmins({
+            title: "Bulk Online Service Payment Successful",
+            message: `A bulk payment of ₹${paymentRecord.amount.toLocaleString()} for ${paymentRecord.serviceApplications.length} services (Student: ${paymentRecord.student.name}) was completed via Cashfree.`,
+            type: "payment_completed",
+            relatedId: paymentRecord._id,
+            link: "/dashboard/payment-management",
+          });
+
+          res.status(200).json({ success: true, message: "Payment successful" });
+        } else {
+          paymentRecord.approvalStatus = "rejected";
+          paymentRecord.rejectionReason = "Payment failed at gateway";
+          await paymentRecord.save();
+          res.status(400).json({ success: false, message: "Payment not successful" });
+        }
+      })
+      .catch((error) => {
+        console.error("[Cashfree Error] Bulk service payment verification failed:", {
+          status: error.response?.status,
+          message: error.message,
+        });
+        next(createError(500, error.response?.data?.message || "Failed to verify Cashfree payment"));
       });
   } catch (error) {
     next(error);

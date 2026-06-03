@@ -194,7 +194,9 @@ const Sidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuGroups = [
+  const isFullyOnboardedPartner = user?.type !== "partner" || user?.onboardingState === "completed";
+
+  let menuGroups = [
     {
       label: "System",
       items: [
@@ -319,6 +321,22 @@ const Sidebar = ({
       ],
     },
   ];
+
+  if (!isFullyOnboardedPartner) {
+    menuGroups = [
+      {
+        label: "Activation",
+        items: [
+          {
+            id: "onboarding",
+            label: "Onboarding Sequence",
+            icon: Activity,
+            path: "/dashboard",
+          },
+        ],
+      },
+    ];
+  }
 
   return (
     <>

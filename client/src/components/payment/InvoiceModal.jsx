@@ -77,6 +77,10 @@ export default function InvoiceModal({ isOpen, onClose, payment, student }) {
                       <span>{payment.invoiceId}</span>
                    </div>
                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Date: {new Date(payment.date || payment.createdAt).toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
+                   <div className="pt-2">
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Method: {payment.method}</p>
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ref: {payment.transactionId}</p>
+                   </div>
                 </div>
               </div>
 
@@ -122,23 +126,46 @@ export default function InvoiceModal({ isOpen, onClose, payment, student }) {
                     <thead>
                        <tr className="border-b-2 border-slate-900">
                           <th className="py-4 text-left text-[10px] font-black uppercase tracking-widest">Description</th>
-                          <th className="py-4 text-right text-[10px] font-black uppercase tracking-widest">Method</th>
                           <th className="py-4 text-right text-[10px] font-black uppercase tracking-widest">Amount</th>
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                       <tr>
+                      {payment.type === "Documents & Services" ? (
+                        <>
+                          {payment.serviceApplications && payment.serviceApplications.length > 0 ? (
+                            payment.serviceApplications.map((app, idx) => (
+                               <tr key={idx}>
+                                  <td className="py-6">
+                                     <p className="font-black text-slate-900">{app.service?.title || "Service Document"}</p>
+                                  </td>
+                                  <td className="py-6 text-right">
+                                     <span className="text-lg font-black text-slate-900">
+                                       ₹{app.feeAmount?.toLocaleString()}
+                                     </span>
+                                  </td>
+                               </tr>
+                            ))
+                          ) : (
+                               <tr>
+                                  <td className="py-6">
+                                     <p className="font-black text-slate-900">{payment.serviceApplication?.service?.title || "Service Document"}</p>
+                                  </td>
+                                  <td className="py-6 text-right">
+                                     <span className="text-lg font-black text-slate-900">₹{payment.amount?.toLocaleString()}</span>
+                                  </td>
+                               </tr>
+                          )}
+                        </>
+                      ) : (
+                        <tr>
                           <td className="py-6">
-                             <p className="font-black text-slate-900">{student?.program?.name || "Program Fee Payment"}</p>
-                             <p className="text-xs text-slate-500 font-medium mt-1">Transaction Ref: {payment.transactionId}</p>
+                            <p className="font-black text-slate-900">{payment.type}</p>
                           </td>
                           <td className="py-6 text-right">
-                             <span className="text-sm font-bold text-slate-600 uppercase">{payment.method}</span>
+                            <span className="text-lg font-black text-slate-900">₹{payment.amount?.toLocaleString()}</span>
                           </td>
-                          <td className="py-6 text-right">
-                             <span className="text-lg font-black text-slate-900">₹{payment.amount?.toLocaleString()}</span>
-                          </td>
-                       </tr>
+                        </tr>
+                      )}
                     </tbody>
                  </table>
               </div>

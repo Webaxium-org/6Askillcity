@@ -54,3 +54,38 @@ export const generateAdminToken = async (id) => {
   const response = await API.post(`/admission-points/${id}/generate-token`);
   return response.data;
 };
+
+export const createInspectionFeeOrder = async () => {
+  const response = await API.post("/admission-points/onboarding/fee-order");
+  return response.data;
+};
+
+export const verifyInspectionFeePayment = async (orderId) => {
+  const response = await API.post("/admission-points/onboarding/verify-fee", { orderId });
+  return response.data;
+};
+
+export const completePartnerInspection = async (id) => {
+  const response = await API.patch(`/admission-points/${id}/complete-inspection`);
+  return response.data;
+};
+
+export const recordOfflineInspectionFee = async (formData) => {
+  const response = await API.post("/admission-points/onboarding/offline-fee", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const uploadInspectionMedia = async (formData) => {
+  const response = await API.post("/admission-points/onboarding/office-video", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const rejectPartnerInspection = async (id, reason) => {
+  const response = await API.put(`/admission-points/${id}/reject-inspection`, { reason });
+  return response.data;
+};
+

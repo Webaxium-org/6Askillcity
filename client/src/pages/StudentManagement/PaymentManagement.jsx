@@ -41,9 +41,10 @@ export default function PaymentManagement() {
     recentPayments: [],
     upcomingSchedules: [],
     pendingPayments: [],
+    rejectedPayments: [],
   });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(isAdmin ? "pending" : "recent");
+  const [activeTab, setActiveTab] = useState("recent");
   const [search, setSearch] = useState("");
 
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -201,13 +202,16 @@ export default function PaymentManagement() {
   const filteredPayments = applyFilters(data.recentPayments);
   const filteredSchedules = applyFilters(data.upcomingSchedules, true);
   const filteredPending = applyFilters(data.pendingPayments || [], false, true);
+  const filteredRejected = applyFilters(data.rejectedPayments || [], false, true);
 
   const currentList =
     activeTab === "pending"
       ? filteredPending
-      : activeTab === "recent"
-        ? filteredPayments
-        : filteredSchedules;
+      : activeTab === "rejected"
+        ? filteredRejected
+        : activeTab === "recent"
+          ? filteredPayments
+          : filteredSchedules;
 
   const totalPages = Math.ceil(currentList.length / itemsPerPage);
   const paginatedData = currentList.slice(
@@ -366,6 +370,12 @@ export default function PaymentManagement() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
             <div className="flex bg-muted/50 p-1.5 rounded-[1.5rem] border border-border w-fit whitespace-nowrap">
+              <button
+                onClick={() => setActiveTab("recent")}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "recent" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Recent Payments
+              </button>
               {isAdmin && (
                 <button
                   onClick={() => setActiveTab("pending")}
@@ -380,10 +390,15 @@ export default function PaymentManagement() {
                 </button>
               )}
               <button
-                onClick={() => setActiveTab("recent")}
-                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "recent" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setActiveTab("rejected")}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === "rejected" ? "bg-card text-rose-500 shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
-                Recent Payments
+                Rejected Payments
+                {data.rejectedPayments?.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-background">
+                    {data.rejectedPayments.length}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab("upcoming")}
@@ -508,7 +523,7 @@ export default function PaymentManagement() {
                   <thead className="hidden md:table-header-group bg-muted/50 border-y border-border/50">
                     <tr>
                       <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                        {activeTab === "pending" ? "Requested Date" : activeTab === "upcoming" ? "Due Date" : "Date"}
+                        {activeTab === "pending" || activeTab === "rejected" ? "Requested Date" : activeTab === "upcoming" ? "Due Date" : "Date"}
                       </th>
                       <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
                         Type
@@ -537,10 +552,10 @@ export default function PaymentManagement() {
                             <span className="md:hidden text-[10px] font-black uppercase text-muted-foreground tracking-widest">Date</span>
                             <div className="flex flex-col text-right md:text-left">
                               <span className="text-sm font-black">
-                                {new Date(activeTab === "upcoming" ? item.dueDate : (activeTab === "pending" ? item.createdAt : item.date)).toLocaleDateString("en-IN")}
+                                {new Date(activeTab === "upcoming" ? item.dueDate : (activeTab === "pending" || activeTab === "rejected" ? item.createdAt : item.date)).toLocaleDateString("en-IN")}
                               </span>
                               <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                                {new Date(activeTab === "upcoming" ? item.dueDate : (activeTab === "pending" ? item.createdAt : item.date)).toLocaleTimeString()}
+                                {new Date(activeTab === "upcoming" ? item.dueDate : (activeTab === "pending" || activeTab === "rejected" ? item.createdAt : item.date)).toLocaleTimeString()}
                               </span>
                             </div>
                           </div>
@@ -558,6 +573,11 @@ export default function PaymentManagement() {
                             >
                               {item.type || "N/A"}
                             </span>
+                            {activeTab === "rejected" && item.rejectionReason && (
+                              <div className="mt-2 text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1.5 rounded-lg border border-rose-100 max-w-[150px] md:max-w-[200px]" title={item.rejectionReason}>
+                                <span className="line-clamp-2">Reason: {item.rejectionReason}</span>
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 md:px-8 py-3 md:py-6">
@@ -589,7 +609,7 @@ export default function PaymentManagement() {
                             <span className="md:hidden text-[10px] font-black uppercase text-muted-foreground tracking-widest">Amount</span>
                             <div className="flex flex-col items-end">
                               <p className="text-lg font-black text-foreground">₹{item.amount.toLocaleString()}</p>
-                              {activeTab === "pending" && item.receipt && (
+                              {(activeTab === "pending" || activeTab === "rejected") && item.receipt && (
                                 <button
                                   onClick={() => setViewingDoc({ url: item.receipt, title: "Payment Receipt" })}
                                   className="flex items-center gap-1 text-[8px] font-black text-primary hover:underline uppercase mt-1"
@@ -603,15 +623,25 @@ export default function PaymentManagement() {
                         <td className="px-6 md:px-8 py-5 md:py-6 text-center">
                           <div className="flex md:flex-col items-center justify-between gap-3">
                             <span className="md:hidden text-[10px] font-black uppercase text-muted-foreground tracking-widest">Actions</span>
-                            {activeTab === "pending" ? (
+                            {activeTab === "pending" || activeTab === "rejected" ? (
                               <div className="flex items-center justify-center gap-3">
-                                <button
-                                  onClick={() => handleApprove(item)}
-                                  className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
-                                  title="View Details"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
+                                {isAdmin && activeTab === "pending" && (
+                                  <button
+                                    onClick={() => handleApprove(item)}
+                                    className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
+                                    title="Verify Details"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {(activeTab === "rejected" || !isAdmin) && (
+                                  <button
+                                    onClick={() => navigate(`/dashboard/student-management/${item.student?._id}?tab=payment`)}
+                                    className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:bg-primary hover:text-white px-4 py-2.5 rounded-2xl transition-all border border-primary/10"
+                                  >
+                                    <Users className="w-4 h-4" /> Profile
+                                  </button>
+                                )}
                               </div>
                             ) : activeTab === "recent" ? (
                               <button

@@ -26,7 +26,16 @@ import {
   Check,
   GitBranch,
   Search,
-  ChevronDown
+  ChevronDown,
+  Clock,
+  CreditCard,
+  Upload,
+  Receipt,
+  Wallet,
+  X,
+  Loader2,
+  Video,
+  Image,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -36,12 +45,17 @@ import {
   addPartnerPermission, 
   removePartnerPermission,
   reviewPartner,
-  generateAdminToken
+  generateAdminToken,
+  completePartnerInspection,
+  recordOfflineInspectionFee,
+  rejectPartnerInspection
 } from "../../api/partner.api";
 import { getUniversities, getPrograms, getBranches } from "../../api/university.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { handleFormError } from "../../utils/handleFormError";
+
+import { AuthorisationLetterModal } from "../../components/dashboard/AuthorisationLetterModal";
 
 export default function PartnerProfile() {
   const { id } = useParams();
@@ -82,6 +96,13 @@ export default function PartnerProfile() {
   const [reviewStatus, setReviewStatus] = useState(null); // 'approved' or 'rejected'
   const [isReviewing, setIsReviewing] = useState(false);
 
+  // Inspection Modal States
+  const [isInspectionReviewOpen, setIsInspectionReviewOpen] = useState(false);
+  const [isCompletingInspection, setIsCompletingInspection] = useState(false);
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [rejectInspectionReason, setRejectInspectionReason] = useState("");
+  const [isRejectingInspection, setIsRejectingInspection] = useState(false);
+
   // Admin Access Token State
   const [generatedToken, setGeneratedToken] = useState("");
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
@@ -92,6 +113,20 @@ export default function PartnerProfile() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [permissionToDelete, setPermissionToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Partner Onboarding & Inspection state hooks
+  const [showLetterModal, setShowLetterModal] = useState(false);
+  
+  // Offline Payment states
+  const [showAdminOfflinePayModal, setShowAdminOfflinePayModal] = useState(false);
+  const [offlinePaymentData, setOfflinePaymentData] = useState({
+    method: "Offline / Cash",
+    transactionId: "",
+    remarks: "",
+  });
+  const [offlineReceipt, setOfflineReceipt] = useState(null);
+  const [isOfflinePaying, setIsOfflinePaying] = useState(false);
+
 
   useEffect(() => {
     fetchPartnerData();
@@ -189,6 +224,82 @@ export default function PartnerProfile() {
       setIsReviewing(false);
     }
   };
+
+  const handleCompleteInspection = async () => {
+    setIsCompletingInspection(true);
+    try {
+      const res = await completePartnerInspection(id);
+      if (res.success) {
+        setPartner(res.data);
+        dispatch(showAlert({ 
+          type: "success", 
+          message: "Inspection completed and Authorisation Letter issued!" 
+        }));
+        setIsInspectionReviewOpen(false);
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsCompletingInspection(false);
+    }
+  };
+
+  const handleRejectInspection = async () => {
+    if (!rejectInspectionReason.trim()) return;
+    setIsRejectingInspection(true);
+    try {
+      const res = await rejectPartnerInspection(id, rejectInspectionReason);
+      if (res.success) {
+        setPartner(res.data);
+        dispatch(showAlert({ 
+          type: "success", 
+          message: "Partner inspection rejected. They will need to re-upload media." 
+        }));
+        setIsInspectionReviewOpen(false);
+        setShowRejectInput(false);
+        setRejectInspectionReason("");
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsRejectingInspection(false);
+    }
+  };
+
+  const handleAdminOfflinePay = async (e) => {
+    e.preventDefault();
+    if (!offlinePaymentData.transactionId) {
+      dispatch(showAlert({ type: "error", message: "Please specify the Transaction ID." }));
+      return;
+    }
+    if (!offlineReceipt) {
+      dispatch(showAlert({ type: "error", message: "Please attach a receipt for offline payment." }));
+      return;
+    }
+
+    setIsOfflinePaying(true);
+    try {
+      const formData = new FormData();
+      formData.append("amount", "5000");
+      formData.append("method", offlinePaymentData.method);
+      formData.append("transactionId", offlinePaymentData.transactionId);
+      formData.append("remarks", offlinePaymentData.remarks);
+      formData.append("receipt", offlineReceipt);
+      formData.append("partnerId", id);
+
+      const res = await recordOfflineInspectionFee(formData);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: "Offline payment receipt recorded successfully!" }));
+        setPartner(res.data);
+        setShowAdminOfflinePayModal(false);
+      }
+    } catch (err) {
+      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Failed to submit offline payment." }));
+    } finally {
+      setIsOfflinePaying(false);
+    }
+  };
+
 
   const handleAddPermission = async (e) => {
     e.preventDefault();
@@ -404,6 +515,110 @@ export default function PartnerProfile() {
           >
             {activeTab === "info" && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Onboarding & Inspection Status Console */}
+                {partner.status === "approved" && (
+                  <div className="col-span-full bg-card border border-border rounded-3xl p-8 space-y-6 shadow-sm">
+                    <div className="flex items-center gap-3 border-b border-border pb-4">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold">Onboarding & Inspection Control</h3>
+                        <p className="text-xs text-muted-foreground">Manage partner credentials, inspection status, and certificates.</p>
+                      </div>
+                    </div>
+
+                    {partner.onboardingState === "fee_pending" && (
+                      <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex gap-3 items-start">
+                          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 flex-shrink-0 mt-0.5">
+                            <Clock className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-amber-600">Awaiting Inspection Fee Payment</p>
+                            <p className="text-xs text-muted-foreground mt-1 max-w-lg">
+                              The partner's application request has been approved and password issued. However, the onboarding fee of <strong>₹5,000</strong> has not been paid yet.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => setShowAdminOfflinePayModal(true)}
+                            className="px-4 py-2 rounded-xl border border-primary/20 bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all flex items-center gap-2"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            Log Manual Payment
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {partner.onboardingState === "inspection_pending" && (
+                      <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex gap-3 items-start">
+                          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 flex-shrink-0 mt-0.5">
+                            <Activity className="w-5 h-5 animate-pulse" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-blue-600">Onboarding Fee Paid - Awaiting Inspection Audit</p>
+                            <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                              The partner has paid the registration and inspection fee successfully. Please conduct the Online / Physical site inspection to verify their layout and resource capabilities.
+                            </p>
+
+                            {partner.inspectionFeePaymentDetails && (
+                              <div className="mt-4 flex flex-wrap items-center gap-3 border border-blue-500/20 bg-blue-500/5 p-3 rounded-xl">
+                                <div className="text-[10px] font-bold text-blue-800 flex items-center gap-1.5">
+                                  <CreditCard className="w-3.5 h-3.5" /> 
+                                  ₹{partner.inspectionFeePaymentDetails.amount || partner.inspectionFeePaymentDetails.payment_amount} Paid via {partner.inspectionFeePaymentDetails.method || partner.inspectionFeePaymentDetails.payment_group}
+                                </div>
+                                <div className="text-[10px] font-bold text-blue-800 flex items-center gap-1.5">
+                                  <Receipt className="w-3.5 h-3.5" /> 
+                                  TXN: {partner.inspectionFeePaymentDetails.transactionId || partner.inspectionFeePaymentDetails.cf_payment_id}
+                                </div>
+                                {partner.inspectionFeePaymentDetails.receipt && (
+                                  <a 
+                                    href={`${partner.inspectionFeePaymentDetails.receipt.replace(/\\/g, "/")}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="px-3 py-1 bg-white border border-blue-500/20 text-blue-600 hover:bg-blue-50 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                  >
+                                    View Receipt
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                          </div>
+                        </div>
+
+                      </div>
+                    )}
+
+                    {partner.onboardingState === "completed" && (
+                      <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                        <div className="flex gap-3 items-start">
+                          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 flex-shrink-0 mt-0.5">
+                            <Check className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-emerald-600">Onboarding Completed & Fully Authorized</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              All onboarding steps were verified. The Online/Physical site inspection was completed on <strong>{new Date(partner.inspectionCompletedAt).toLocaleString()}</strong>.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowLetterModal(true)}
+                          className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 active:scale-[0.98] transition-all shadow-lg shadow-emerald-600/25 whitespace-nowrap shrink-0"
+                        >
+                          View Issued Authorisation Letter
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="bg-card border border-border rounded-3xl p-8 space-y-8 shadow-sm">
                    <div>
                      <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -496,7 +711,6 @@ export default function PartnerProfile() {
                   { id: "licenseeAadharCard", label: "Aadhar Card" },
                   { id: "businessLicense", label: "Business License" },
                   { id: "ownershipRentalAgreement", label: "Ownership / Rental Agreement" },
-                  { id: "officePhotos", label: "Office Photos" },
                 ].map((doc, idx) => (
                   <div key={idx} className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-4 shadow-sm group hover:border-primary/30 transition-all">
                     <div className="flex items-center justify-between">
@@ -514,7 +728,7 @@ export default function PartnerProfile() {
                           {partner.documents[doc.id].map((path, pIdx) => (
                             <div key={pIdx} className="relative aspect-video rounded-2xl overflow-hidden bg-muted border border-border group/img">
                               <img 
-                                src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${path.replace(/\\/g, "/")}`} 
+                                src={`${path.replace(/\\/g, "/")}`} 
                                 alt={`${doc.label} ${pIdx + 1}`}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -526,7 +740,7 @@ export default function PartnerProfile() {
                                  Preview not available
                               </div>
                               <a 
-                                href={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${path.replace(/\\/g, "/")}`} 
+                                href={`${path.replace(/\\/g, "/")}`} 
                                 target="_blank" 
                                 rel="noreferrer"
                                 className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-all"
@@ -545,6 +759,90 @@ export default function PartnerProfile() {
                   </div>
                 ))}
               </div>
+            )}
+
+            {activeTab === "documents" && (
+              <>
+                {/* Center Video Section */}
+                {partner.documents?.officeVideo?.length > 0 && (
+                  <div className="pt-8 border-t border-border/50 mt-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                          <Video className="w-4 h-4 text-blue-500" />
+                        </div>
+                        Center Video
+                      </h4>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {partner.documents.officeVideo.map((docUrl, i) => (
+                         <div
+                            key={`video-${i}`}
+                            className="group relative flex flex-col gap-3 p-4 rounded-2xl border border-border bg-muted/5"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                <Video className="w-4 h-4 text-blue-500" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Center Video</p>
+                                <p className="text-xs font-bold text-foreground">Video Walkthrough</p>
+                              </div>
+                            </div>
+                            <video 
+                              src={`${docUrl.replace(/\\/g, "/")}`} 
+                              controls 
+                              className="w-full rounded-xl bg-black max-h-[400px] object-contain border border-border"
+                            />
+                          </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Center Photos Section */}
+                {partner.documents?.officePhotos?.length > 0 && (
+                  <div className="pt-8 border-t border-border/50 mt-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                          <Image className="w-4 h-4 text-pink-500" />
+                        </div>
+                        Center Photos
+                      </h4>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {partner.documents.officePhotos.map((docUrl, i) => (
+                        <a
+                          key={`photo-${i}`}
+                          href={`${docUrl.replace(/\\/g, "/")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group relative aspect-video rounded-2xl overflow-hidden bg-muted border border-border block"
+                        >
+                          <img 
+                            src={`${docUrl.replace(/\\/g, "/")}`} 
+                            alt={`Center Photo ${i + 1}`}
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                          <div className="hidden w-full h-full items-center justify-center text-[8px] font-black uppercase text-muted-foreground tracking-widest text-center p-2 bg-muted">
+                             Preview not available
+                          </div>
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                            <ExternalLink className="w-5 h-5 text-white" />
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {activeTab === "permissions" && (
@@ -1066,6 +1364,232 @@ export default function PartnerProfile() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Inspection Review Modal */}
+        <AnimatePresence>
+          {isInspectionReviewOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+              onClick={() => setIsInspectionReviewOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card w-full max-w-md p-6 rounded-3xl shadow-2xl border border-border flex flex-col"
+              >
+                {!showRejectInput ? (
+                  <>
+                    <div className="flex items-center space-x-3 mb-4 text-blue-500">
+                      <ShieldCheck className="w-6 h-6" />
+                      <h3 className="text-xl font-black text-foreground">Review Inspection</h3>
+                    </div>
+                    <p className="text-muted-foreground mb-6 text-sm flex-1 leading-relaxed">
+                      By confirming this step, you verify that the physical or online facility audit for <strong>{partner.centerName}</strong> has been successfully completed. 
+                      <span className="block mt-2 font-bold text-blue-600">This will instantly activate their courses dashboard and email them the official Authorisation Letter.</span>
+                    </p>
+                    <div className="flex gap-3 mt-auto">
+                      <button
+                        onClick={() => setShowRejectInput(true)}
+                        disabled={isCompletingInspection}
+                        className="flex-1 py-3 px-4 rounded-xl border border-orange-500/20 bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors font-bold text-sm"
+                      >
+                        Reject Inspection
+                      </button>
+                      <button
+                        onClick={handleCompleteInspection}
+                        disabled={isCompletingInspection}
+                        className="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-all font-bold text-sm flex items-center justify-center space-x-2 shadow-md shadow-blue-500/20"
+                      >
+                        {isCompletingInspection ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span>Approve & Activate</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-4">
+                      <ShieldAlert className="w-6 h-6 text-orange-500" />
+                    </div>
+                    <h3 className="text-xl font-black mb-2">Reject Inspection</h3>
+                    <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                      Please provide a reason for rejecting the inspection. The partner will be notified and asked to re-upload their media.
+                    </p>
+                    
+                    <textarea
+                      value={rejectInspectionReason}
+                      onChange={(e) => setRejectInspectionReason(e.target.value)}
+                      placeholder="E.g., Video is blurry, please provide a clear walkthrough of the center..."
+                      className="w-full min-h-[100px] p-3 rounded-xl border border-border bg-muted/30 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-sm resize-none mb-6"
+                    />
+
+                    <div className="flex gap-3 mt-auto">
+                      <button
+                        onClick={() => {
+                          setShowRejectInput(false);
+                          setRejectInspectionReason("");
+                        }}
+                        disabled={isRejectingInspection}
+                        className="flex-1 py-3 px-4 rounded-xl border border-border hover:bg-muted font-bold transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={handleRejectInspection}
+                        disabled={isRejectingInspection || !rejectInspectionReason.trim()}
+                        className="flex-1 py-3 px-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                      >
+                        {isRejectingInspection ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          "Submit Rejection"
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Issued Authorisation Letter Modal */}
+        <AnimatePresence>
+          {showLetterModal && (
+            <AuthorisationLetterModal
+              partner={partner}
+              onClose={() => setShowLetterModal(false)}
+            />
+          )}
+        </AnimatePresence>
+      {/* Admin Offline Payment Modal */}
+      <AnimatePresence>
+        {showAdminOfflinePayModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9998]"
+              onClick={() => setShowAdminOfflinePayModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-card border border-border shadow-2xl rounded-[2rem] z-[9999] overflow-hidden"
+            >
+              <div className="p-6 border-b border-border/50 flex justify-between items-center bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg leading-tight">Log Manual Payment</h3>
+                    <p className="text-xs text-muted-foreground font-medium">Record an offline receipt for this partner</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAdminOfflinePayModal(false)}
+                  className="p-2 hover:bg-white rounded-xl text-muted-foreground hover:text-foreground transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAdminOfflinePay} className="p-6 space-y-5">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Payment Method</label>
+                    <select 
+                      value={offlinePaymentData.method}
+                      onChange={(e) => setOfflinePaymentData({...offlinePaymentData, method: e.target.value})}
+                      className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    >
+                      <option>Offline / Cash</option>
+                      <option>Bank Transfer / NEFT</option>
+                      <option>UPI / QR</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Transaction ID / Ref No</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. TXN12345678"
+                      value={offlinePaymentData.transactionId}
+                      onChange={(e) => setOfflinePaymentData({...offlinePaymentData, transactionId: e.target.value})}
+                      className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Amount (Fixed)</label>
+                    <input 
+                      type="text" 
+                      value="₹5,000.00"
+                      disabled
+                      className="w-full px-4 py-3 bg-muted border border-border/50 rounded-xl text-xs font-bold text-muted-foreground cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Payment Receipt</label>
+                    <div className="relative border-2 border-dashed border-border rounded-xl p-4 text-center hover:bg-muted/80 transition-colors bg-muted/30">
+                      <input 
+                        type="file" 
+                        accept="image/*,.pdf"
+                        onChange={(e) => setOfflineReceipt(e.target.files[0])}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Upload className="w-6 h-6 text-muted-foreground" />
+                        <span className="text-xs font-bold text-muted-foreground">
+                          {offlineReceipt ? offlineReceipt.name : "Click or drag receipt here"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminOfflinePayModal(false)}
+                    className="flex-1 py-3.5 bg-muted text-foreground rounded-xl font-bold text-sm hover:bg-muted/80 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isOfflinePaying}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/20 disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {isOfflinePaying ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Receipt className="w-4 h-4" />
+                        <span>Submit Receipt</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       </div>
     </DashboardLayout>
   );

@@ -413,36 +413,59 @@ export const approvePayment = async (req, res, next) => {
       });
     } else if (
       payment.type === "Documents & Services" &&
-      payment.serviceApplication
+      (payment.serviceApplication || (payment.serviceApplications && payment.serviceApplications.length > 0))
     ) {
-      // Update Service Application
-      const application = await ServiceApplication.findById(
-        payment.serviceApplication,
-      );
-      if (application) {
-        application.paidAmount += payment.amount;
+      if (payment.serviceApplication) {
+        // Update Single Service Application
+        const application = await ServiceApplication.findById(
+          payment.serviceApplication,
+        );
+        if (application) {
+          application.paidAmount += payment.amount;
 
-        if (application.paidAmount >= application.feeAmount) {
+          if (application.paidAmount >= application.feeAmount) {
+            application.paymentStatus = "Paid";
+            // Only advance status if full payment is done
+            if (application.status === "Waiting for Payment") {
+              application.status = "Pending Applications";
+              application.pendingDate = new Date();
+              application.history.push({
+                status: "Pending Applications",
+                updatedBy: req.user.userId,
+                remarks: "Full payment confirmed via admin approval.",
+              });
+            }
+          } else {
+            application.paymentStatus = "Partially Paid";
+            application.history.push({
+              status: application.status,
+              updatedBy: req.user.userId,
+              remarks: `Partial payment of ₹${payment.amount} approved by admin.`,
+            });
+          }
+          await application.save();
+        }
+      }
+
+      if (payment.serviceApplications && payment.serviceApplications.length > 0) {
+        // Update Multiple Service Applications (Bulk Payment)
+        const applications = await ServiceApplication.find({ _id: { $in: payment.serviceApplications } });
+        for (const application of applications) {
+          const remaining = application.feeAmount - (application.paidAmount || 0);
+          application.paidAmount += remaining; // Assume bulk covers the full remaining
+
           application.paymentStatus = "Paid";
-          // Only advance status if full payment is done
           if (application.status === "Waiting for Payment") {
             application.status = "Pending Applications";
             application.pendingDate = new Date();
             application.history.push({
               status: "Pending Applications",
               updatedBy: req.user.userId,
-              remarks: "Full payment confirmed via admin approval.",
+              remarks: "Full payment confirmed via bulk admin approval.",
             });
           }
-        } else {
-          application.paymentStatus = "Partially Paid";
-          application.history.push({
-            status: application.status,
-            updatedBy: req.user.userId,
-            remarks: `Partial payment of ₹${payment.amount} approved by admin.`,
-          });
+          await application.save();
         }
-        await application.save();
       }
     }
 
@@ -587,15 +610,26 @@ export const getGlobalPaymentStats = async (req, res, next) => {
     const filter = {};
     if (req.user.userType === "partner") filter.partner = req.user.userId;
 
-    const [recentPayments, upcomingSchedules, pendingPayments] =
+    const [recentPayments, upcomingSchedules, pendingPayments, rejectedPayments] =
       await Promise.all([
         Payment.find({ ...filter, approvalStatus: "approved" })
           .populate({
             path: "student",
-            select: "name email university admissionPoint",
-            populate: { path: "university", select: "name" },
+            select: "name email university admissionPoint program",
+            populate: [
+              { path: "university", select: "name" },
+              { path: "program", select: "name" }
+            ],
           })
           .populate("partner", "name")
+          .populate({
+            path: "serviceApplication",
+            populate: { path: "service", select: "title" }
+          })
+          .populate({
+            path: "serviceApplications",
+            populate: { path: "service", select: "title" }
+          })
           .sort({ date: -1 })
           .limit(100),
         PaymentSchedule.find({ ...filter, status: "Pending" })
@@ -607,16 +641,45 @@ export const getGlobalPaymentStats = async (req, res, next) => {
           .populate("partner", "name")
           .sort({ dueDate: 1 })
           .limit(100),
-        req.user.userType === "admin"
-          ? Payment.find({ approvalStatus: "pending" })
-              .populate({
-                path: "student",
-                select: "name email university admissionPoint",
-                populate: { path: "university", select: "name" },
-              })
-              .populate("partner", "name centerName centerId")
-              .sort({ createdAt: -1 })
-          : [],
+        Payment.find({ ...filter, approvalStatus: "pending" })
+          .populate({
+            path: "student",
+            select: "name email university admissionPoint program",
+            populate: [
+              { path: "university", select: "name" },
+              { path: "program", select: "name" }
+            ],
+          })
+          .populate("partner", "name centerName centerId")
+          .populate({
+            path: "serviceApplication",
+            populate: { path: "service", select: "title" }
+          })
+          .populate({
+            path: "serviceApplications",
+            populate: { path: "service", select: "title" }
+          })
+          .sort({ createdAt: -1 }),
+        Payment.find({ ...filter, approvalStatus: "rejected" })
+          .populate({
+            path: "student",
+            select: "name email university admissionPoint program",
+            populate: [
+              { path: "university", select: "name" },
+              { path: "program", select: "name" }
+            ],
+          })
+          .populate("partner", "name centerName centerId")
+          .populate({
+            path: "serviceApplication",
+            populate: { path: "service", select: "title" }
+          })
+          .populate({
+            path: "serviceApplications",
+            populate: { path: "service", select: "title" }
+          })
+          .sort({ updatedAt: -1 })
+          .limit(100),
       ]);
 
     res.status(200).json({
@@ -625,6 +688,7 @@ export const getGlobalPaymentStats = async (req, res, next) => {
         recentPayments,
         upcomingSchedules,
         pendingPayments,
+        rejectedPayments,
       },
     });
   } catch (error) {

@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Phone,
-  Mail,
-  Globe,
-  MapPin,
-  Send,
-  ArrowUpRight,
-} from "lucide-react";
+import { Phone, Mail, Globe, MapPin, Send, ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Logo from "../assets/logo.png";
 
@@ -61,9 +54,9 @@ const cardVariants = {
     transition: {
       type: "spring",
       stiffness: 300,
-      damping: 20
-    }
-  }
+      damping: 20,
+    },
+  },
 };
 
 const MotionPhone = motion(Phone);
@@ -76,9 +69,9 @@ const phoneIconVariants = {
     rotate: [0, -15, 15, -15, 15, 0],
     transition: {
       duration: 0.6,
-      ease: "easeInOut"
-    }
-  }
+      ease: "easeInOut",
+    },
+  },
 };
 
 const mailIconVariants = {
@@ -87,9 +80,9 @@ const mailIconVariants = {
     scale: [1, 1.05, 0.98, 1],
     transition: {
       duration: 0.6,
-      ease: "easeInOut"
-    }
-  }
+      ease: "easeInOut",
+    },
+  },
 };
 
 const arrowVariants = {
@@ -100,9 +93,9 @@ const arrowVariants = {
     transition: {
       type: "spring",
       stiffness: 300,
-      damping: 15
-    }
-  }
+      damping: 15,
+    },
+  },
 };
 
 const sendIconVariants = {
@@ -111,9 +104,9 @@ const sendIconVariants = {
     y: [0, -3, 1, 0],
     transition: {
       duration: 0.5,
-      ease: "easeInOut"
-    }
-  }
+      ease: "easeInOut",
+    },
+  },
 };
 
 export default function Footer() {
@@ -141,19 +134,29 @@ export default function Footer() {
           viewport={{ once: true, margin: "-60px" }}
           className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-slate-200"
         >
-          <motion.div variants={itemVariants} className="lg:col-span-4 space-y-6">
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-4 space-y-6"
+          >
             <div className="flex items-center gap-2">
               <Link to="/">
-                <img src={Logo} alt="Logo" className="w-28 hover:opacity-90 transition-opacity" />
+                <img
+                  src={Logo}
+                  alt="Logo"
+                  className="w-28 hover:opacity-90 transition-opacity"
+                />
               </Link>
             </div>
             <p className="text-slate-500 text-base leading-relaxed max-w-xs font-medium">
-              Managing global academic affairs with precision, integrity,
-              and a commitment to student success.
+              Managing global academic affairs with precision, integrity, and a
+              commitment to student success.
             </p>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="lg:col-span-2 space-y-5">
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-2 space-y-5"
+          >
             <h5 className="text-lg font-extrabold text-slate-800 tracking-tight">
               Navigation
             </h5>
@@ -165,7 +168,10 @@ export default function Footer() {
                     const element = document.getElementById("mission-vision");
                     if (element) {
                       e.preventDefault();
-                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                      element.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                     }
                   }}
                   className="hover:text-[#17468C] transition-colors cursor-pointer"
@@ -180,7 +186,10 @@ export default function Footer() {
                     const element = document.getElementById("mission-vision");
                     if (element) {
                       e.preventDefault();
-                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                      element.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                     }
                   }}
                   className="hover:text-[#17468C] transition-colors cursor-pointer"
@@ -199,7 +208,10 @@ export default function Footer() {
             </ul>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="lg:col-span-3 space-y-5 text-left">
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-3 space-y-5 text-left"
+          >
             <div className="space-y-2">
               <h5 className="text-lg font-extrabold text-slate-800 tracking-tight">
                 Official Hub
@@ -210,20 +222,20 @@ export default function Footer() {
             </div>
             <div className="space-y-4">
               <div className="flex gap-3 text-base text-slate-500 font-medium">
-                <MapPin
-                  size={20}
-                  className="shrink-0 text-slate-400 mt-0.5"
-                />
+                <MapPin size={20} className="shrink-0 text-slate-400 mt-0.5" />
                 <span className="leading-relaxed">
-                  Grace Tower, First Floor, Cabin No.C1 Door No. 67/1392,
-                  St. Vincent Road, Kacheripady, Ernakulam North,
-                  Kerala, India - 682018
+                  Grace Tower, First Floor, Cabin No.C1 Door No. 67/1392, St.
+                  Vincent Road, Kacheripady, Ernakulam North, Kerala, India -
+                  682018
                 </span>
               </div>
             </div>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="lg:col-span-3 space-y-5">
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-3 space-y-5"
+          >
             <h5 className="text-lg font-extrabold text-slate-800 tracking-tight">
               Newsletter
             </h5>
@@ -240,7 +252,7 @@ export default function Footer() {
                 whileHover="hover"
                 whileTap={{ scale: 0.95 }}
                 variants={{
-                  hover: { scale: 1.05 }
+                  hover: { scale: 1.05 },
                 }}
                 type="submit"
                 disabled={subscribed}
@@ -272,7 +284,8 @@ export default function Footer() {
             {
               id: "01",
               title: "Partner Enquiry",
-              description: "For new academic collaborations and university tie-ups.",
+              description:
+                "For new academic collaborations and university tie-ups.",
               mob: "+91 963 33 31 014",
               mobHref: "tel:+919633331014",
               land: "0484 461 4539",
@@ -281,12 +294,13 @@ export default function Footer() {
               emailHref: "mailto:partner@6askillcity.com",
               blueWord: "Partner",
               redWord: "Enquiry",
-              borderGradient: "from-[#17468C] to-[#B82424]"
+              borderGradient: "from-[#17468C] to-[#B82424]",
             },
             {
               id: "02",
               title: "Finance",
-              description: "Billing enquiries, fee reconciliation, and ledger statements.",
+              description:
+                "Billing enquiries, fee reconciliation, and ledger statements.",
               mob: "+91 999 54 53 322",
               mobHref: "tel:+919995453322",
               land: "",
@@ -295,12 +309,13 @@ export default function Footer() {
               emailHref: "mailto:accounts@6askillcity.com",
               blueWord: "Finance",
               redWord: "",
-              borderGradient: "from-[#B82424] to-[#17468C]"
+              borderGradient: "from-[#B82424] to-[#17468C]",
             },
             {
               id: "03",
-              title: "IT Team",
-              description: "Technical support, portal issues, and API integrations.",
+              title: "Administration & IT Support",
+              description:
+                "Technical support, portal issues, and API integrations.",
               mob: "+91 735 60 75 454",
               mobHref: "tel:+917356075454",
               land: "",
@@ -309,7 +324,7 @@ export default function Footer() {
               emailHref: "mailto:partner@6askillcity.com",
               blueWord: "IT",
               redWord: "Team",
-              borderGradient: "from-[#17468C] to-[#B82424]"
+              borderGradient: "from-[#17468C] to-[#B82424]",
             },
           ].map((dept, idx) => (
             <motion.div
@@ -322,13 +337,14 @@ export default function Footer() {
                 {/* Card Header */}
                 <div className="space-y-2 relative z-10">
                   <h3 className="text-3xl font-black tracking-tight pb-1">
-                    <span 
+                    <span
                       style={{
-                        backgroundImage: "linear-gradient(to right, #17468C, #B82424)",
+                        backgroundImage:
+                          "linear-gradient(to right, #17468C, #B82424)",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
                         backgroundClip: "text",
-                        display: "inline-block"
+                        display: "inline-block",
                       }}
                     >
                       {dept.title}
@@ -385,24 +401,41 @@ export default function Footer() {
           ))}
         </motion.div>
 
-        <div 
-          className="w-24 h-[1.5px] bg-slate-300 mx-auto mt-12 mb-8" 
+        <div
+          className="w-24 h-[1.5px] bg-slate-300 mx-auto mt-12 mb-8"
           style={{ backgroundColor: "#cbd5e1", width: "96px", height: "1.5px" }}
         />
 
         <div
           className="flex flex-col items-center justify-center gap-4 text-center"
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", textAlign: "center", opacity: 1, visibility: "visible" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "16px",
+            textAlign: "center",
+            opacity: 1,
+            visibility: "visible",
+          }}
         >
-          <p 
+          <p
             className="text-sm font-extrabold text-slate-800"
             style={{ color: "#1e293b", fontSize: "14px", fontWeight: 800 }}
           >
-            © {new Date().getFullYear()} 6A Skillcity. All rights reserved.
+            © 6A Skillcity {new Date().getFullYear()} is reserved all rights.
           </p>
-          <div 
+          <div
             className="flex justify-center flex-wrap gap-x-8 gap-y-2 text-xs font-black text-slate-600"
-            style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", columnGap: "32px", rowGap: "8px", fontSize: "12px", fontWeight: 900 }}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              columnGap: "32px",
+              rowGap: "8px",
+              fontSize: "12px",
+              fontWeight: 900,
+            }}
           >
             <Link
               to="/privacy-policy"

@@ -45,6 +45,11 @@ export const recordServicePayment = async (id, data) => {
   return response.data;
 };
 
+export const recordBulkServicePayment = async (data) => {
+  const response = await axiosInstance.post("/services/applications/bulk/pay", data);
+  return response.data;
+};
+
 export const createServiceCashfreeOrder = async (id, data) => {
   const response = await axiosInstance.post(`/services/applications/${id}/cashfree/order`, data);
   return response.data;
@@ -52,5 +57,15 @@ export const createServiceCashfreeOrder = async (id, data) => {
 
 export const verifyServiceCashfreePayment = async (orderId) => {
   const response = await axiosInstance.post("/services/applications/cashfree/verify", { orderId });
+  return response.data;
+};
+
+export const createBulkServiceCashfreeOrder = async (data) => {
+  const response = await axiosInstance.post("/services/applications/bulk/cashfree/order", data);
+  return response.data;
+};
+
+export const verifyBulkServiceCashfreePayment = async (orderId) => {
+  const response = await axiosInstance.post("/services/applications/bulk/cashfree/verify", { orderId });
   return response.data;
 };

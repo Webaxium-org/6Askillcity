@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 /**
@@ -13,6 +13,7 @@ import { useSelector } from "react-redux";
  */
 const ProtectedRoute = ({ allowedRoles = [], allowedTypes = [] }) => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
+  const location = useLocation();
 
   // 1️⃣ Not logged in
   if (!isAuthenticated || !user) {
@@ -31,6 +32,18 @@ const ProtectedRoute = ({ allowedRoles = [], allowedTypes = [] }) => {
   const userIdentity = user.role || user.type;
   if (allowedRoles.length > 0 && !allowedRoles.includes(userIdentity)) {
     console.warn(`[ProtectedRoute] Role mismatch: identity=${userIdentity}, allowed=${allowedRoles}`);
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // 4️⃣ Partner Onboarding Check
+  // Prevent partners who haven't completed onboarding from accessing any route other than the dashboard
+  if (
+    user.type === "partner" &&
+    user.onboardingState !== "completed" &&
+    location.pathname !== "/dashboard" &&
+    location.pathname !== "/dashboard/profile"
+  ) {
+    console.warn(`[ProtectedRoute] Partner onboarding incomplete, redirecting to dashboard.`);
     return <Navigate to="/dashboard" replace />;
   }
 

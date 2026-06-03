@@ -17,15 +17,25 @@ import {
   GraduationCap,
   ChevronRight,
   X,
+  Activity,
+  ShieldCheck,
+  User as UserIcon,
+  ShieldAlert,
+  FileText,
+  ExternalLink,
+  Video,
+  Image,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getPartners, togglePartnerActive } from "../../api/partner.api";
+import { getPartners, togglePartnerActive, completePartnerInspection, reviewPartner, rejectPartnerInspection } from "../../api/partner.api";
 import { getUniversities } from "../../api/university.api.js";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { handleFormError } from "../../utils/handleFormError";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../../lib/utils";
+import { AuthorisationLetterModal } from "../../components/dashboard/AuthorisationLetterModal";
 
 export default function PartnerList() {
   const [partners, setPartners] = useState([]);
@@ -34,6 +44,7 @@ export default function PartnerList() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
   const [universityFilter, setUniversityFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("overview");
   const [universities, setUniversities] = useState([]);
 
   // Advanced Filters
@@ -41,9 +52,25 @@ export default function PartnerList() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // Inspection completion state
+  const [inspectionPartnerId, setInspectionPartnerId] = useState(null);
+  const [isCompletingInspection, setIsCompletingInspection] = useState(false);
+  const [showLetterModal, setShowLetterModal] = useState(false);
+  const [letterPartner, setLetterPartner] = useState(null);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+
+  // Modal states
+  const [viewDetailsPoint, setViewDetailsPoint] = useState(null);
+  const [approveWarningId, setApproveWarningId] = useState(null);
+  const [rejectWarningId, setRejectWarningId] = useState(null);
+  
+  // Inspection Rejection state
+  const [rejectInspectionPartnerId, setRejectInspectionPartnerId] = useState(null);
+  const [rejectInspectionReason, setRejectInspectionReason] = useState("");
+  const [isRejectingInspection, setIsRejectingInspection] = useState(false);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -139,7 +166,95 @@ export default function PartnerList() {
     }
   };
 
+  const handleCompleteInspection = async (partnerId) => {
+    setIsCompletingInspection(true);
+    setInspectionPartnerId(partnerId);
+    try {
+      const res = await completePartnerInspection(partnerId);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: "Inspection completed & Authorisation Letter generated!" }));
+        // Update local state
+        setPartners(partners.map(p =>
+          p._id === partnerId ? { ...p, onboardingState: "completed", inspectionCompletedAt: new Date().toISOString() } : p
+        ));
+        setLetterPartner(res.data);
+        setShowLetterModal(true);
+        setViewDetailsPoint(null);
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsCompletingInspection(false);
+      setInspectionPartnerId(null);
+    }
+  };
+
+  const handleRejectInspectionSubmit = async () => {
+    if (!rejectInspectionPartnerId || !rejectInspectionReason.trim()) return;
+    setIsRejectingInspection(true);
+    try {
+      const res = await rejectPartnerInspection(rejectInspectionPartnerId, rejectInspectionReason);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: "Partner inspection rejected. They will need to re-upload media." }));
+        // Update local state
+        setPartners(partners.map(p =>
+          p._id === rejectInspectionPartnerId ? { ...p, inspectionStatus: "rejected", inspectionRejectionReason: rejectInspectionReason } : p
+        ));
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsRejectingInspection(false);
+      setRejectInspectionPartnerId(null);
+      setRejectInspectionReason("");
+    }
+  };
+
+  const confirmApprove = async () => {
+    if (!approveWarningId) return;
+    const id = approveWarningId;
+    setApproveWarningId(null);
+    try {
+      const res = await reviewPartner(id, "approved");
+      if (res.success) {
+        setPartners(partners.filter(p => p._id !== id));
+        dispatch(showAlert({ type: "success", message: "Partner approved successfully" }));
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    }
+  };
+
+  const confirmReject = async () => {
+    if (!rejectWarningId) return;
+    const id = rejectWarningId;
+    setRejectWarningId(null);
+    try {
+      const res = await reviewPartner(id, "rejected");
+      if (res.success) {
+        setPartners(partners.filter(p => p._id !== id));
+        dispatch(showAlert({ type: "success", message: "Partner rejected successfully" }));
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    }
+  };
+
   const filteredPartners = partners.filter((p) => {
+    // Tab Filter
+    let matchesTab = false;
+    if (activeTab === "overview") {
+      matchesTab = p.status === "approved" && p.onboardingState === "completed";
+    } else if (activeTab === "onboarding") {
+      matchesTab = p.status === "approved" && p.onboardingState !== "completed";
+    } else if (activeTab === "authorisation") {
+      matchesTab = p.status === "pending";
+    } else {
+      matchesTab = true; // fallback
+    }
+
+    if (!matchesTab) return false;
+
     const matchesSearch =
       p.centerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.licenseeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -176,6 +291,15 @@ export default function PartnerList() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
+
+  const authCount = partners.filter(p => p.status === "pending").length;
+  const onboardingCount = partners.filter(p => p.status === "approved" && p.onboardingState !== "completed").length;
+
+  const tabs = [
+    { id: "overview", label: "Network Overview", icon: Users },
+    { id: "authorisation", label: "Authorisation Review", icon: ShieldCheck, count: authCount },
+    { id: "onboarding", label: "Onboarding & Fees", icon: Clock, count: onboardingCount },
+  ];
 
   return (
     <DashboardLayout title="Partner Management">
@@ -301,231 +425,390 @@ export default function PartnerList() {
           )}
         </AnimatePresence>
 
-        {/* Partners Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-          <AnimatePresence mode="popLayout">
-            {loading ? (
-              Array(8)
-                .fill(0)
-                .map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-card border border-border rounded-2xl p-6 animate-pulse"
-                  >
-                    <div className="flex justify-between mb-4">
-                      <div className="w-12 h-12 bg-muted rounded-xl" />
-                      <div className="w-20 h-6 bg-muted rounded-lg" />
-                    </div>
-                    <div className="h-5 bg-muted rounded w-3/4 mb-2" />
-                    <div className="h-4 bg-muted rounded w-1/2 mb-6" />
-                    <div className="space-y-2">
-                      <div className="h-3 bg-muted rounded w-full" />
-                      <div className="h-3 bg-muted rounded w-full" />
-                    </div>
-                  </div>
-                ))
-            ) : paginatedPartners.length === 0 ? (
-              <div className="col-span-full py-32 flex flex-col items-center justify-center text-muted-foreground bg-card/40 border-2 border-dashed border-border rounded-[3rem]">
-                <div className="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mb-6">
-                  <Users className="w-10 h-10 opacity-20" />
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">
-                  No matching nodes found
-                </p>
+
+      </div>
+
+      {/* Tab Navigation Row - Image Style */}
+      <div className="overflow-x-auto pt-3 pb-4 -mx-4 px-4 scrollbar-hide">
+        <div className="flex items-center gap-3 min-w-max">
+          {tabs.map((tab) => (
+            <div key={tab.id} className="relative">
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all relative overflow-hidden group border",
+                  activeTab === tab.id
+                    ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20"
+                    : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary",
+                )}
+              >
+                <tab.icon
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    activeTab === tab.id
+                      ? "text-white"
+                      : "text-muted-foreground group-hover:text-primary",
+                  )}
+                />
+                {tab.label}
+              </button>
+              {tab.count > 0 && (
+                <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse shadow-sm z-10 border-2 border-background">
+                  {tab.count}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <div className="py-20 flex justify-center text-muted-foreground">
+            Loading...
+          </div>
+        ) : activeTab === "authorisation" ? (
+          <motion.div
+            key="auth-table"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-card border border-border/50 rounded-3xl overflow-hidden shadow-sm flex flex-col"
+          >
+            <div className="flex-1 overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Center & Licensee
+                    </th>
+                    <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredPartners.length === 0 ? (
+                    <tr>
+                      <td colSpan="5">
+                        <div className="px-6 py-20 text-center text-muted-foreground flex flex-col items-center">
+                          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                            <Activity className="w-6 h-6 text-muted-foreground/50" />
+                          </div>
+                          No pending partners for authorisation review.
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedPartners.map((partner) => (
+                      <tr
+                        key={partner._id}
+                        className="hover:bg-muted/50 transition-colors group"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-sm text-foreground mb-0.5">
+                            {partner.centerName}
+                          </div>
+                          <div className="text-xs font-medium text-muted-foreground">
+                            {partner.licenseeName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1 text-xs">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Mail className="w-3 h-3" /> {partner.licenseeEmail}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Phone className="w-3 h-3" /> {partner.licenseeContactNumber || "N/A"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                          {partner.location?.city}, {partner.location?.state}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
+                          {new Date(
+                            partner.createdAt || new Date(),
+                          ).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setViewDetailsPoint(partner)}
+                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        ) : activeTab === "onboarding" ? (
+          <motion.div
+            key="table"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-card border border-border/50 rounded-3xl overflow-hidden shadow-sm"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Center & Licensee
+                      </th>
+                      <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Contact
+                      </th>
+                      <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Location
+                      </th>
+                      <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Onboarding Status
+                      </th>
+                      <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredPartners.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="px-6 py-20 text-center text-muted-foreground"
+                        >
+                          No partners currently in the onboarding queue.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedPartners.map((partner) => (
+                        <tr
+                          key={partner._id}
+                          className="hover:bg-muted/30 transition-colors group"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-sm text-foreground mb-0.5">
+                              {partner.centerName}
+                            </div>
+                            <div className="text-xs font-medium text-muted-foreground">
+                              {partner.licenseeName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col gap-1 text-xs">
+                              <span className="flex items-center gap-1.5 text-muted-foreground">
+                                <Mail className="w-3 h-3" /> {partner.licenseeEmail}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-muted-foreground">
+                                <Phone className="w-3 h-3" /> {partner.licenseeContactNumber}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground">
+                            {partner.location?.city}, {partner.location?.state}
+                          </td>
+                          <td className="px-6 py-4">
+                            {partner.onboardingState === "fee_pending" && (
+                              <span className="px-3 py-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                                <Clock className="w-3 h-3" /> Fee Pending
+                              </span>
+                            )}
+                            {partner.onboardingState === "inspection_pending" && (
+                              <span className="px-3 py-1.5 rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                                <Activity className="w-3 h-3 animate-pulse" /> Awaiting Inspection
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() =>
+                                  navigate(`/dashboard/partner-management/${partner._id}`)
+                                }
+                                className="p-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl transition-all border border-blue-500/20"
+                                title="View Profile"
+                              >
+                                <UserIcon className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setViewDetailsPoint(partner)}
+                                className={cn(
+                                  "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm",
+                                  partner.documents?.officeVideo?.length > 0
+                                    ? "bg-purple-500 text-white hover:bg-purple-600 shadow-purple-500/20"
+                                    : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
+                                )}
+                                disabled={!(partner.documents?.officeVideo?.length > 0)}
+                                title={partner.documents?.officeVideo?.length > 0 ? "View Inspection Media" : "Waiting for Upload"}
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                View
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="cards"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {filteredPartners.length === 0 ? (
+              <div className="col-span-full py-20 text-center text-muted-foreground bg-card border border-border/50 rounded-3xl">
+                No partners found matching your criteria.
               </div>
             ) : (
               paginatedPartners.map((partner) => (
-                <motion.div
-                  layout
-                  key={partner._id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-card border border-border rounded-2xl p-6 hover:shadow-xl hover:shadow-primary/5 transition-all group relative overflow-hidden"
-                >
-                  {/* Status Badge */}
-                  <div className="absolute top-0 right-0 p-4">
-                    <div
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                        partner.status === "approved"
-                          ? "bg-emerald-500/10 text-emerald-600"
-                          : partner.status === "pending"
-                            ? "bg-amber-500/10 text-amber-600"
-                            : "bg-red-500/10 text-red-600"
-                      }`}
-                    >
-                      {partner.status === "approved" ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : partner.status === "pending" ? (
-                        <Clock className="w-3 h-3" />
-                      ) : (
-                        <XCircle className="w-3 h-3" />
-                      )}
+                <div key={partner._id} className="bg-card border border-border/50 rounded-[2rem] p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0">
+                        <Users className="w-6 h-6 text-slate-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg leading-tight text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{partner.centerName}</h3>
+                        <p className="text-sm text-slate-500 line-clamp-1">{partner.licenseeName}</p>
+                      </div>
+                    </div>
+                    
+                    <div className={cn(
+                      "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0",
+                      partner.status === 'approved' ? "bg-emerald-50 text-emerald-600" :
+                      partner.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                    )}>
+                      {partner.status === 'approved' && <CheckCircle className="w-3 h-3" />}
+                      {partner.status === 'pending' && <Clock className="w-3 h-3" />}
+                      {partner.status === 'rejected' && <XCircle className="w-3 h-3" />}
                       {partner.status}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 mb-5">
-                    <div className="w-14 h-14 bg-primary/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <Users className="w-7 h-7 text-primary" />
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span className="truncate">{partner.licenseeEmail}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg truncate leading-tight">
-                        {partner.centerName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {partner.licenseeName}
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span className="truncate">{partner.licenseeContactNumber || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span className="truncate">{partner.location?.city}, {partner.location?.state}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-6 mt-auto">
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3">
+                      <div className="flex items-center gap-1.5 mb-1 text-slate-600">
+                        <Building2 className="w-3 h-3" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Universities</span>
+                      </div>
+                      <p className="text-xs font-medium text-slate-500">
+                        {partner.assignedUnis?.length > 0 ? `${partner.assignedUnis.length} assigned` : "None assigned"}
+                      </p>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-100/50 rounded-2xl p-3">
+                      <div className="flex items-center gap-1.5 mb-1 text-emerald-600">
+                        <GraduationCap className="w-3 h-3" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Courses</span>
+                      </div>
+                      <p className="text-sm font-black text-emerald-600">
+                        {partner.programCount || 0} <span className="text-[10px] font-bold opacity-80">PROGRAMS</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center flex-shrink-0">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <span className="truncate">{partner.licenseeEmail}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center flex-shrink-0">
-                        <Phone className="w-4 h-4" />
-                      </div>
-                      <span>{partner.licenseeContactNumber}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-4 h-4" />
-                      </div>
-                      <span className="truncate">
-                        {partner.location.city}, {partner.location.state}
-                      </span>
-                    </div>
-
-                    {/* Universities & Courses Summary */}
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="bg-primary/5 border border-primary/10 p-2.5 rounded-xl">
-                        <p className="text-[9px] font-black uppercase tracking-[0.1em] text-primary/70 mb-1 flex items-center gap-1">
-                          <Building2 className="w-2.5 h-2.5" /> Universities
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {partner.assignedUnis?.length > 0 ? (
-                            partner.assignedUnis.map((uni, idx) => (
-                              <span
-                                key={idx}
-                                className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase"
-                              >
-                                {uni}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground italic">
-                              None assigned
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="bg-emerald-500/5 border border-emerald-500/10 p-2.5 rounded-xl">
-                        <p className="text-[9px] font-black uppercase tracking-[0.1em] text-emerald-600/70 mb-1 flex items-center gap-1">
-                          <GraduationCap className="w-2.5 h-2.5" /> Courses
-                        </p>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-lg font-black text-emerald-600 leading-none">
-                            {partner.programCount || 0}
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-600/60 uppercase">
-                            Programs
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-5 border-t border-border flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          handleToggleActive(partner._id, partner.isActive)
-                        }
-                        className={`p-2 rounded-xl transition-all border ${
-                          partner.isActive
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white"
-                            : "bg-red-500/10 border-red-500/20 text-red-600 hover:bg-red-500 hover:text-white"
-                        }`}
-                        title={
-                          partner.isActive
-                            ? "Deactivate Partner"
-                            : "Activate Partner"
-                        }
-                      >
-                        {partner.isActive ? (
-                          <UserCheck className="w-4 h-4" />
-                        ) : (
-                          <UserMinus className="w-4 h-4" />
-                        )}
-                      </button>
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {partner.isActive ? "Active" : "Inactive"}
-                      </div>
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                    <div className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors",
+                      partner.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                    )}>
+                      {partner.isActive ? <UserCheck className="w-3.5 h-3.5" /> : <UserMinus className="w-3.5 h-3.5" />}
+                      {partner.isActive ? "ACTIVE" : "INACTIVE"}
                     </div>
 
                     <button
-                      onClick={() =>
-                        navigate(`/dashboard/partner-management/${partner._id}`)
-                      }
-                      className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-primary hover:text-white rounded-xl text-xs font-bold transition-all group/btn"
+                      onClick={() => navigate(`/dashboard/partner-management/${partner._id}`)}
+                      className="flex items-center gap-1 px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-900 rounded-xl text-xs font-bold transition-colors"
                     >
                       View Profile
-                      <ChevronRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </motion.div>
+                </div>
               ))
             )}
-          </AnimatePresence>
-        </div>
-
-        {/* Standardized Pagination Footer */}
-        {filteredPartners.length > 0 && (
-          <div className="mt-12 p-8 bg-muted/10 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-6 rounded-[2.5rem]">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-              Displaying {Math.min(paginatedPartners.length, itemsPerPage)} of{" "}
-              {filteredPartners.length} results
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => prev - 1)}
-                className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
-              >
-                Previous
-              </button>
-              <div className="flex items-center gap-1.5 px-2">
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={cn(
-                      "w-10 h-10 rounded-xl text-[10px] font-black transition-all",
-                      currentPage === i + 1
-                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
-                        : "bg-white border border-border/50 text-slate-500 hover:bg-muted",
-                    )}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-              <button
-                disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setCurrentPage((prev) => prev + 1)}
-                className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* Standardized Pagination Footer */}
+      {filteredPartners.length > 0 && (
+        <div className="mt-12 p-8 bg-muted/10 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-6 rounded-[2.5rem]">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+            Displaying {Math.min(paginatedPartners.length, itemsPerPage)} of{" "}
+            {filteredPartners.length} results
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
+            >
+              Previous
+            </button>
+            <div className="flex items-center gap-1.5 px-2">
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={cn(
+                    "w-10 h-10 rounded-xl text-[10px] font-black transition-all",
+                    currentPage === i + 1
+                      ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
+                      : "bg-white border border-border/50 text-slate-500 hover:bg-muted",
+                  )}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="px-6 py-3 rounded-xl border border-border/50 bg-white text-[10px] font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Futuristic Filter Console */}
       <AnimatePresence>
@@ -752,6 +1035,555 @@ export default function PartnerList() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Authorisation Letter Modal */}
+      {showLetterModal && letterPartner && (
+        <AuthorisationLetterModal
+          partner={letterPartner}
+          onClose={() => {
+            setShowLetterModal(false);
+            setLetterPartner(null);
+          }}
+        />
+      )}
+
+      {/* Approve Warning Modal */}
+      <AnimatePresence>
+        {approveWarningId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+            onClick={() => setApproveWarningId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border flex flex-col"
+            >
+              <div className="flex items-center space-x-3 text-emerald-500 mb-4">
+                <ShieldCheck className="w-6 h-6" />
+                <h3 className="text-xl font-bold text-foreground">
+                  Confirm Approval
+                </h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                Are you sure you want to approve this partner? This will
+                grant them active status and access into the partners portal.
+              </p>
+              <div className="flex items-center justify-end space-x-3 mt-auto">
+                <button
+                  onClick={() => setApproveWarningId(null)}
+                  className="px-4 py-2 rounded-xl border border-border hover:bg-muted text-foreground transition-colors font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmApprove}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors font-medium text-sm flex items-center space-x-2 shadow-sm"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Yes, Approve</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reject Warning Modal */}
+      <AnimatePresence>
+        {rejectWarningId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+            onClick={() => setRejectWarningId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border flex flex-col"
+            >
+              <div className="flex items-center space-x-3 text-red-500 mb-4">
+                <ShieldAlert className="w-6 h-6" />
+                <h3 className="text-xl font-bold text-foreground">
+                  Confirm Rejection
+                </h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                Are you sure you want to permanently reject this partner? 
+                This action cannot be undone.
+              </p>
+              <div className="flex items-center justify-end space-x-3 mt-auto">
+                <button
+                  onClick={() => setRejectWarningId(null)}
+                  className="px-4 py-2 rounded-xl border border-border hover:bg-muted text-foreground transition-colors font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmReject}
+                  className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors font-medium text-sm flex items-center space-x-2 shadow-sm"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Yes, Reject</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View Details Modal */}
+      <AnimatePresence>
+        {viewDetailsPoint && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-sm"
+            onClick={() => setViewDetailsPoint(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 20, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-xl border border-border flex flex-col overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/30">
+                <div>
+                  <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-purple-500" />
+                    {viewDetailsPoint.centerName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Submitted on{" "}
+                    {new Date(
+                      viewDetailsPoint.createdAt || new Date(),
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setViewDetailsPoint(null)}
+                  className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors border border-transparent hover:border-border"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto flex-1 space-y-8">
+                {/* General Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
+                      <UserIcon className="w-4 h-4 text-purple-500" />
+                      Licensee Details
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Full Name
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.licenseeName}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Email Address
+                        </span>
+                        <span className="font-bold text-foreground break-all">
+                          {viewDetailsPoint.licenseeEmail}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:col-span-2">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Center Name
+                        </span>
+                        <span className="font-black text-primary uppercase italic">
+                          {viewDetailsPoint.centerName}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
+                      <MapPin className="w-4 h-4 text-blue-500" />
+                      Location
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                      <div className="flex flex-col sm:col-span-2">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Address
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.location?.address || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          City / State
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.location?.city || "N/A"},{" "}
+                          {viewDetailsPoint.location?.state || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Country / PIN
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.location?.country || "N/A"} -{" "}
+                          {viewDetailsPoint.location?.pincode || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
+                      <Phone className="w-4 h-4 text-emerald-500" />
+                      Contact Person
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Name
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.contactPerson?.name || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                          Phone
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {viewDetailsPoint.contactPerson?.phone || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
+                      <ShieldAlert className="w-4 h-4 text-rose-500" />
+                      References
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                      {viewDetailsPoint.references?.length > 0 ? viewDetailsPoint.references.map((ref, i) => (
+                        <div key={i} className="flex flex-col">
+                          <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">
+                            Ref {i + 1}: {ref.name || "N/A"}
+                          </span>
+                          <span className="font-bold text-foreground flex items-center gap-2">
+                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            {ref.mobileNumber1 || "N/A"}
+                          </span>
+                        </div>
+                      )) : (
+                        <div className="text-muted-foreground text-xs italic">No references provided</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Docs Link Grid */}
+                {viewDetailsPoint.documents &&
+                  Object.keys(viewDetailsPoint.documents).length > 0 && (
+                    <div className="pt-8 border-t border-border/50">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-purple-500" />
+                          </div>
+                          Verification Documents
+                        </h4>
+                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-wider">
+                          {
+                            Object.entries(viewDetailsPoint.documents)
+                              .filter(([key]) => key !== 'officeVideo' && key !== 'officePhotos')
+                              .map(([, value]) => value)
+                              .flat()
+                              .filter(Boolean).length
+                          }{" "}
+                          Files Attached
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {Object.entries(viewDetailsPoint.documents).map(
+                          ([key, value]) => {
+                            if (
+                              !value ||
+                              (Array.isArray(value) && value.length === 0) ||
+                              key === 'officeVideo' ||
+                              key === 'officePhotos'
+                            )
+                              return null;
+
+                            const docLabel = key
+                              .replace(/([A-Z])/g, " $1")
+                              .replace(/^./, (str) => str.toUpperCase());
+
+                            const formatUrl = (path) =>
+                              `${path.replace(/\\/g, "/")}`;
+
+                            const items = Array.isArray(value)
+                              ? value
+                              : [value];
+
+                            return items.map((docUrl, i) => {
+                              return (
+                                <a
+                                  key={`${key}-${i}`}
+                                  href={formatUrl(docUrl)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="group relative flex items-center gap-4 p-4 rounded-2xl border border-border bg-muted/5 hover:bg-white dark:hover:bg-slate-900 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
+                                >
+                                  <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center border border-border group-hover:border-primary/10 transition-colors shadow-sm">
+                                    <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors truncate">
+                                      {docLabel}
+                                    </p>
+                                    <p className="text-xs font-bold text-foreground truncate">
+                                      {items.length > 1
+                                        ? `Attachment ${i + 1}`
+                                        : "View Document"}
+                                    </p>
+                                  </div>
+                                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                  </div>
+                                </a>
+                              );
+                            });
+                          },
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Center Video Section */}
+                {viewDetailsPoint.documents &&
+                  viewDetailsPoint.documents.officeVideo && viewDetailsPoint.documents.officeVideo.length > 0 && (
+                    <div className="pt-8 border-t border-border/50">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                            <Video className="w-4 h-4 text-blue-500" />
+                          </div>
+                          Center Video
+                        </h4>
+                      </div>
+                      
+                      <div className="space-y-6">
+                        {viewDetailsPoint.documents.officeVideo.map((docUrl, i) => (
+                           <div
+                              key={`video-${i}`}
+                              className="group relative flex flex-col gap-3 p-4 rounded-2xl border border-border bg-muted/5"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                  <Video className="w-4 h-4 text-blue-500" />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Center Video</p>
+                                  <p className="text-xs font-bold text-foreground">Video Walkthrough</p>
+                                </div>
+                              </div>
+                              <video 
+                                src={`${docUrl.replace(/\\/g, "/")}`} 
+                                controls 
+                                className="w-full rounded-xl bg-black max-h-[400px] object-contain border border-border"
+                              />
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Center Photos Section */}
+                {viewDetailsPoint.documents &&
+                  viewDetailsPoint.documents.officePhotos && viewDetailsPoint.documents.officePhotos.length > 0 && (
+                    <div className="pt-8 border-t border-border/50">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                            <Image className="w-4 h-4 text-pink-500" />
+                          </div>
+                          Center Photos
+                        </h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {viewDetailsPoint.documents.officePhotos.map((docUrl, i) => (
+                          <a
+                            key={`photo-${i}`}
+                            href={`${docUrl.replace(/\\/g, "/")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group relative aspect-video rounded-2xl overflow-hidden bg-muted border border-border block"
+                          >
+                            <img 
+                              src={`${docUrl.replace(/\\/g, "/")}`} 
+                              alt={`Center Photo ${i + 1}`}
+                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                            <div className="hidden w-full h-full items-center justify-center text-[8px] font-black uppercase text-muted-foreground tracking-widest text-center p-2 bg-muted">
+                               Preview not available
+                            </div>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                              <ExternalLink className="w-5 h-5 text-white" />
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* Action Footer for Pending Partners */}
+              {viewDetailsPoint.status === 'pending' && (
+                <div className="p-6 border-t border-border bg-muted/30 flex gap-4 shrink-0">
+                  <button
+                    onClick={() => {
+                      setRejectWarningId(viewDetailsPoint._id);
+                      setViewDetailsPoint(null);
+                    }}
+                    className="flex-1 py-3.5 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" /> Reject
+                  </button>
+                  <button
+                    onClick={() => {
+                      setApproveWarningId(viewDetailsPoint._id);
+                      setViewDetailsPoint(null);
+                    }}
+                    className="flex-[2] py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Approve Partner
+                  </button>
+                </div>
+              )}
+
+              {/* Action Footer for Onboarding Partners (Inspection) */}
+              {activeTab === 'onboarding' && viewDetailsPoint.documents?.officeVideo?.length > 0 && viewDetailsPoint.inspectionStatus !== "rejected" && (
+                <div className="p-6 border-t border-border bg-muted/30 flex gap-4 shrink-0">
+                  <button
+                    onClick={() => {
+                      setRejectInspectionPartnerId(viewDetailsPoint._id);
+                      setViewDetailsPoint(null);
+                    }}
+                    className="flex-1 py-3.5 rounded-2xl bg-orange-500/10 hover:bg-orange-500 text-orange-600 hover:text-white border border-orange-500/20 hover:border-orange-500 font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" /> Reject Inspection
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleCompleteInspection(viewDetailsPoint._id);
+                    }}
+                    disabled={isCompletingInspection}
+                    className="flex-[2] py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                  >
+                    {isCompletingInspection && inspectionPartnerId === viewDetailsPoint._id ? (
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-5 h-5" />
+                    )}
+                    Complete Inspection
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reject Inspection Modal */}
+      <AnimatePresence>
+        {rejectInspectionPartnerId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-border"
+            >
+              <div className="p-6">
+                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-4">
+                  <ShieldAlert className="w-6 h-6 text-orange-500" />
+                </div>
+                <h3 className="text-xl font-black mb-2">Reject Inspection</h3>
+                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                  Please provide a reason for rejecting the inspection. The partner will be notified and asked to re-upload their media.
+                </p>
+                
+                <textarea
+                  value={rejectInspectionReason}
+                  onChange={(e) => setRejectInspectionReason(e.target.value)}
+                  placeholder="E.g., Video is blurry, please provide a clear walkthrough of the center..."
+                  className="w-full min-h-[100px] p-3 rounded-xl border border-border bg-muted/30 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-sm resize-none mb-6"
+                />
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setRejectInspectionPartnerId(null);
+                      setRejectInspectionReason("");
+                    }}
+                    className="flex-1 py-3 px-4 rounded-xl border border-border hover:bg-muted font-bold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRejectInspectionSubmit}
+                    disabled={isRejectingInspection || !rejectInspectionReason.trim()}
+                    className="flex-1 py-3 px-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isRejectingInspection ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      "Submit Rejection"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Full Screen Loading Overlay */}
+      {isCompletingInspection && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mb-4" />
+          <h3 className="text-2xl font-black text-foreground">Completing Inspection...</h3>
+          <p className="text-muted-foreground mt-2 font-medium">Please wait while we verify the details and generate the authorization letter.</p>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

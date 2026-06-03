@@ -10,7 +10,10 @@ import {
   getServiceDashboardStats,
   recordServicePayment,
   createServiceCashfreeOrder,
-  verifyServiceCashfreePayment
+  verifyServiceCashfreePayment,
+  createBulkServiceCashfreeOrder,
+  verifyBulkServiceCashfreePayment,
+  recordBulkServicePayment
 } from "../controllers/service.controller.js";
 import { requireAuth, isAuthorized } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
@@ -36,6 +39,9 @@ router.post("/apply", requireAuth, partnerOrStaff, applyForService);
 router.get("/applications", requireAuth, partnerOrStaff, getServiceApplications);
 router.put("/applications/:id/status", requireAuth, staffOnly, updateApplicationStatus);
 router.put("/applications/:id/pay", requireAuth, partnerOnly, upload.single("receipt"), recordServicePayment);
+router.post("/applications/bulk/pay", requireAuth, partnerOnly, upload.single("receipt"), recordBulkServicePayment);
+router.post("/applications/bulk/cashfree/order", requireAuth, partnerOnly, createBulkServiceCashfreeOrder);
+router.post("/applications/bulk/cashfree/verify", requireAuth, partnerOnly, verifyBulkServiceCashfreePayment);
 router.post("/applications/:id/cashfree/order", requireAuth, partnerOnly, createServiceCashfreeOrder);
 router.post("/applications/cashfree/verify", requireAuth, partnerOnly, verifyServiceCashfreePayment);
 

@@ -46,6 +46,11 @@ import {
   Plane,
   ShieldCheck,
   Upload,
+  ClipboardCheck,
+  Package,
+  Users,
+  Truck,
+  Settings,
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
@@ -77,10 +82,31 @@ import {
   recordServicePayment,
   createServiceCashfreeOrder,
   verifyServiceCashfreePayment,
+  createBulkServiceCashfreeOrder,
+  recordBulkServicePayment
 } from "../../api/documentsServices.api";
 import { showAlert } from "../../redux/alertSlice";
 import { getTickets } from "../../api/ticket.api";
 import TicketChat from "../Tickets/TicketChat";
+
+const ICON_MAP = {
+  Layers,
+  ClipboardCheck,
+  GraduationCap,
+  Package,
+  Stamp,
+  ShieldCheck,
+  FileText,
+  CreditCard,
+  Users,
+  Activity,
+  Truck,
+  Globe,
+  Briefcase,
+  History,
+  Settings,
+  Plane,
+};
 
 const getFileUrl = (path) => {
   if (!path) return "";
@@ -173,6 +199,133 @@ export default function StudentPaymentDetail() {
   });
   const [isServiceApplying, setIsServiceApplying] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(null); // application object for document services
+  const [selectedCartItems, setSelectedCartItems] = useState([]);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [cartPaymentMethodTab, setCartPaymentMethodTab] = useState("online");
+  const [cartPaymentData, setCartPaymentData] = useState({
+    method: "Offline / Cash",
+    transactionId: "",
+    remarks: ""
+  });
+  const [cartReceipt, setCartReceipt] = useState(null);
+  const [isCartProcessing, setIsCartProcessing] = useState(false);
+  const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
+  const [showBulkPayModal, setShowBulkPayModal] = useState(false);
+
+  const handleToggleCartItem = (def) => {
+    const isSelected = selectedCartItems.some((item) => item._id === def._id);
+    if (isSelected) {
+      setSelectedCartItems(selectedCartItems.filter((item) => item._id !== def._id));
+    } else {
+      if (selectedCartItems.length > 0) {
+        const getCats = (item) => {
+          if (item.categories && item.categories.length > 0) return item.categories;
+          if (item.category) return [item.category];
+          return ["General Services"];
+        };
+        const firstItemCats = getCats(selectedCartItems[0]);
+        const newItemCats = getCats(def);
+        const isCompatible = firstItemCats.some((cat) => newItemCats.includes(cat));
+
+        if (!isCompatible) {
+          dispatch(
+            showAlert({
+              type: "error",
+              message: "Cannot select items from different categories. All items in the cart must belong to the same category.",
+            })
+          );
+          return;
+        }
+      }
+      setSelectedCartItems([...selectedCartItems, def]);
+    }
+  };
+
+  const handleBulkApplyOnly = async () => {
+    const unappliedItems = selectedCartItems.filter(
+      (def) => !serviceApplications.some((app) => app.service?._id === def._id)
+    );
+    if (unappliedItems.length === 0) {
+      dispatch(showAlert({ type: "info", message: "All selected documents are already applied!" }));
+      return;
+    }
+
+    setIsCartProcessing(true);
+    try {
+      for (const def of unappliedItems) {
+        await applyForService({
+          studentId: id,
+          serviceId: def._id,
+          adminRemarks: "Applied via bulk checkout",
+        });
+      }
+      dispatch(
+        showAlert({
+          type: "success",
+          message: `Successfully applied for ${unappliedItems.length} documents!`,
+        })
+      );
+      setSelectedCartItems([]);
+      const servicesRes = await getServiceApplications({ studentId: id });
+      if (servicesRes.success) setServiceApplications(servicesRes.data);
+    } catch (error) {
+      dispatch(showAlert({ type: "error", message: "Failed to apply for some documents." }));
+    } finally {
+      setIsCartProcessing(false);
+    }
+  };
+
+  const handleCartPayOnline = async (e) => {
+    e.preventDefault();
+    if (selectedCartItems.length === 0) return;
+    
+    setIsCartProcessing(true);
+    try {
+      // 1. Apply unapplied items
+      const unapplied = selectedCartItems.filter(
+        def => !serviceApplications.some(app => app.service?._id === def._id)
+      );
+      for (const def of unapplied) {
+        await applyForService({
+          studentId: id,
+          serviceId: def._id,
+          adminRemarks: cartPaymentData.remarks || "Applied via cart checkout",
+        });
+      }
+      
+      let updatedApps = serviceApplications;
+      if (unapplied.length > 0) {
+        const refreshRes = await getServiceApplications({ studentId: id });
+        if (!refreshRes.success) throw new Error("Failed to sync application records.");
+        setServiceApplications(refreshRes.data);
+        updatedApps = refreshRes.data;
+      }
+      
+      // 2. Get application IDs
+      const applicationIds = selectedCartItems.map(def => {
+        const matchApp = updatedApps.find(a => a.service?._id === def._id);
+        if (!matchApp) throw new Error(`Application for ${def.title} not found.`);
+        return matchApp._id;
+      });
+
+      // 3. Initiate Cashfree Order
+      const res = await createBulkServiceCashfreeOrder({
+        applicationIds,
+        remarks: cartPaymentData.remarks,
+      });
+      if (res.success && cashfree) {
+        const checkoutOptions = {
+          paymentSessionId: res.payment_session_id,
+          redirectTarget: "_self",
+        };
+        cashfree.checkout(checkoutOptions);
+      }
+    } catch (err) {
+      dispatch(showAlert({ type: "error", message: err.response?.data?.message || err.message || "Failed to initiate online payment" }));
+    } finally {
+      setIsCartProcessing(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -555,6 +708,8 @@ export default function StudentPaymentDetail() {
     }
     return true;
   });
+
+  const mandatoryDefs = serviceDefinitions.filter(def => def.documentType === "Mandatory");
 
   return (
     <DashboardLayout title="Student Profile">
@@ -1648,6 +1803,10 @@ export default function StudentPaymentDetail() {
                 let statusLabel = "Not Applied";
                 let statusColor = "bg-slate-100 text-slate-500 border-slate-200";
 
+                const appPendingPayments = app ? payments.filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && (p.serviceApplication?._id === app._id || p.serviceApplication === app._id || (p.serviceApplications && p.serviceApplications.includes(app._id)))) : [];
+                const appPendingAmount = appPendingPayments.reduce((sum, p) => sum + p.amount, 0);
+                const remainingAppFee = app ? Math.max(0, (app.feeAmount || 0) - (app.paidAmount || 0) - appPendingAmount) : 0;
+
                 if (app) {
                   if (app.status === "Documents Received" || app.status === "Documents Sent Courier") {
                     statusIcon = <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
@@ -1656,26 +1815,60 @@ export default function StudentPaymentDetail() {
                   } else {
                     statusIcon = <Hourglass className="w-5 h-5 text-amber-500 animate-pulse" />;
                     statusLabel = app.status.replace(" Applications", "").replace("Application ", "");
-                    statusColor = "bg-amber-50 text-amber-600 border-amber-200";
                   }
                 }
 
+                const isSelectable = isPartner && !isLocked && (!app || (app?.paymentStatus !== "Paid" && remainingAppFee > 0)) && def.documentType !== "Mandatory";
+                const isSelected = selectedCartItems.some(item => item._id === def._id);
+ 
                 return (
-                  <div 
+                  <div
                     key={def._id}
+                    onClick={isSelectable ? () => handleToggleCartItem(def) : undefined}
                     className={cn(
                       "bg-card border border-border rounded-3xl p-6 shadow-sm transition-all flex flex-col justify-between relative overflow-hidden group",
+                      isSelectable ? "cursor-pointer" : "",
                       app ? "border-primary/20 bg-primary/[0.01]" : "",
+                      isSelected 
+                        ? "border-primary bg-gradient-to-br from-primary/[0.03] to-card shadow-lg shadow-primary/5 ring-1 ring-primary/20 scale-[1.01]" 
+                        : "",
                       isLocked ? "opacity-60 grayscale-[40%] cursor-not-allowed" : "hover:border-primary/30 hover:shadow-md"
                     )}
                   >
                     <div>
                       {/* Top status & fee row */}
                       <div className="flex justify-between items-start gap-4 mb-4">
-                        <span className={cn("px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1", statusColor)}>
-                          {statusIcon}
-                          {statusLabel}
-                        </span>
+                        <div className="flex items-center gap-2" onClick={(e) => isSelectable && e.stopPropagation()}>
+                          {isSelectable && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleCartItem(def);
+                              }}
+                              className={cn(
+                                "w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer shadow-sm shrink-0",
+                                isSelected
+                                  ? "bg-primary border-primary text-primary-foreground scale-105"
+                                  : "border-muted-foreground/30 hover:border-primary bg-card text-transparent hover:text-primary/40"
+                              )}
+                            >
+                              <svg className="w-3.5 h-3.5 stroke-[3.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                          )}
+                          <span className={cn("px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1", statusColor)}>
+                            {statusIcon}
+                            {statusLabel}
+                          </span>
+                          {app && app.paymentStatus !== "Paid" && appPendingAmount > 0 && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20 shadow-sm">
+                              <Clock size={10} />
+                              Pending (₹{appPendingAmount})
+                            </span>
+                          )}
+                        </div>
                         <div className="text-right">
                           <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Fee</p>
                           <p className="text-sm font-black text-primary">₹{resolvedFee.toLocaleString()}</p>
@@ -1683,9 +1876,15 @@ export default function StudentPaymentDetail() {
                       </div>
 
                       {/* Title & Description */}
-                      <h4 className="text-base font-black text-foreground mb-1 group-hover:text-primary transition-colors">
-                        {def.title}
-                      </h4>
+                      <div className="flex items-center gap-2 mb-1.5 text-foreground group-hover:text-primary transition-colors overflow-hidden">
+                        {(() => {
+                          const TitleIcon = ICON_MAP[def.icon] || Layers;
+                          return <TitleIcon size={18} className="text-primary/70 shrink-0 group-hover:text-primary transition-colors" />;
+                        })()}
+                        <h4 className="text-base font-black truncate">
+                          {def.title}
+                        </h4>
+                      </div>
                       {def.description && (
                         <p className="text-xs font-medium text-muted-foreground leading-relaxed mb-4 line-clamp-2">
                           {def.description}
@@ -1695,11 +1894,14 @@ export default function StudentPaymentDetail() {
                     </div>
 
                     {/* Action button */}
-                    {!app && (def.documentType === "Optional" || (def.documentType === "Mandatory" && outstandingMandatory.length === 1)) && (
+                    {!app && isPartner && (def.documentType === "Optional" || (def.documentType === "Mandatory" && outstandingMandatory.length === 1)) && (
                       <div className="mt-4 pt-4 border-t border-border/50">
                         <button
                           disabled={isLocked || isServiceApplying}
-                          onClick={() => handleApplySingle(def._id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApplySingle(def._id);
+                          }}
                           className={cn(
                             "w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all",
                             isLocked 
@@ -1713,15 +1915,29 @@ export default function StudentPaymentDetail() {
                       </div>
                     )}
 
-                    {app && (
+                    {app && def.documentType !== "Mandatory" && (
                       <div className="mt-4 pt-4 border-t border-border/50">
                         <button
-                          onClick={() => setShowStatusModal(app)}
-                          className="w-full py-3 bg-muted hover:bg-primary hover:text-primary-foreground rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all text-muted-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowStatusModal(app);
+                          }}
+                          className="w-full py-3 bg-primary/[0.02] hover:bg-primary border border-primary/20 hover:border-primary hover:text-primary-foreground rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all text-primary/80 hover:shadow-md"
                         >
                           <ArrowUpDown size={12} />
-                          Update Status / Pay
+                          {isPartner 
+                            ? (app.paymentStatus === "Paid" || (appPendingAmount > 0 && remainingAppFee === 0) ? "View Status" : (appPendingAmount > 0 ? `Pay (₹${remainingAppFee})` : "Pay")) 
+                            : "Update Status"}
                         </button>
+                      </div>
+                    )}
+
+                    {app && def.documentType === "Mandatory" && (
+                      <div className="mt-4 pt-4 border-t border-border/50 text-center flex justify-center">
+                        <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl border border-border/50">
+                          <Lock size={10} className="text-muted-foreground" />
+                          Managed Collectively
+                        </span>
                       </div>
                     )}
                   </div>
@@ -1742,42 +1958,95 @@ export default function StudentPaymentDetail() {
                         Track, apply, and manage enrollment requirements and certificates.
                       </p>
                     </div>
-                    {outstandingMandatory.length > 0 && (
-                      <button
-                        onClick={handleApplyAllMandatory}
-                        disabled={bulkApplying}
-                        className="px-6 py-4 bg-primary text-primary-foreground rounded-2xl text-xs font-black uppercase tracking-[0.15em] flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
-                      >
-                        {bulkApplying ? (
-                          <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <CheckCircle2 size={16} />
-                        )}
-                        Apply All Mandatory Docs
-                      </button>
-                    )}
                   </div>
 
                   {/* Mandatory Documents Section */}
-                  {mandatoryDefs.length > 0 && (
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                        <h4 className="text-lg font-black tracking-tight">Mandatory Documents</h4>
-                      </div>
+                  {mandatoryDefs.length > 0 && (() => {
+                    const mandatoryApps = serviceApplications.filter(app => 
+                      mandatoryDefs.some(def => def._id === (app.service?._id || app.service))
+                    );
+                    const unpaidMandatoryApps = mandatoryApps.filter(app => app.paymentStatus !== "Paid");
+                    const totalUnpaidMandatoryFee = unpaidMandatoryApps.reduce((sum, app) => sum + (app.feeAmount || 0) - (app.paidAmount || 0), 0);
+                    const totalPendingMandatoryFee = payments
+                      .filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && unpaidMandatoryApps.some(app => app._id === p.serviceApplication?._id || app._id === p.serviceApplication))
+                      .reduce((sum, p) => sum + p.amount, 0);
+                    const remainingMandatoryFee = Math.max(0, totalUnpaidMandatoryFee - totalPendingMandatoryFee);
+
+                    return (
+                      <div className="space-y-6">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                            <h4 className="text-lg font-black tracking-tight">Mandatory Documents</h4>
+                          </div>
+                          <div className="flex flex-wrap items-center justify-end gap-3">
+                            {outstandingMandatory.length > 0 && isPartner && (
+                              <button
+                                onClick={handleApplyAllMandatory}
+                                disabled={bulkApplying}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/10 disabled:opacity-50"
+                              >
+                                {bulkApplying ? (
+                                  <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <CheckCircle2 size={14} />
+                                )}
+                                Apply All Mandatory Documents
+                              </button>
+                            )}
+                            {isPartner && remainingMandatoryFee > 0 && (
+                              <button
+                                onClick={() => setShowBulkPayModal(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-500/10"
+                              >
+                                <CreditCard size={14} />
+                                Pay All (₹{remainingMandatoryFee.toLocaleString()})
+                              </button>
+                            )}
+                            {isPartner && totalPendingMandatoryFee > 0 && (
+                              <div className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-xl text-xs font-black uppercase tracking-wider select-none shadow-sm shadow-amber-500/5">
+                                <Clock size={14} />
+                                Pending Approval (₹{totalPendingMandatoryFee.toLocaleString()})
+                              </div>
+                            )}
+                            {!isPartner && mandatoryApps.length > 0 && (
+                              <button
+                                onClick={() => setShowBulkStatusModal(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/10"
+                              >
+                                <ArrowUpDown size={14} />
+                                Update Status
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       
                       {Object.keys(groupMandatory).map((catName) => (
                         <div key={catName} className="space-y-4">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                            {catName}
-                          </p>
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/5 border border-primary/10 text-primary text-[10px] font-black uppercase tracking-widest ml-1 shadow-sm select-none">
+                            {(() => {
+                              const CategoryIcon = {
+                                "Academic Documents": GraduationCap,
+                                "Overseas Education Documents": Globe,
+                                "Job Overseas Documents": Briefcase,
+                                "Working In India Documents": Building2,
+                                "Studying In India Documents": ClipboardCheck,
+                                "Embassy Attestion Services": Stamp,
+                                "Study Abroad services": Plane,
+                                "General Services": Layers
+                              }[catName] || Layers;
+                              return <CategoryIcon size={12} />;
+                            })()}
+                            <span>{catName}</span>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {groupMandatory[catName].map(def => renderDocCard(def, false))}
                           </div>
                         </div>
                       ))}
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Optional Documents Section */}
                   {optionalDefs.length > 0 && (
@@ -1810,9 +2079,22 @@ export default function StudentPaymentDetail() {
                       
                       {Object.keys(groupOptional).map((catName) => (
                         <div key={catName} className="space-y-4">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                            {catName}
-                          </p>
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-400/10 border border-slate-400/20 text-slate-600 text-[10px] font-black uppercase tracking-widest ml-1 shadow-sm select-none">
+                            {(() => {
+                              const CategoryIcon = {
+                                "Academic Documents": GraduationCap,
+                                "Overseas Education Documents": Globe,
+                                "Job Overseas Documents": Briefcase,
+                                "Working In India Documents": Building2,
+                                "Studying In India Documents": ClipboardCheck,
+                                "Embassy Attestion Services": Stamp,
+                                "Study Abroad services": Plane,
+                                "General Services": Layers
+                              }[catName] || Layers;
+                              return <CategoryIcon size={12} />;
+                            })()}
+                            <span>{catName}</span>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {groupOptional[catName].map(def => renderDocCard(def, !isMandatoryAppliedAll))}
                           </div>
@@ -2521,15 +2803,508 @@ export default function StudentPaymentDetail() {
         onClose={() => setShowStatusModal(null)}
         title="Update Application Status"
       >
-        <ServiceUpdateStatusForm 
-          application={showStatusModal}
+        {(() => {
+          const pendingAmount = showStatusModal ? payments.filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && (p.serviceApplication?._id === showStatusModal._id || p.serviceApplication === showStatusModal._id || (p.serviceApplications && p.serviceApplications.includes(showStatusModal._id)))).reduce((s, p) => s + p.amount, 0) : 0;
+          return (
+            <ServiceUpdateStatusForm 
+              application={showStatusModal}
+              onSuccess={async () => {
+                setShowStatusModal(null);
+                const servicesRes = await getServiceApplications({ studentId: id });
+                if (servicesRes.success) setServiceApplications(servicesRes.data);
+                checkPaymentStatus();
+              }} 
+              cashfree={cashfree}
+              pendingAmount={pendingAmount}
+            />
+          );
+        })()}
+      </ServiceModal>
+
+      {/* ── Floating Cart Strip ── */}
+      <AnimatePresence>
+        {selectedCartItems.length > 0 && (() => {
+          const totalFee = selectedCartItems.reduce((s, i) => s + (i.currentFee || 0), 0);
+          const hasUnapplied = selectedCartItems.some(
+            def => !serviceApplications.some(app => app.service?._id === def._id)
+          );
+          return (
+            <motion.div
+              key="cart-strip"
+              initial={{ y: 120, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 120, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              className="fixed bottom-5 inset-x-0 z-[60] flex justify-center px-4 pointer-events-none"
+            >
+              <div
+                className="pointer-events-auto w-full max-w-3xl"
+                style={{ filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.45))" }}
+              >
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 text-white">
+                  {/* subtle shimmer bar at top */}
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    {/* left: icon + meta */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="relative shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                          <Package size={18} />
+                        </div>
+                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-500 text-[9px] font-black text-white flex items-center justify-center shadow-sm">
+                          {selectedCartItems.length}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400 leading-none mb-0.5">
+                          Document Cart
+                        </p>
+                        <p className="text-base font-black leading-none">
+                          ₹{totalFee.toLocaleString()}
+                          <span className="text-[10px] font-bold text-slate-400 ml-2 normal-case tracking-normal">
+                            {selectedCartItems.length} {selectedCartItems.length === 1 ? "service" : "services"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* right: actions */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* clear */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCartItems([])}
+                        className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+                        title="Clear cart"
+                      >
+                        <X size={15} />
+                      </button>
+
+                      {/* apply only – shows only when unapplied items exist */}
+                      {hasUnapplied && (
+                        <button
+                          type="button"
+                          disabled={isCartProcessing}
+                          onClick={handleBulkApplyOnly}
+                          className="px-4 py-2 rounded-xl border border-slate-600 hover:border-slate-400 bg-slate-800 hover:bg-slate-700 text-[11px] font-black uppercase tracking-wider text-slate-200 transition-all flex items-center gap-1.5 disabled:opacity-40"
+                        >
+                          <Plus size={11} />
+                          Apply
+                        </button>
+                      )}
+
+                      {/* view / pay – always clickable; explains why blocked when unapplied items exist */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (hasUnapplied) {
+                            const unappliedCount = selectedCartItems.filter(
+                              def => !serviceApplications.some(app => app.service?._id === def._id)
+                            ).length;
+                            dispatch(showAlert({
+                              type: "warning",
+                              message: `${unappliedCount} document${unappliedCount > 1 ? "s are" : " is"} not yet applied. Click "Apply" first to initiate the application${unappliedCount > 1 ? "s" : ""}, then you can pay.`,
+                            }));
+                            return;
+                          }
+                          setShowCartModal(true);
+                        }}
+                        className={cn(
+                          "px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5",
+                          hasUnapplied
+                            ? "bg-slate-700 text-slate-400 opacity-70 hover:opacity-100 hover:bg-slate-600"
+                            : "bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:brightness-110 active:scale-95"
+                        )}
+                      >
+                        <CreditCard size={13} />
+                        Pay Together
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* ── Cart Side-Drawer ── */}
+      <AnimatePresence>
+        {showCartModal && (
+          <>
+            {/* backdrop */}
+            <motion.div
+              key="cart-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm"
+              onClick={() => !isCartProcessing && setShowCartModal(false)}
+            />
+
+            {/* panel */}
+            <motion.div
+              key="cart-panel"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 340, damping: 32 }}
+              className="fixed right-0 top-0 bottom-0 z-[70] w-full max-w-[480px] flex flex-col bg-card border-l border-border shadow-2xl"
+            >
+              {/* ─ Header ─ */}
+              <div className="flex items-center justify-between px-7 py-5 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Package size={17} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black tracking-tight">Document Cart</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      {selectedCartItems.length} {selectedCartItems.length === 1 ? "service" : "services"} selected
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => !isCartProcessing && setShowCartModal(false)}
+                  className="p-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* ─ Scrollable body ─ */}
+              <div className="flex-1 overflow-y-auto">
+                <form
+                  id="cart-checkout-form"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (cartPaymentMethodTab === "online") {
+                      return handleCartPayOnline(e);
+                    }
+                    if (!cartPaymentData.transactionId.trim()) {
+                      dispatch(showAlert({ type: "error", message: "Please specify the Transaction ID." }));
+                      return;
+                    }
+                    if (!cartReceipt) {
+                      dispatch(showAlert({ type: "error", message: "Please attach a payment receipt." }));
+                      return;
+                    }
+                    setIsCartProcessing(true);
+                    try {
+                      const unapplied = selectedCartItems.filter(
+                        def => !serviceApplications.some(app => app.service?._id === def._id)
+                      );
+                      for (const def of unapplied) {
+                        await applyForService({
+                          studentId: id,
+                          serviceId: def._id,
+                          adminRemarks: cartPaymentData.remarks || "Applied via bulk checkout",
+                        });
+                      }
+                      const refreshRes = await getServiceApplications({ studentId: id });
+                      if (!refreshRes.success) throw new Error("Failed to sync application records.");
+                      setServiceApplications(refreshRes.data);
+                      const updatedApps = refreshRes.data;
+
+                      const validCartItems = selectedCartItems.filter(def => {
+                        const matchApp = updatedApps.find(a => a.service?._id === def._id);
+                        if (!matchApp) return false;
+                        const appPending = payments.filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && (p.serviceApplication === matchApp._id || (p.serviceApplications && p.serviceApplications.includes(matchApp._id)))).reduce((sum, p) => sum + p.amount, 0);
+                        return (matchApp.feeAmount || 0) - (matchApp.paidAmount || 0) - appPending > 0;
+                      });
+
+                      const totalToPay = validCartItems.reduce((sum, def) => {
+                        const matchApp = updatedApps.find(a => a.service?._id === def._id);
+                        const appPending = payments.filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && (p.serviceApplication === matchApp._id || (p.serviceApplications && p.serviceApplications.includes(matchApp._id)))).reduce((sum, p) => sum + p.amount, 0);
+                        return sum + ((matchApp.feeAmount || 0) - (matchApp.paidAmount || 0) - appPending);
+                      }, 0);
+
+                      const applicationIds = validCartItems.map(def => {
+                        return updatedApps.find(a => a.service?._id === def._id)?._id;
+                      }).filter(id => id);
+
+                      const data = new FormData();
+                      applicationIds.forEach(id => data.append("applicationIds", id));
+                      data.append("amount", totalToPay);
+                      data.append("method", cartPaymentData.method);
+                      data.append("transactionId", cartPaymentData.transactionId);
+                      data.append("remarks", cartPaymentData.remarks || "Cart bulk payment");
+                      if (cartReceipt) data.append("receipt", cartReceipt);
+                      
+                      const res = await recordBulkServicePayment(data);
+
+                      if (res.success) {
+                        dispatch(showAlert({ type: "success", message: "Bulk payment submitted for verification!" }));
+                        setSelectedCartItems([]);
+                        setCartReceipt(null);
+                        setCartPaymentData({ method: "Offline / Cash", transactionId: "", remarks: "" });
+                        setShowCartModal(false);
+                        const final = await getServiceApplications({ studentId: id });
+                        if (final.success) setServiceApplications(final.data);
+                        checkPaymentStatus();
+                      } else {
+                        dispatch(showAlert({ type: "warning", message: "Some payments failed. Check individual statuses." }));
+                      }
+                    } catch (err) {
+                      dispatch(showAlert({ type: "error", message: err.message || "Bulk checkout failed." }));
+                    } finally {
+                      setIsCartProcessing(false);
+                    }
+                  }}
+                  className="p-7 space-y-7"
+                >
+                  {/* ── Cart Items ── */}
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Selected Services</p>
+                    <div className="space-y-2">
+                      {selectedCartItems.map((item) => {
+                        const isApplied = serviceApplications.some(app => app.service?._id === item._id);
+                        const ItemIcon = ICON_MAP[item.icon] || Layers;
+                        return (
+                          <motion.div
+                            key={item._id}
+                            layout
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: 40 }}
+                            className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-muted/30 hover:border-primary/20 transition-all group"
+                          >
+                            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                              <ItemIcon size={14} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-black text-foreground truncate">{item.title}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-black text-primary">₹{(item.currentFee || 0).toLocaleString()}</span>
+                                {isApplied ? (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">Applied · Unpaid</span>
+                                ) : (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-500/10 text-slate-500 border border-slate-500/20">Not Applied</span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = selectedCartItems.filter(i => i._id !== item._id);
+                                setSelectedCartItems(updated);
+                                if (updated.length === 0) setShowCartModal(false);
+                              }}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <X size={13} />
+                            </button>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ── Total ── */}
+                  <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-primary/5 border border-primary/15">
+                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">Total</span>
+                    <span className="text-xl font-black text-primary">
+                      ₹{selectedCartItems.reduce((s, i) => s + (i.currentFee || 0), 0).toLocaleString()}
+                    </span>
+                  </div>
+
+                  {/* ── Divider ── */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment Details</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  {/* ── Tabs ── */}
+                  <div className="flex bg-muted p-1 rounded-2xl mb-6">
+                    <button
+                      type="button"
+                      onClick={() => setCartPaymentMethodTab("online")}
+                      className={cn(
+                        "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+                        cartPaymentMethodTab === "online"
+                          ? "bg-card shadow-sm text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      Pay Online
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCartPaymentMethodTab("offline")}
+                      className={cn(
+                        "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+                        cartPaymentMethodTab === "offline"
+                          ? "bg-card shadow-sm text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      Upload Receipt
+                    </button>
+                  </div>
+
+                  {cartPaymentMethodTab === "offline" && (
+                    <>
+                      {/* ── Method + TxID ── */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Method</label>
+                          <select
+                            required
+                            value={cartPaymentData.method}
+                            onChange={e => setCartPaymentData({ ...cartPaymentData, method: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl bg-muted/40 border border-border focus:border-primary outline-none transition-all font-bold text-sm appearance-none"
+                          >
+                            <option value="Online">Online</option>
+                            <option value="Offline / Cash">Offline / Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Google Pay">Google Pay</option>
+                            <option value="PhonePe">PhonePe</option>
+                            <option value="UPI">Other UPI</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Transaction ID</label>
+                          <input
+                            required
+                            value={cartPaymentData.transactionId}
+                            onChange={e => setCartPaymentData({ ...cartPaymentData, transactionId: e.target.value })}
+                            placeholder="e.g. TXN123…"
+                            className="w-full px-4 py-3 rounded-xl bg-muted/40 border border-border focus:border-primary outline-none transition-all font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* ── Receipt upload ── */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment Receipt</label>
+                        <input type="file" id="cart-receipt-panel" className="hidden" accept="image/*,.pdf" onChange={e => setCartReceipt(e.target.files[0])} />
+                        <label
+                          htmlFor="cart-receipt-panel"
+                          className={cn(
+                            "flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-dashed cursor-pointer transition-all",
+                            cartReceipt
+                              ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                              : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60 hover:border-primary/40"
+                          )}
+                        >
+                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", cartReceipt ? "bg-emerald-100" : "bg-muted")}>
+                            {cartReceipt ? <CheckCircle2 size={15} className="text-emerald-600" /> : <Upload size={15} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-black truncate">{cartReceipt ? cartReceipt.name : "Attach receipt"}</p>
+                            <p className="text-[10px] text-muted-foreground">{cartReceipt ? `${(cartReceipt.size / 1024).toFixed(0)} KB` : "JPG, PNG or PDF · Max 5 MB"}</p>
+                          </div>
+                          {cartReceipt && (
+                            <button type="button" onClick={e => { e.preventDefault(); setCartReceipt(null); }} className="p-1 rounded hover:bg-red-50 text-red-400 transition-all">
+                              <X size={12} />
+                            </button>
+                          )}
+                        </label>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── Remarks ── */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Remarks <span className="normal-case font-medium">(optional)</span></label>
+                    <textarea
+                      rows={2}
+                      value={cartPaymentData.remarks}
+                      onChange={e => setCartPaymentData({ ...cartPaymentData, remarks: e.target.value })}
+                      placeholder="Any extra payment details..."
+                      className="w-full px-4 py-3 rounded-xl bg-muted/40 border border-border focus:border-primary outline-none transition-all font-medium text-sm resize-none"
+                    />
+                  </div>
+                </form>
+              </div>
+
+              {/* ─ Footer ─ */}
+              <div className="px-7 py-5 border-t border-border bg-card space-y-3">
+                {/* Warning: unapplied items block payment */}
+                {selectedCartItems.some(def => !serviceApplications.some(app => app.service?._id === def._id)) && (
+                  <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700">
+                    <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                    <p className="text-[11px] font-bold leading-snug">
+                      Some selected documents are not yet applied. Use <span className="font-black">Apply</span> in the cart strip to initiate them first, then you can pay.
+                    </p>
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  form="cart-checkout-form"
+                  disabled={isCartProcessing || selectedCartItems.length === 0 || selectedCartItems.some(def => !serviceApplications.some(app => app.service?._id === def._id))}
+                  className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-sm uppercase tracking-[0.18em] shadow-lg shadow-primary/20 hover:brightness-105 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isCartProcessing ? (
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard size={15} />
+                      Pay {selectedCartItems.length} Service{selectedCartItems.length !== 1 ? "s" : ""} · ₹{selectedCartItems.reduce((s, i) => s + (i.currentFee || 0), 0).toLocaleString()}
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => !isCartProcessing && setShowCartModal(false)}
+                  disabled={isCartProcessing}
+                  className="w-full py-3 rounded-2xl border border-border font-black text-sm text-muted-foreground hover:bg-muted transition-all disabled:opacity-40"
+                >
+                  Continue Browsing
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Service Status & Payment Modal */}
+      <ServiceModal 
+        show={showBulkStatusModal} 
+        onClose={() => setShowBulkStatusModal(false)}
+        title="Update Status of All Mandatory Documents"
+      >
+        <BulkServiceUpdateStatusForm 
+          applications={serviceApplications.filter(app => 
+            mandatoryDefs.some(def => def._id === (app.service?._id || app.service))
+          )}
           onSuccess={async () => {
-            setShowStatusModal(null);
+            setShowBulkStatusModal(false);
             const servicesRes = await getServiceApplications({ studentId: id });
             if (servicesRes.success) setServiceApplications(servicesRes.data);
+            checkPaymentStatus();
           }} 
-          cashfree={cashfree}
         />
+      </ServiceModal>
+
+      <ServiceModal
+        show={showBulkPayModal}
+        onClose={() => setShowBulkPayModal(false)}
+        title="Pay All Mandatory Documents Together"
+      >
+        {(() => {
+          const apps = serviceApplications.filter(app => 
+            mandatoryDefs.some(def => def._id === (app.service?._id || app.service)) && app.paymentStatus !== "Paid"
+          );
+          const pendingAmount = payments.filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && apps.some(a => a._id === p.serviceApplication?._id || a._id === p.serviceApplication || (p.serviceApplications && p.serviceApplications.includes(a._id)))).reduce((s, p) => s + p.amount, 0);
+          return (
+            <BulkServiceRecordPaymentForm 
+              applications={apps}
+              onSuccess={async () => {
+                setShowBulkPayModal(false);
+                const servicesRes = await getServiceApplications({ studentId: id });
+                if (servicesRes.success) setServiceApplications(servicesRes.data);
+                checkPaymentStatus();
+              }}
+              cashfree={cashfree}
+              pendingAmount={pendingAmount}
+              payments={payments}
+            />
+          );
+        })()}
       </ServiceModal>
     </DashboardLayout>
   );
@@ -2605,7 +3380,34 @@ const ServiceUpdateStatusForm = ({ application, onSuccess, cashfree }) => {
     }
   };
 
+  const remainingFee = Math.max(0, (application?.feeAmount || 0) - (application?.paidAmount || 0));
+  const isFullyPending = remainingFee > 0 && pendingAmount >= remainingFee;
+
   if (isUnpaid) {
+    if (isFullyPending) {
+       return (
+        <div className="space-y-6 text-center py-8 bg-amber-500/5 border border-amber-500/10 rounded-3xl p-6">
+          <Clock className="w-12 h-12 mx-auto text-amber-500" />
+          <p className="text-sm font-black uppercase tracking-widest text-amber-600">Payment Pending Approval</p>
+          <p className="text-xs text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+            A payment of ₹{pendingAmount.toLocaleString()} is currently awaiting admin verification. Access is locked until it is approved.
+          </p>
+        </div>
+      );
+    }
+    
+    if (!isPartner) {
+      return (
+        <div className="space-y-6 text-center py-8 bg-amber-500/5 border border-amber-500/10 rounded-3xl p-6">
+          <AlertCircle className="w-12 h-12 mx-auto text-amber-500" />
+          <p className="text-sm font-black uppercase tracking-widest text-amber-600">Awaiting Payment</p>
+          <p className="text-xs text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+            This document request is currently unpaid. Access is locked for fulfillment administrators until the partner records or pays the fee.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-bold flex items-center gap-3">
@@ -2615,7 +3417,7 @@ const ServiceUpdateStatusForm = ({ application, onSuccess, cashfree }) => {
             : "Payment Required: You must record the service fee before processing this application."
           }
         </div>
-        <ServiceRecordPaymentForm application={application} onSuccess={onSuccess} cashfree={cashfree} />
+        <ServiceRecordPaymentForm application={application} onSuccess={onSuccess} cashfree={cashfree} pendingAmount={pendingAmount} />
       </div>
     );
   }
@@ -2703,8 +3505,8 @@ const ServiceUpdateStatusForm = ({ application, onSuccess, cashfree }) => {
   );
 };
 
-const ServiceRecordPaymentForm = ({ application, onSuccess, cashfree }) => {
-  const remainingBalance = application.feeAmount - (application.paidAmount || 0);
+const ServiceRecordPaymentForm = ({ application, onSuccess, cashfree, pendingAmount = 0 }) => {
+  const remainingBalance = application.feeAmount - (application.paidAmount || 0) - pendingAmount;
   
   const [paymentMethodTab, setPaymentMethodTab] = useState("online");
   const [formData, setFormData] = useState({
@@ -2952,6 +3754,336 @@ const ServiceRecordPaymentForm = ({ application, onSuccess, cashfree }) => {
           "Record Partial Payment"
         ) : (
           "Record Full Payment & Process"
+        )}
+      </button>
+    </form>
+  );
+};
+
+const BulkServiceUpdateStatusForm = ({ applications, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    status: applications[0]?.status || "Pending Applications",
+    remarks: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+
+  const statusOrder = [
+    "Waiting for Payment",
+    "Pending Applications",
+    "Application On Progress",
+    "Documents Received",
+    "Documents Sent Courier"
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.remarks.trim()) {
+      dispatch(showAlert({ type: "error", message: "Please enter remarks." }));
+      return;
+    }
+    setLoading(true);
+    try {
+      const promises = applications.map(app => 
+        updateApplicationStatus(app._id, formData)
+      );
+      await Promise.all(promises);
+      dispatch(showAlert({ type: "success", message: "Successfully updated status of all mandatory documents!" }));
+      onSuccess();
+    } catch (error) {
+      dispatch(showAlert({ type: "error", message: "Failed to update status for some documents." }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Status</label>
+          <div className="grid grid-cols-2 gap-2">
+            {statusOrder.slice(1).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFormData({...formData, status: s})}
+                className={cn(
+                  "p-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                  formData.status === s 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                    : "bg-muted/30 border-border text-muted-foreground hover:bg-muted hover:border-primary/30"
+                )}
+              >
+                {s.replace(" Applications", "")}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Update Remarks</label>
+          <textarea 
+            required
+            rows={3}
+            value={formData.remarks}
+            onChange={e => setFormData({...formData, remarks: e.target.value})}
+            placeholder="Describe the action taken (e.g. Approved and dispatched)..."
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-medium"
+          />
+        </div>
+      </div>
+
+      <button 
+        disabled={loading}
+        className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+      >
+        {loading ? "Updating..." : "Commit Status Change (All)"}
+      </button>
+    </form>
+  );
+};
+
+const BulkServiceRecordPaymentForm = ({ applications, onSuccess, cashfree, pendingAmount = 0, payments = [] }) => {
+  const totalDue = applications.reduce((sum, app) => sum + (app.feeAmount || 0) - (app.paidAmount || 0), 0) - pendingAmount;
+  
+  if (totalDue <= 0) {
+    return (
+      <div className="space-y-6 text-center py-8 bg-amber-500/5 border border-amber-500/10 rounded-3xl p-6">
+        <Clock className="w-12 h-12 mx-auto text-amber-500" />
+        <p className="text-sm font-black uppercase tracking-widest text-amber-600">Payments Pending Approval</p>
+        <p className="text-xs text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+          Payments covering the remaining mandatory fees are currently awaiting admin verification. You cannot make further payments until they are processed.
+        </p>
+      </div>
+    );
+  }
+  
+  const [paymentMethodTab, setPaymentMethodTab] = useState("online");
+  const [formData, setFormData] = useState({
+    amount: totalDue,
+    method: "Offline / Cash",
+    transactionId: "",
+    remarks: ""
+  });
+  const [receipt, setReceipt] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+
+  const handlePayOnline = async (e) => {
+    e.preventDefault();
+    if (!totalDue || totalDue <= 0) return;
+
+    setLoading(true);
+    try {
+      const res = await createBulkServiceCashfreeOrder({
+        applicationIds: applications.map(app => app._id),
+        remarks: formData.remarks,
+      });
+      if (res.success && cashfree) {
+        const checkoutOptions = {
+          paymentSessionId: res.payment_session_id,
+          redirectTarget: "_self",
+        };
+        cashfree.checkout(checkoutOptions);
+      }
+    } catch (error) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message: error.response?.data?.message || "Failed to initiate bulk online payment",
+        })
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    if (!formData.method) {
+      dispatch(showAlert({ type: "error", message: "Please specify the payment method." }));
+      return;
+    }
+    if (!formData.transactionId) {
+      dispatch(showAlert({ type: "error", message: "Please specify the Transaction ID." }));
+      return;
+    }
+    if (!receipt) {
+      dispatch(showAlert({ type: "error", message: "Please attach a receipt." }));
+      return;
+    }
+    setLoading(true);
+    try {
+      const validApplications = applications.filter(app => {
+        const appPending = payments.filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && (p.serviceApplication?._id === app._id || p.serviceApplication === app._id || (p.serviceApplications && p.serviceApplications.includes(app._id)))).reduce((sum, p) => sum + p.amount, 0);
+        return (app.feeAmount - (app.paidAmount || 0) - appPending) > 0;
+      });
+
+      const totalToPay = validApplications.reduce((sum, app) => {
+        const appPending = payments.filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && (p.serviceApplication?._id === app._id || p.serviceApplication === app._id || (p.serviceApplications && p.serviceApplications.includes(app._id)))).reduce((sum, p) => sum + p.amount, 0);
+        return sum + (app.feeAmount - (app.paidAmount || 0) - appPending);
+      }, 0);
+
+      const applicationIds = validApplications.map(app => app._id);
+      
+      const data = new FormData();
+      applicationIds.forEach(id => data.append("applicationIds", id));
+      data.append("amount", totalToPay);
+      data.append("method", formData.method);
+      data.append("transactionId", formData.transactionId);
+      data.append("remarks", formData.remarks || "Bulk payment of all mandatory documents");
+      if (receipt) {
+        data.append("receipt", receipt);
+      }
+
+      const res = await recordBulkServicePayment(data);
+      if (res.success) {
+        dispatch(showAlert({ type: "success", message: "Successfully recorded payment for all mandatory documents!" }));
+        onSuccess();
+      } else {
+        dispatch(showAlert({ type: "error", message: "Failed to record some payments." }));
+      }
+    } catch (error) {
+      dispatch(showAlert({ type: "error", message: error.response?.data?.message || "Bulk payment recording failed" }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={paymentMethodTab === "online" ? handlePayOnline : handlePayment} className="space-y-6">
+      <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total Due (Bundle)</p>
+            <p className="text-3xl font-black text-primary">₹{totalDue.toLocaleString()}</p>
+          </div>
+          <CreditCard className="text-primary opacity-20" size={48} />
+        </div>
+        
+        <div className="space-y-2 pt-4 border-t border-primary/10 max-h-[120px] overflow-y-auto custom-scrollbar">
+          {applications.map(app => (
+            <div key={app._id} className="flex justify-between items-center text-xs">
+              <span className="font-bold text-muted-foreground truncate max-w-[250px]">{app.service?.title}</span>
+              <span className="font-black text-foreground">₹{(app.feeAmount - (app.paidAmount || 0)).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex bg-muted p-1 rounded-2xl mb-6">
+        <button
+          type="button"
+          onClick={() => setPaymentMethodTab("online")}
+          className={cn(
+            "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+            paymentMethodTab === "online"
+              ? "bg-card shadow-sm text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Pay Online
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentMethodTab("offline")}
+          className={cn(
+            "flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all",
+            paymentMethodTab === "offline"
+              ? "bg-card shadow-sm text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Upload Receipt
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {paymentMethodTab === "offline" && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Method</label>
+                <select 
+                  required
+                  value={formData.method}
+                  onChange={e => setFormData({...formData, method: e.target.value})}
+                  className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold appearance-none"
+                >
+                  <option value="Online">Online</option>
+                  <option value="Offline / Cash">Offline / Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Google Pay">Google Pay</option>
+                  <option value="PhonePe">PhonePe</option>
+                  <option value="UPI">Other UPI</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Transaction ID (Required)</label>
+                <input 
+                  required
+                  value={formData.transactionId}
+                  onChange={e => setFormData({...formData, transactionId: e.target.value})}
+                  placeholder="e.g., TXN123..."
+                  className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-bold"
+                />
+              </div>
+            </div>
+
+            {/* Receipt Upload */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Receipt (Required)</label>
+              <div className="relative">
+                <input 
+                  type="file"
+                  id="bulk-receipt"
+                  className="hidden"
+                  onChange={(e) => setReceipt(e.target.files[0])}
+                  accept="image/*,.pdf"
+                />
+                <label 
+                  htmlFor="bulk-receipt"
+                  className={cn(
+                    "w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-dashed cursor-pointer transition-all",
+                    receipt ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Upload size={18} className={receipt ? "text-emerald-500" : "text-muted-foreground"} />
+                    <span className="text-xs font-bold truncate max-w-[200px]">
+                      {receipt ? receipt.name : "Attach proof of payment..."}
+                    </span>
+                  </div>
+                  {receipt && (
+                    <CheckCircle2 size={16} className="text-emerald-500" />
+                  )}
+                </label>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Payment Remarks</label>
+          <textarea 
+            rows={2}
+            value={formData.remarks}
+            onChange={e => setFormData({...formData, remarks: e.target.value})}
+            placeholder="Any additional payment details..."
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-medium"
+          />
+        </div>
+      </div>
+
+      <button 
+        disabled={loading}
+        className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+      >
+        {loading ? (
+          <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+        ) : (
+          "Record Bulk Payment & Process"
         )}
       </button>
     </form>

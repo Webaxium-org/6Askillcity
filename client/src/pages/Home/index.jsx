@@ -59,7 +59,8 @@ const Button = React.forwardRef(
       default: "bg-primary text-primary-foreground hover:bg-primary/90",
       primary: "bg-[#17468C] text-white hover:bg-[#17468C]/90 shadow",
       brandRed: "bg-[#B82424] text-white hover:bg-[#B82424]/90 shadow",
-      brandGradient: "bg-gradient-to-r from-[#0a3382] via-[#63163a] to-[#bd0808] text-white hover:opacity-95 shadow-xl",
+      brandGradient:
+        "bg-gradient-to-r from-[#0a3382] via-[#63163a] to-[#bd0808] text-white hover:opacity-95 shadow-xl",
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       outline:
@@ -82,22 +83,22 @@ const Button = React.forwardRef(
       className,
     );
 
-    if (className?.includes("rounded-full") || variants[variant]?.includes("rounded-full")) {
+    if (
+      className?.includes("rounded-full") ||
+      variants[variant]?.includes("rounded-full")
+    ) {
       finalClass = finalClass.replace(/rounded-md/g, "");
     }
 
     // Force font size 22px and font weight 600 (font-semibold) by stripping other classes
     finalClass = finalClass
       .replace(/\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)\b/g, "")
-      .replace(/\bfont-(thin|extralight|light|normal|medium|bold|extrabold|black)\b/g, "");
+      .replace(
+        /\bfont-(thin|extralight|light|normal|medium|bold|extrabold|black)\b/g,
+        "",
+      );
 
-    return (
-      <button
-        ref={ref}
-        className={finalClass}
-        {...props}
-      />
-    );
+    return <button ref={ref} className={finalClass} {...props} />;
   },
 );
 Button.displayName = "Button";
@@ -193,10 +194,7 @@ CardHeader.displayName = "CardHeader";
 const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn(
-      "text-2xl font-bold leading-none tracking-tight",
-      className,
-    )}
+    className={cn("text-2xl font-bold leading-none tracking-tight", className)}
     {...props}
   />
 ));
@@ -415,7 +413,7 @@ const staticPgDiplomas = [
   "Special Need",
   "Styling & Makeup Artistry",
   "Script Writing & Direction",
-  "Supply Chain Management"
+  "Supply Chain Management",
 ];
 const staticSkillPrograms = [
   "CARPET",
@@ -516,7 +514,7 @@ const staticSkillPrograms = [
   "PCI VERIFIED PHARMACIST",
   "BCI ADVOCATE ASSISTANT",
   "AIU REGISTRATION DESK OFFICER",
-  "UGC COMPLIANCE SPECIALIST"
+  "UGC COMPLIANCE SPECIALIST",
 ];
 
 export default function App() {
@@ -555,31 +553,58 @@ export default function App() {
     fetchBranches();
   }, []);
 
-  const bachelors = dbPrograms.filter((p) => p.programType === "Bachelors Degree");
-  const bachelorsList = bachelors.length > 0
-    ? bachelors
-    : staticBachelors.map((name, i) => ({ _id: `fallback-bach-${i}`, name, isFallback: true }));
+  const bachelors = dbPrograms.filter(
+    (p) => p.programType === "Bachelors Degree",
+  );
+  const bachelorsList =
+    bachelors.length > 0
+      ? bachelors
+      : staticBachelors.map((name, i) => ({
+          _id: `fallback-bach-${i}`,
+          name,
+          isFallback: true,
+        }));
 
   const masters = dbPrograms.filter((p) => p.programType === "Masters Degree");
-  const mastersList = masters.length > 0
-    ? masters
-    : staticMasters.map((name, i) => ({ _id: `fallback-mast-${i}`, name, isFallback: true }));
+  const mastersList =
+    masters.length > 0
+      ? masters
+      : staticMasters.map((name, i) => ({
+          _id: `fallback-mast-${i}`,
+          name,
+          isFallback: true,
+        }));
 
   const pgDiplomaBranches = dbBranches.filter(
-    (b) => b.program && (b.program.programType === "PG Diploma" || b.program.programType === "PG Deploma")
+    (b) =>
+      b.program &&
+      (b.program.programType === "PG Diploma" ||
+        b.program.programType === "PG Deploma"),
   );
-  const pgDiplomasList = pgDiplomaBranches.length > 0
-    ? pgDiplomaBranches.map((b) => ({
-      _id: b.program._id,
-      name: b.name,
-      isFallback: false
-    }))
-    : staticPgDiplomas.map((name, i) => ({ _id: `fallback-pgd-${i}`, name, isFallback: true }));
+  const pgDiplomasList =
+    pgDiplomaBranches.length > 0
+      ? pgDiplomaBranches.map((b) => ({
+          _id: b.program._id,
+          name: b.name,
+          isFallback: false,
+        }))
+      : staticPgDiplomas.map((name, i) => ({
+          _id: `fallback-pgd-${i}`,
+          name,
+          isFallback: true,
+        }));
 
-  const skillPrograms = dbPrograms.filter((p) => p.programType === "Skill Programs");
-  const skillProgramsList = skillPrograms.length > 0
-    ? skillPrograms
-    : staticSkillPrograms.map((name, i) => ({ _id: `fallback-skill-${i}`, name, isFallback: true }));
+  const skillPrograms = dbPrograms.filter(
+    (p) => p.programType === "Skill Programs",
+  );
+  const skillProgramsList =
+    skillPrograms.length > 0
+      ? skillPrograms
+      : staticSkillPrograms.map((name, i) => ({
+          _id: `fallback-skill-${i}`,
+          name,
+          isFallback: true,
+        }));
 
   const programCategories = [
     {
@@ -593,7 +618,8 @@ export default function App() {
       shadowColor: "rgba(23,70,140,0.15)",
       bgLight: "bg-blue-50/50",
       borderColor: "border-blue-100",
-      description: "Establish a strong professional foundation with our industry-aligned undergraduate programs, delivering rigorous academic theory combined with core practical skills.",
+      description:
+        "Establish a strong professional foundation with our industry-aligned undergraduate programs, delivering rigorous academic theory combined with core practical skills.",
       programs: bachelorsList,
     },
     {
@@ -607,7 +633,8 @@ export default function App() {
       shadowColor: "rgba(184,36,36,0.15)",
       bgLight: "bg-red-50/50",
       borderColor: "border-red-100",
-      description: "Advance your expertise and unlock executive leadership opportunities with our advanced, research-informed postgraduate degrees tailored for modern career demands.",
+      description:
+        "Advance your expertise and unlock executive leadership opportunities with our advanced, research-informed postgraduate degrees tailored for modern career demands.",
       programs: mastersList,
     },
     {
@@ -621,7 +648,8 @@ export default function App() {
       shadowColor: "rgba(99,102,241,0.15)",
       bgLight: "bg-indigo-50/50",
       borderColor: "border-indigo-100",
-      description: "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
+      description:
+        "Accelerate your professional path with focused, high-impact postgraduate diplomas designed to deliver targeted specialization in high-growth industries.",
       programs: pgDiplomasList,
     },
     {
@@ -635,7 +663,8 @@ export default function App() {
       shadowColor: "rgba(217,119,6,0.15)",
       bgLight: "bg-amber-50/50",
       borderColor: "border-amber-100",
-      description: "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
+      description:
+        "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
       programs: skillProgramsList,
     },
   ];
@@ -674,13 +703,16 @@ export default function App() {
     const address = e.target.address.value;
 
     try {
-      const response = await axiosInstance.post("/admission-points/partner-inquiry", {
-        centerName,
-        contactName,
-        phone,
-        email,
-        address,
-      });
+      const response = await axiosInstance.post(
+        "/admission-points/partner-inquiry",
+        {
+          centerName,
+          contactName,
+          phone,
+          email,
+          address,
+        },
+      );
 
       if (response.data?.success) {
         dispatch(
@@ -723,20 +755,24 @@ export default function App() {
     e.preventDefault();
     setIsSubmittingPartner(true);
     try {
-      const response = await axiosInstance.post("/admission-points/partner-inquiry", {
-        fullName: partnerForm.fullName,
-        email: partnerForm.email,
-        phone: partnerForm.mobile,
-        coursesLooking: partnerForm.coursesLooking,
-        comments: partnerForm.comments,
-      });
+      const response = await axiosInstance.post(
+        "/admission-points/partner-inquiry",
+        {
+          fullName: partnerForm.fullName,
+          email: partnerForm.email,
+          phone: partnerForm.mobile,
+          coursesLooking: partnerForm.coursesLooking,
+          comments: partnerForm.comments,
+        },
+      );
 
       if (response.data?.success) {
         dispatch(
           showAlert({
             type: "success",
-            message: "Submission successful! Our partnership team will contact you shortly.",
-          })
+            message:
+              "Submission successful! Our partnership team will contact you shortly.",
+          }),
         );
         setPartnerForm({
           fullName: "",
@@ -746,15 +782,20 @@ export default function App() {
           comments: "",
         });
       } else {
-        throw new Error(response.data?.message || "Failed to submit partner details.");
+        throw new Error(
+          response.data?.message || "Failed to submit partner details.",
+        );
       }
     } catch (error) {
       console.error("Partner submission error:", error);
       dispatch(
         showAlert({
           type: "destructive",
-          message: error.response?.data?.message || error.message || "Failed to submit. Please try again.",
-        })
+          message:
+            error.response?.data?.message ||
+            error.message ||
+            "Failed to submit. Please try again.",
+        }),
       );
     } finally {
       setIsSubmittingPartner(false);
@@ -832,100 +873,9 @@ export default function App() {
                       onClick={() => navigate("/register-admission-point")}
                       className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-lg font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-6 py-3 h-auto"
                     >
-                      Join Education Network <MoveRight size={24} className="ml-2.5 stroke-[2]" />
+                      Join Education Network{" "}
+                      <MoveRight size={24} className="ml-2.5 stroke-[2]" />
                     </Button>
-                  </motion.div>
-
-                  <motion.div
-                    variants={fadeInUp}
-                    className="pt-8"
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, x: -30, filter: "blur(5px)" }}
-                      whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                      viewport={{ once: true, margin: "-40px" }}
-                      transition={{ duration: 0.8, type: "spring", bounce: 0.25 }}
-                      whileHover={{
-                        scale: 1.02,
-                        x: 4,
-                        boxShadow: "0 20px 25px -5px rgba(23, 70, 140, 0.08), 0 8px 10px -6px rgba(23, 70, 140, 0.08)"
-                      }}
-                      className="relative bg-gradient-to-r from-[#17468C]/8 via-[#17468C]/2 to-transparent p-5 rounded-r-2xl max-w-xl flex flex-col sm:flex-row items-center sm:items-start gap-5 hover:from-[#17468C]/12 transition-all duration-300 group cursor-default shadow-sm border border-[#17468C]/10 border-l-0 pl-7 overflow-hidden"
-                    >
-                      {/* Infinite Shifting Gradient Left-Border Line */}
-                      <motion.div
-                        className="absolute left-0 top-0 bottom-0 w-[4px] rounded-l-2xl"
-                        animate={{
-                          background: [
-                            "linear-gradient(to bottom, #17468C, #B82424)",
-                            "linear-gradient(to bottom, #B82424, #17468C)",
-                            "linear-gradient(to bottom, #17468C, #B82424)"
-                          ]
-                        }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: "linear"
-                        }}
-                      />
-
-                      {/* Floating Institutional Logo container */}
-                      <motion.div
-                        animate={{ y: [0, -3, 0] }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                        className="w-16 h-16 bg-white p-2.5 rounded-xl border border-slate-100 shadow-md shrink-0 flex items-center justify-center group-hover:scale-108 group-hover:rotate-1 transition-all duration-300 relative overflow-hidden"
-                      >
-                        {/* Soft ambient aura behind logo */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-[#17468C]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                        <img
-                          src={Ugc}
-                          alt="UGC Logo"
-                          className="w-full h-full object-contain filter drop-shadow-sm relative z-10"
-                        />
-                      </motion.div>
-
-                      <div className="text-center sm:text-left space-y-2">
-                        <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#17468C]/10 text-[#17468C] border border-[#17468C]/20">
-                            <motion.span
-                              animate={{ rotate: [0, 15, -15, 0] }}
-                              transition={{
-                                duration: 3,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                              }}
-                              className="inline-block"
-                            >
-                              <Sparkles size={10} className="stroke-[3]" />
-                            </motion.span>
-                            Recognized by
-                          </span>
-                          <span className="h-3 w-px bg-border hidden sm:block" />
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                            Academic Accreditation
-                          </span>
-                        </div>
-
-                        <p className="text-sm sm:text-base font-extrabold text-foreground leading-snug tracking-tight">
-                          Our partner University Is Recognized By{" "}
-                          <span className="font-black text-[#17468C] relative inline-block">
-                            University Grant's commission India ( UGC )
-                            <motion.span
-                              className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#17468C] to-[#B82424] rounded"
-                              initial={{ width: 0 }}
-                              whileInView={{ width: "100%" }}
-                              viewport={{ once: true }}
-                              transition={{ delay: 0.5, duration: 1.2, ease: "easeOut" }}
-                            />
-                          </span>
-                        </p>
-                      </div>
-                    </motion.div>
                   </motion.div>
                 </motion.div>
 
@@ -939,31 +889,31 @@ export default function App() {
                   animate={
                     highlightInquiry
                       ? {
-                        scale: [1, 1.06, 0.96, 1.02, 1],
-                        rotateY: [0, 360],
-                        z: [0, 40, -10, 5, 0],
-                      }
+                          scale: [1, 1.06, 0.96, 1.02, 1],
+                          rotateY: [0, 360],
+                          z: [0, 40, -10, 5, 0],
+                        }
                       : {
-                        opacity: 1,
-                        scale: 1,
-                        filter: "blur(0px)",
-                        y: 0,
-                        rotateX: 0,
-                        rotateY: 0,
-                      }
+                          opacity: 1,
+                          scale: 1,
+                          filter: "blur(0px)",
+                          y: 0,
+                          rotateX: 0,
+                          rotateY: 0,
+                        }
                   }
                   transition={
                     highlightInquiry
                       ? {
-                        duration: 2.5,
-                        ease: "easeInOut",
-                      }
+                          duration: 2.5,
+                          ease: "easeInOut",
+                        }
                       : {
-                        delay: 0.4,
-                        duration: 1,
-                        type: "spring",
-                        bounce: 0.3,
-                      }
+                          delay: 0.4,
+                          duration: 1,
+                          type: "spring",
+                          bounce: 0.3,
+                        }
                   }
                   style={{ perspective: 1000 }}
                   className="lg:col-span-5 relative group"
@@ -992,7 +942,7 @@ export default function App() {
                           "text-4xl font-extrabold tracking-tight leading-none transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r select-none",
                           highlightInquiry
                             ? "from-[#B82424] to-red-500 scale-[1.02]"
-                            : "from-[#0a3382] via-[#63163a] to-[#bd0808]"
+                            : "from-[#0a3382] via-[#63163a] to-[#bd0808]",
                         )}
                       >
                         Partner Enquiry
@@ -1083,7 +1033,10 @@ export default function App() {
                             ) : (
                               <>
                                 Submit
-                                <MoveRight size={24} className="ml-.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-1" />
+                                <MoveRight
+                                  size={24}
+                                  className="ml-.5 stroke-[2] transition-transform duration-300 group-hover:translate-x-1"
+                                />
                               </>
                             )}
                           </span>
@@ -1158,19 +1111,30 @@ export default function App() {
                           <div>
                             <h3 className="text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
                               The Global University,{" "}
-                              <span className="text-2xl font-semibold text-foreground/80">India,</span>{" "}
-                              <span className="text-lg font-medium text-foreground/60">Arunachal Pradesh</span>
+                              <span className="text-2xl font-semibold text-foreground/80">
+                                India,
+                              </span>{" "}
+                              <span className="text-lg font-medium text-foreground/60">
+                                Arunachal Pradesh
+                              </span>
                             </h3>
                           </div>
                         </div>
 
                         <p className="text-lg text-muted-foreground leading-relaxed">
-                          Widely recognized as a beacon of academic excellence and innovation in Arunachal Pradesh. Since 2024, it has been known among the top education institutions in India, shaping minds and empowering positive impact through premium UGC-approved programs.
+                          Widely recognized as a beacon of academic excellence
+                          and innovation in Arunachal Pradesh. Since 2024, it
+                          has been known among the top education institutions in
+                          India, shaping minds and empowering positive impact
+                          through premium UGC-approved programs.
                         </p>
 
                         <div className="grid grid-cols-2 gap-6 pt-4 border-t border-border/60">
                           {[
-                            { label: "Recognition", value: "Prominent Institution" },
+                            {
+                              label: "Recognition",
+                              value: "Prominent Institution",
+                            },
                             { label: "Focus", value: "Innovation & Impact" },
                           ].map((stat, idx) => (
                             <div key={idx} className="space-y-1">
@@ -1382,14 +1346,17 @@ export default function App() {
                           size="none"
                           className={cn(
                             "w-full py-3 px-6 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 border-transparent text-lg h-auto",
-                            path.buttonClass
+                            path.buttonClass,
                           )}
                           onClick={() => navigate("/register-admission-point")}
                         >
                           <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
                           <span className="relative z-10 flex items-center justify-center gap-2">
                             Be a Partner
-                            <MoveRight size={24} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+                            <MoveRight
+                              size={24}
+                              className="transition-transform duration-300 group-hover/btn:translate-x-1"
+                            />
                           </span>
                         </Button>
                       </CardFooter>
@@ -1430,9 +1397,8 @@ export default function App() {
                         The Global University, India, Arunachal Pradesh
                       </span>{" "}
                       handling all admission affairs. The foundation connects
-                      admission application point and skill education
-                      centers with The
-                      Global University.
+                      admission application point and skill education centers
+                      with The Global University.
                     </p>
                     <p className="text-lg text-muted-foreground leading-relaxed">
                       With a commitment to fostering educational growth and
@@ -1518,7 +1484,10 @@ export default function App() {
           </section>
 
           {/* MISSION & VISION SECTION */}
-          <section id="mission-vision" className="py-24 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden">
+          <section
+            id="mission-vision"
+            className="py-24 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden"
+          >
             {/* Ambient decorative glowing blobs */}
             <div className="absolute top-1/3 left-10 w-96 h-96 bg-[#17468C]/5 rounded-full blur-[100px] pointer-events-none -z-10" />
             <div className="absolute bottom-1/3 right-10 w-96 h-96 bg-[#B82424]/5 rounded-full blur-[100px] pointer-events-none -z-10" />
@@ -1531,14 +1500,18 @@ export default function App() {
                 transition={{ duration: 0.8, type: "spring" }}
                 className="text-center max-w-3xl mx-auto mb-20 space-y-4"
               >
-                <Badge variant="brandRed" className="px-4 py-1.5 text-xs shadow-sm shadow-[#B82424]/5 border-[#B82424]/15 backdrop-blur-md bg-[#B82424]/5">
+                <Badge
+                  variant="brandRed"
+                  className="px-4 py-1.5 text-xs shadow-sm shadow-[#B82424]/5 border-[#B82424]/15 backdrop-blur-md bg-[#B82424]/5"
+                >
                   Our Purpose & Future
                 </Badge>
                 <h2 className="text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-none">
                   Mission & Vision
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                  Guiding our efforts to bridge the gap between aspirations and achievements, creating a world of borderless opportunities.
+                  Guiding our efforts to bridge the gap between aspirations and
+                  achievements, creating a world of borderless opportunities.
                 </p>
               </motion.div>
 
@@ -1560,24 +1533,38 @@ export default function App() {
                           <Target size={32} />
                         </div>
                         <div>
-                          <h3 className="text-3xl font-extrabold text-foreground tracking-tight">Our Mission</h3>
-                          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">Empowering potential through education</p>
+                          <h3 className="text-3xl font-extrabold text-foreground tracking-tight">
+                            Our Mission
+                          </h3>
+                          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">
+                            Empowering potential through education
+                          </p>
                         </div>
                       </div>
 
                       <p className="text-lg text-muted-foreground leading-relaxed">
-                        To democratize high-quality skill development and academic excellence across India by establishing a seamless, technology-driven partnership network. We aim to empower application, training, and testing centers, enabling every student to access UGC-approved, industry-aligned education.
+                        To democratize high-quality skill development and
+                        academic excellence across India by establishing a
+                        seamless, technology-driven partnership network. We aim
+                        to empower application, training, and testing centers,
+                        enabling every student to access UGC-approved,
+                        industry-aligned education.
                       </p>
 
                       <ul className="space-y-3.5 pt-2">
                         {[
                           "Provide nationwide access to premium UGC-approved degree pathways.",
                           "Equip learners with employment-ready skills matching global standards.",
-                          "Bridge the critical gap between traditional academia and modern industries."
+                          "Bridge the critical gap between traditional academia and modern industries.",
                         ].map((point, idx) => (
                           <li key={idx} className="flex items-start gap-3">
-                            <CheckCircle size={18} className="text-[#B82424] mt-1 shrink-0" />
-                            <span className="text-muted-foreground font-medium">{point}</span>
+                            <CheckCircle
+                              size={18}
+                              className="text-[#B82424] mt-1 shrink-0"
+                            />
+                            <span className="text-muted-foreground font-medium">
+                              {point}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -1607,13 +1594,22 @@ export default function App() {
                           <Eye size={32} />
                         </div>
                         <div>
-                          <h3 className="text-3xl font-extrabold text-foreground tracking-tight">Our Vision</h3>
-                          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">The future of skilled learning</p>
+                          <h3 className="text-3xl font-extrabold text-foreground tracking-tight">
+                            Our Vision
+                          </h3>
+                          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">
+                            The future of skilled learning
+                          </p>
                         </div>
                       </div>
 
                       <p className="text-lg text-muted-foreground leading-relaxed">
-                        To become the nation's premier catalyst for skilled and academic transformation, fostering a future-ready workforce. We envision an ecosystem where practical expertise and formal recognition unite, creating borderless opportunities for lifelong learning, global competence, and sustainable career success.
+                        To become the nation's premier catalyst for skilled and
+                        academic transformation, fostering a future-ready
+                        workforce. We envision an ecosystem where practical
+                        expertise and formal recognition unite, creating
+                        borderless opportunities for lifelong learning, global
+                        competence, and sustainable career success.
                       </p>
 
                       <ul className="space-y-3.5 pt-2">
@@ -1621,11 +1617,16 @@ export default function App() {
                           "Build a borderless community of certified, highly skilled professionals.",
                           "Pioneer Recognition of Prior Learning (RPL) on a national scale.",
                           "Be the benchmark of excellence for academic-skilled integration.",
-                          "Drive continuous economic empowerment through localized education pathways."
+                          "Drive continuous economic empowerment through localized education pathways.",
                         ].map((point, idx) => (
                           <li key={idx} className="flex items-start gap-3">
-                            <CheckCircle size={18} className="text-[#17468C] mt-1 shrink-0" />
-                            <span className="text-muted-foreground font-medium">{point}</span>
+                            <CheckCircle
+                              size={18}
+                              className="text-[#17468C] mt-1 shrink-0"
+                            />
+                            <span className="text-muted-foreground font-medium">
+                              {point}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -1642,7 +1643,10 @@ export default function App() {
           </section>
 
           {/* ACADEMIC PROGRAMS SECTION */}
-          <section id="programs" className="py-28 bg-muted/30 relative overflow-hidden">
+          <section
+            id="programs"
+            className="py-28 bg-muted/30 relative overflow-hidden"
+          >
             {/* Ambient decorative glowing blobs */}
             <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-[#17468C]/5 rounded-full blur-[120px] pointer-events-none -z-10" />
             <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-[#B82424]/5 rounded-full blur-[120px] pointer-events-none -z-10" />
@@ -1655,14 +1659,18 @@ export default function App() {
                 transition={{ duration: 0.8, type: "spring" }}
                 className="text-center max-w-3xl mx-auto mb-20 space-y-4"
               >
-                <Badge variant="brandBlue" className="px-4 py-1.5 text-xs shadow-sm shadow-[#17468C]/5 border-[#17468C]/15 backdrop-blur-md bg-[#17468C]/5">
+                <Badge
+                  variant="brandBlue"
+                  className="px-4 py-1.5 text-xs shadow-sm shadow-[#17468C]/5 border-[#17468C]/15 backdrop-blur-md bg-[#17468C]/5"
+                >
                   Curriculum & Pathways
                 </Badge>
                 <h2 className="text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-none">
                   Academic Programs
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                  Explore our comprehensive array of certified degree pathways and specialized industry-led skill programs.
+                  Explore our comprehensive array of certified degree pathways
+                  and specialized industry-led skill programs.
                 </p>
               </motion.div>
 
@@ -1685,7 +1693,7 @@ export default function App() {
                           "w-full flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 text-left cursor-pointer group relative overflow-hidden",
                           isActive
                             ? "bg-white shadow-xl shadow-foreground/5 border-border scale-[1.02]"
-                            : "bg-white/40 backdrop-blur-sm border-border/60 hover:bg-white/80 hover:border-border hover:shadow-md"
+                            : "bg-white/40 backdrop-blur-sm border-border/60 hover:bg-white/80 hover:border-border hover:shadow-md",
                         )}
                       >
                         {/* Dynamic category active vertical ribbon */}
@@ -1694,7 +1702,7 @@ export default function App() {
                             layoutId="activeRibbon"
                             className={cn(
                               "absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b",
-                              cat.color
+                              cat.color,
                             )}
                           />
                         )}
@@ -1705,11 +1713,20 @@ export default function App() {
                               "p-3 rounded-xl transition-all duration-300",
                               isActive
                                 ? "bg-gradient-to-br text-white shadow-md shadow-foreground/5"
-                                : "bg-muted text-muted-foreground group-hover:bg-white group-hover:text-foreground"
+                                : "bg-muted text-muted-foreground group-hover:bg-white group-hover:text-foreground",
                             )}
-                            style={isActive ? { backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)` } : {}}
+                            style={
+                              isActive
+                                ? {
+                                    backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
+                                  }
+                                : {}
+                            }
                           >
-                            <CatIcon size={22} className="transition-transform duration-500 group-hover:rotate-3" />
+                            <CatIcon
+                              size={22}
+                              className="transition-transform duration-500 group-hover:rotate-3"
+                            />
                           </div>
                           <div>
                             <p className="font-bold text-foreground text-[15px] leading-tight">
@@ -1726,7 +1743,9 @@ export default function App() {
                             variant="secondary"
                             className={cn(
                               "text-[10px] font-bold tracking-wide transition-colors",
-                              isActive ? "bg-muted text-foreground" : "bg-muted/50 text-muted-foreground"
+                              isActive
+                                ? "bg-muted text-foreground"
+                                : "bg-muted/50 text-muted-foreground",
                             )}
                           >
                             {cat.count}
@@ -1754,7 +1773,12 @@ export default function App() {
                           className="bg-card/85 backdrop-blur-xl border border-border shadow-2xl shadow-foreground/5 rounded-[2.5rem] p-6 sm:p-8 md:p-10 relative overflow-hidden"
                         >
                           {/* Corner ambient glow inside panel */}
-                          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br opacity-[0.03] rounded-bl-full pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, transparent)` }} />
+                          <div
+                            className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br opacity-[0.03] rounded-bl-full pointer-events-none"
+                            style={{
+                              backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, transparent)`,
+                            }}
+                          />
 
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/60 mb-8">
                             <div className="flex items-center gap-4">
@@ -1762,7 +1786,7 @@ export default function App() {
                                 className="p-4 rounded-2xl text-white shadow-lg shrink-0"
                                 style={{
                                   background: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
-                                  boxShadow: `0 8px 25px ${cat.shadowColor}`
+                                  boxShadow: `0 8px 25px ${cat.shadowColor}`,
                                 }}
                               >
                                 <CatIcon size={28} />
@@ -1780,7 +1804,7 @@ export default function App() {
                             <Badge
                               className="px-4 py-1.5 text-xs font-bold text-white border-transparent self-start md:self-auto w-fit"
                               style={{
-                                background: `linear-gradient(to right, ${cat.accentColor}, ${cat.accentColor}cc)`
+                                background: `linear-gradient(to right, ${cat.accentColor}, ${cat.accentColor}cc)`,
                               }}
                             >
                               {cat.count} Available
@@ -1799,19 +1823,24 @@ export default function App() {
                               <div
                                 className={cn(
                                   "transition-all duration-500 ease-in-out",
-                                  (cat.id === "skill-programs" || cat.id === "pg-diploma") ? "max-h-[420px] overflow-y-auto pr-3 py-2 scroll-smooth custom-scrollbar" : ""
+                                  cat.id === "skill-programs" ||
+                                    cat.id === "pg-diploma"
+                                    ? "max-h-[420px] overflow-y-auto pr-3 py-2 scroll-smooth custom-scrollbar"
+                                    : "",
                                 )}
                                 style={
-                                  (cat.id === "skill-programs" || cat.id === "pg-diploma")
+                                  cat.id === "skill-programs" ||
+                                  cat.id === "pg-diploma"
                                     ? {
-                                      scrollbarWidth: "thin",
-                                      scrollbarColor: `${cat.accentColor}33 transparent`,
-                                    }
+                                        scrollbarWidth: "thin",
+                                        scrollbarColor: `${cat.accentColor}33 transparent`,
+                                      }
                                     : {}
                                 }
                               >
-                                <style dangerouslySetInnerHTML={{
-                                  __html: `
+                                <style
+                                  dangerouslySetInnerHTML={{
+                                    __html: `
                                   .custom-scrollbar::-webkit-scrollbar {
                                     width: 6px;
                                   }
@@ -1825,22 +1854,31 @@ export default function App() {
                                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                                     background-color: ${cat.accentColor}66;
                                   }
-                                `}} />
+                                `,
+                                  }}
+                                />
                                 <div className="grid sm:grid-cols-2 gap-4">
                                   {cat.programs.map((prog, pIdx) => (
                                     <motion.div
                                       key={prog._id}
                                       initial={{ opacity: 0, y: 10 }}
                                       animate={{ opacity: 1, y: 0 }}
-                                      transition={{ delay: Math.min(pIdx, 20) * 0.03, duration: 0.3 }}
+                                      transition={{
+                                        delay: Math.min(pIdx, 20) * 0.03,
+                                        duration: 0.3,
+                                      }}
                                       onClick={() => {
                                         if (!prog.isFallback) {
-                                          navigate(`/specialization/${prog._id}`);
+                                          navigate(
+                                            `/specialization/${prog._id}`,
+                                          );
                                         }
                                       }}
                                       className={cn(
                                         "flex items-center justify-between p-4 rounded-xl bg-background/50 border border-border/80 hover:border-border hover:bg-background hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group/item min-w-0",
-                                        prog.isFallback ? "cursor-default" : "cursor-pointer hover:border-primary/20 hover:shadow-primary/5"
+                                        prog.isFallback
+                                          ? "cursor-default"
+                                          : "cursor-pointer hover:border-primary/20 hover:shadow-primary/5",
                                       )}
                                     >
                                       <div className="flex items-center gap-3 min-w-0 mr-2">
@@ -1859,7 +1897,7 @@ export default function App() {
                                           "transition-all duration-300 shrink-0",
                                           prog.isFallback
                                             ? "text-muted-foreground/0 group-hover/item:text-muted-foreground/100 group-hover/item:translate-x-0.5"
-                                            : "text-muted-foreground group-hover/item:text-primary group-hover/item:translate-x-0.5"
+                                            : "text-muted-foreground group-hover/item:text-primary group-hover/item:translate-x-0.5",
                                         )}
                                       />
                                     </motion.div>
@@ -1875,11 +1913,15 @@ export default function App() {
                                 className="py-3 px-6 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-lg h-auto w-full sm:w-auto"
                                 onClick={() => {
                                   const el = document.getElementById("contact");
-                                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                                  if (el)
+                                    el.scrollIntoView({ behavior: "smooth" });
                                 }}
                               >
                                 Enquire Now
-                                <MoveRight size={24} className="transition-transform duration-300 hover:translate-x-1" />
+                                <MoveRight
+                                  size={24}
+                                  className="transition-transform duration-300 hover:translate-x-1"
+                                />
                               </Button>
                             </div>
                           </div>
@@ -2097,151 +2139,326 @@ export default function App() {
           </section>
 
           {/* CTA BANNER SECTION */}
-          <section className="py-24 bg-background relative overflow-hidden">
-            <div className="container mx-auto px-6">
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, type: "spring" }}
-                className="relative rounded-[3rem] overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] px-8 py-16 md:py-24 shadow-2xl text-white border border-white/10"
-              >
-                {/* Abstract grid & wavy glowing overlays */}
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)] pointer-events-none" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+          <section className="relative overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] text-white">
+            {/* Full-bleed layered backgrounds */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(255,255,255,0.07),transparent_60%)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(184,36,36,0.3),transparent_55%)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
-                {/* Floating ambient accent shapes */}
-                <div className="absolute -top-40 -left-40 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" />
+            {/* Decorative blobs */}
+            <motion.div
+              animate={{ scale: [1, 1.15, 1], opacity: [0.06, 0.12, 0.06] }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-60 -left-60 w-[600px] h-[600px] bg-white rounded-full blur-3xl pointer-events-none"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 2,
+              }}
+              className="absolute -bottom-60 -right-40 w-[500px] h-[500px] bg-[#B82424] rounded-full blur-3xl pointer-events-none"
+            />
 
-                <div className="relative z-10 grid lg:grid-cols-12 gap-12 items-center max-w-6xl mx-auto">
-                  {/* Left Column: Asymmetrical Typography and Value Proposition */}
-                  <div className="lg:col-span-4 space-y-6 text-left">
-                    <Badge
-                      variant="none"
-                      className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider text-white border border-white/30 bg-white/10 backdrop-blur-md inline-flex items-center gap-2 shadow-inner"
-                    >
-                      <Sparkles size={14} className="text-white animate-pulse" />
-                      PARTNER INVITATION {new Date().getFullYear()}
-                    </Badge>
+            <div className="relative z-10 grid lg:grid-cols-2 min-h-[85vh] items-stretch">
+              {/* ── LEFT COLUMN ─────────────────────────────────────── */}
+              <div className="flex flex-col justify-center gap-10 px-10 md:px-16 lg:px-20 xl:px-28 py-24">
+                {/* Badge */}
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-amber-400/30 bg-amber-400/10 text-amber-300 backdrop-blur-sm">
+                    <Sparkles size={12} className="animate-pulse" />
+                    Exclusive Partner Invitation {new Date().getFullYear()}
+                  </span>
+                </motion.div>
 
-                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight">
-                      Ready to <br />
-                      Partner?
-                    </h2>
-                  </div>
+                {/* Headline */}
+                <div className="space-y-5">
+                  <motion.h2
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, delay: 0.1 }}
+                    className="text-5xl md:text-6xl xl:text-7xl font-black tracking-tighter leading-[1.05]"
+                  >
+                    Become an{" "}
+                    <span className="relative inline-block">
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400">
+                        Official
+                      </span>
+                      <motion.span
+                        className="absolute -bottom-1 left-0 h-[3px] rounded-full bg-gradient-to-r from-amber-300 to-amber-500"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "100%" }}
+                        viewport={{ once: true }}
+                        transition={{
+                          delay: 0.8,
+                          duration: 1,
+                          ease: "easeOut",
+                        }}
+                      />
+                    </span>
+                    <br />
+                    Partner.
+                  </motion.h2>
 
-                  {/* Right Column: Single Premium Be a Partner Card */}
-                  <div className="lg:col-span-8 w-full max-w-xl mx-auto lg:mr-0">
-                    {/* Card 1: Be a Partner Form */}
-                    <motion.div
-                      whileHover={{ y: -4 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group w-full"
-                    >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[2rem] blur-xl opacity-20 pointer-events-none" />
-
-                      <div className="relative z-10 flex items-center gap-4 text-left mb-6">
-                        <div className="p-3 bg-white/10 rounded-2xl border border-white/20 shadow-inner shrink-0">
-                          <Handshake size={36} className="text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-                            Be a Partner
-                          </h4>
-                          <p className="text-white/70 text-xs md:text-sm leading-relaxed mt-1">
-                            Submit your complete center details and launch your official collaboration.
-                          </p>
-                        </div>
-                      </div>
-
-                      <form onSubmit={handlePartnerSubmit} className="relative z-10 space-y-4 text-left">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="partnerFullName" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Full name :</Label>
-                          <Input
-                            id="partnerFullName"
-                            required
-                            placeholder="Enter your full name"
-                            value={partnerForm.fullName}
-                            onChange={(e) => setPartnerForm({ ...partnerForm, fullName: e.target.value })}
-                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor="partnerEmailId" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Email id :</Label>
-                          <Input
-                            id="partnerEmailId"
-                            required
-                            type="email"
-                            placeholder="Enter your email ID"
-                            value={partnerForm.email}
-                            onChange={(e) => setPartnerForm({ ...partnerForm, email: e.target.value })}
-                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor="partnerMobileNumber" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Mobile number :</Label>
-                          <Input
-                            id="partnerMobileNumber"
-                            required
-                            placeholder="Enter your mobile number"
-                            value={partnerForm.mobile}
-                            onChange={(e) => setPartnerForm({ ...partnerForm, mobile: e.target.value })}
-                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor="partnerCourses" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Courses are Looking :</Label>
-                          <Input
-                            id="partnerCourses"
-                            placeholder="e.g. Masters, Bachelors, Skill Programs"
-                            value={partnerForm.coursesLooking}
-                            onChange={(e) => setPartnerForm({ ...partnerForm, coursesLooking: e.target.value })}
-                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor="partnerComments" className="text-white text-xs font-semibold uppercase tracking-wider pl-1">Comments :</Label>
-                          <Textarea
-                            id="partnerComments"
-                            placeholder="Write your comments or center address here"
-                            value={partnerForm.comments}
-                            onChange={(e) => setPartnerForm({ ...partnerForm, comments: e.target.value })}
-                            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl resize-none min-h-[80px] text-base"
-                          />
-                        </div>
-
-                        <div className="pt-4">
-                          <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 group/btnWrapper cursor-pointer">
-                            <Button
-                              type="submit"
-                              variant="none"
-                              size="none"
-                              disabled={isSubmittingPartner}
-                              className="w-full py-3 px-6 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto"
-                            >
-                              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
-                              <span className="relative z-10 flex items-center justify-center gap-2 text-white">
-                                {isSubmittingPartner ? "Submitting..." : "Submit"}
-                                <MoveRight size={24} className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1" />
-                              </span>
-                            </Button>
-                          </div>
-                        </div>
-                      </form>
-
-                      <div className="flex items-center justify-start gap-2 text-xs text-white/50 font-bold uppercase tracking-wider mt-6 pl-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                        Applications Active
-                      </div>
-                    </motion.div>
-                  </div>
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    className="text-base md:text-lg text-white/75 leading-relaxed max-w-lg font-medium"
+                  >
+                    Join our elite network of application point. Get exclusive
+                    university access, a dedicated dashboard, and everything you
+                    need to scale your education business.
+                  </motion.p>
                 </div>
-              </motion.div>
+
+                {/* Benefits list */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                  className="space-y-4"
+                >
+                  {[
+                    {
+                      icon: ShieldCheck,
+                      text: "Authorisation Letter",
+                    },
+                    {
+                      icon: GraduationCap,
+                      text: "Access to UGC-Recognised Programs",
+                    },
+                    {
+                      icon: Target,
+                      text: "Dedicated Onboarding & Partner Dashboard",
+                    },
+                    {
+                      icon: Handshake,
+                      text: "Ongoing Support & Priority Processing",
+                    },
+                  ].map(({ icon: Icon, text }, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.35 + i * 0.08 }}
+                      className="flex items-center gap-3.5 group"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0 group-hover:bg-amber-400/20 group-hover:border-amber-400/30 transition-all duration-300">
+                        <Icon size={15} className="text-amber-300" />
+                      </div>
+                      <span className="text-sm md:text-base font-semibold text-white/85 group-hover:text-white transition-colors duration-200">
+                        {text}
+                      </span>
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* Stats row */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.55 }}
+                  className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10"
+                >
+                  {[
+                    { value: "50+", label: "Active Partners" },
+                    { value: "1+", label: "Universities" },
+                    { value: "100%", label: "UGC Recognised" },
+                  ].map(({ value, label }, i) => (
+                    <div key={i} className="text-center">
+                      <p className="text-2xl md:text-3xl font-black text-amber-300 tracking-tight">
+                        {value}
+                      </p>
+                      <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest mt-0.5">
+                        {label}
+                      </p>
+                    </div>
+                  ))}
+                </motion.div>
+              </div>
+
+              {/* ── RIGHT COLUMN (form card) ─────────────────────────── */}
+              <div className="flex items-center justify-center px-8 md:px-12 lg:px-16 py-20 lg:border-l border-white/10 relative">
+                {/* Subtle inner glow behind form */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.04),transparent_70%)] pointer-events-none" />
+
+                {/* Card 1: Be a Partner Form */}
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group w-full max-w-xl"
+                >
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[2rem] blur-xl opacity-20 pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center gap-4 text-left mb-6">
+                    <div className="p-3 bg-white/10 rounded-2xl border border-white/20 shadow-inner shrink-0">
+                      <Handshake size={36} className="text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                        Be a Partner
+                      </h4>
+                      <p className="text-white/70 text-xs md:text-sm leading-relaxed mt-1">
+                        Submit your complete center details and launch your
+                        official collaboration.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={handlePartnerSubmit}
+                    className="relative z-10 space-y-4 text-left"
+                  >
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="partnerFullName"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Full name :
+                      </Label>
+                      <Input
+                        id="partnerFullName"
+                        required
+                        placeholder="Enter your full name"
+                        value={partnerForm.fullName}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            fullName: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="partnerEmailId"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Email id :
+                      </Label>
+                      <Input
+                        id="partnerEmailId"
+                        required
+                        type="email"
+                        placeholder="Enter your email ID"
+                        value={partnerForm.email}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            email: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="partnerMobileNumber"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Mobile number :
+                      </Label>
+                      <Input
+                        id="partnerMobileNumber"
+                        required
+                        placeholder="Enter your mobile number"
+                        value={partnerForm.mobile}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            mobile: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="partnerCourses"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Courses are Looking :
+                      </Label>
+                      <Input
+                        id="partnerCourses"
+                        placeholder="e.g. Masters, Bachelors, Skill Programs"
+                        value={partnerForm.coursesLooking}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            coursesLooking: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="partnerComments"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Comments :
+                      </Label>
+                      <Textarea
+                        id="partnerComments"
+                        placeholder="Write your comments or center address here"
+                        value={partnerForm.comments}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            comments: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl resize-none min-h-[80px] text-base"
+                      />
+                    </div>
+
+                    <div className="pt-4">
+                      <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 group/btnWrapper cursor-pointer">
+                        <Button
+                          type="submit"
+                          variant="none"
+                          size="none"
+                          disabled={isSubmittingPartner}
+                          className="w-full py-3 px-6 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto"
+                        >
+                          <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
+                          <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                            {isSubmittingPartner ? "Submitting..." : "Submit"}
+                            <MoveRight
+                              size={24}
+                              className="transition-transform duration-300 group-hover/btnWrapper:translate-x-1"
+                            />
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+
+                  <div className="flex items-center justify-start gap-2 text-xs text-white/50 font-bold uppercase tracking-wider mt-6 pl-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    Applications Active
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </section>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { load } from "@cashfreepayments/cashfree-js";
@@ -109,6 +109,8 @@ export default function DocumentsServices() {
   const [showEditModal, setShowEditModal] = useState(null); // service object
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(null); // application object
+  const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
+  const [selectedApps, setSelectedApps] = useState([]);
   const [selectedManageCategory, setSelectedManageCategory] = useState("all");
 
   const [cashfree, setCashfree] = useState(null);
@@ -126,11 +128,18 @@ export default function DocumentsServices() {
   useEffect(() => {
     const orderId = searchParams.get("order_id");
     const status = searchParams.get("payment_status");
+    const type = searchParams.get("type");
 
     if (orderId && status) {
       const verifyPayment = async () => {
         try {
-          const res = await serviceApi.verifyServiceCashfreePayment(orderId);
+          let res;
+          if (type === "bulk") {
+            res = await serviceApi.verifyBulkServiceCashfreePayment(orderId);
+          } else {
+            res = await serviceApi.verifyServiceCashfreePayment(orderId);
+          }
+
           if (res.success) {
             dispatch(
               showAlert({
@@ -207,39 +216,65 @@ export default function DocumentsServices() {
   };
 
 
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = 
-      app.student?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      app.service?.title?.toLowerCase().includes(search.toLowerCase()) ||
-      app.subCategory?.toLowerCase().includes(search.toLowerCase());
-    
-    if (!matchesSearch) return false;
+  const groupedApplications = useMemo(() => {
+    const filtered = applications.filter(app => {
+      const matchesSearch = 
+        app.student?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        app.service?.title?.toLowerCase().includes(search.toLowerCase()) ||
+        app.subCategory?.toLowerCase().includes(search.toLowerCase());
+      
+      if (!matchesSearch) return false;
 
-    // Status Filter
-    if (statusFilter !== "all" && app.status !== statusFilter) return false;
-    
-    // Service Type Filter
-    if (serviceTypeFilter !== "all" && app.service?.title !== serviceTypeFilter) return false;
+      if (statusFilter !== "all" && app.status !== statusFilter) return false;
+      if (serviceTypeFilter !== "all" && app.service?.title !== serviceTypeFilter) return false;
+      if (selectedPartner !== "all" && app.student?.registeredBy?._id !== selectedPartner) return false;
+      if (paymentStatusFilter !== "all" && app.paymentStatus !== paymentStatusFilter) return false;
 
-    // Partner Filter
-    if (selectedPartner !== "all" && app.student?.registeredBy?._id !== selectedPartner) return false;
-
-    // Payment Status Filter
-    if (paymentStatusFilter !== "all" && app.paymentStatus !== paymentStatusFilter) return false;
-
-    // Date Range Filter
-    if (startDate || endDate) {
-      const appDate = new Date(app.createdAt);
-      if (startDate && appDate < new Date(startDate)) return false;
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (appDate > end) return false;
+      if (startDate || endDate) {
+        const appDate = new Date(app.createdAt);
+        if (startDate && appDate < new Date(startDate)) return false;
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (appDate > end) return false;
+        }
       }
-    }
-    
-    return true;
-  });
+      return true;
+    });
+
+    const groups = [];
+    const studentMandatoryMap = new Map();
+
+    filtered.forEach(app => {
+      const serviceDef = services.find(s => s._id === (app.service?._id || app.service));
+      if (serviceDef?.documentType === "Mandatory") {
+        const studentId = app.student?._id;
+        if (!studentId) {
+          groups.push(app);
+          return;
+        }
+        if (studentMandatoryMap.has(studentId)) {
+          const group = studentMandatoryMap.get(studentId);
+          group.bundledApplications.push(app);
+          group.feeAmount += (app.feeAmount || 0);
+          group.service.title = group.bundledApplications.map(a => a.service?.title).join(" + ");
+        } else {
+          const groupItem = { 
+            ...app, 
+            isBundle: true, 
+            bundledApplications: [app],
+            service: { ...app.service }
+          };
+          studentMandatoryMap.set(studentId, groupItem);
+          groups.push(groupItem);
+        }
+      } else {
+        groups.push(app);
+      }
+    });
+
+    return groups;
+  }, [applications, search, statusFilter, serviceTypeFilter, selectedPartner, paymentStatusFilter, startDate, endDate]);
 
   const setQuickRange = (range) => {
     const today = new Date();
@@ -268,6 +303,22 @@ export default function DocumentsServices() {
 
     setStartDate(start.toISOString().split("T")[0]);
     setEndDate(end.toISOString().split("T")[0]);
+  };
+
+  const handleUpdateStatusClick = (app) => {
+    const serviceDef = services.find(s => s._id === (app.service?._id || app.service));
+    if (app.isBundle || serviceDef?.documentType === "Mandatory") {
+      const bundledApps = app.isBundle ? app.bundledApplications : [app];
+      // If for some reason they aren't bundled but are mandatory, we fetch them
+      const studentMandatoryApps = app.isBundle ? bundledApps : applications.filter(a => {
+        const sDef = services.find(s => s._id === (a.service?._id || a.service));
+        return a.student?._id === app.student?._id && sDef?.documentType === "Mandatory";
+      });
+      setSelectedApps(studentMandatoryApps.map(a => a._id));
+      setShowBulkStatusModal(true);
+    } else {
+      setShowStatusModal(app);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -705,7 +756,7 @@ export default function DocumentsServices() {
                           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Synchronizing Data...</p>
                         </td>
                       </tr>
-                    ) : filteredApplications.length === 0 ? (
+                    ) : groupedApplications.length === 0 ? (
                       <tr>
                         <td colSpan="6" className="px-8 py-20 text-center space-y-3">
                           <Layers className="w-12 h-12 mx-auto opacity-10" />
@@ -713,7 +764,7 @@ export default function DocumentsServices() {
                         </td>
                       </tr>
                     ) : (
-                      filteredApplications.map((app, idx) => (
+                      groupedApplications.map((app, idx) => (
                         <motion.tr 
                           key={app._id}
                           initial={{ opacity: 0, x: -10 }}
@@ -784,7 +835,7 @@ export default function DocumentsServices() {
                           </td>
                           <td className="px-8 py-6 text-right">
                             <button 
-                              onClick={() => setShowStatusModal(app)}
+                              onClick={() => handleUpdateStatusClick(app)}
                               className="p-3 rounded-xl bg-muted/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"
                             >
                               <ArrowUpDown size={16} />
@@ -805,13 +856,13 @@ export default function DocumentsServices() {
                   <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Syncing...</p>
                 </div>
-              ) : filteredApplications.length === 0 ? (
+              ) : groupedApplications.length === 0 ? (
                 <div className="p-12 text-center bg-card border border-border rounded-3xl space-y-2">
                   <Layers className="w-8 h-8 mx-auto opacity-10" />
                   <p className="text-xs font-medium text-muted-foreground">No matches found.</p>
                 </div>
               ) : (
-                filteredApplications.map((app, idx) => (
+                groupedApplications.map((app, idx) => (
                   <motion.div 
                     key={app._id}
                     initial={{ opacity: 0, y: 10 }}
@@ -830,7 +881,7 @@ export default function DocumentsServices() {
                         </div>
                       </div>
                       <button 
-                        onClick={() => setShowStatusModal(app)}
+                        onClick={() => handleUpdateStatusClick(app)}
                         className="p-3 rounded-xl bg-muted/50 text-muted-foreground shrink-0"
                       >
                         <ArrowUpDown size={16} />
@@ -1080,6 +1131,23 @@ export default function DocumentsServices() {
             fetchData();
           }} 
           cashfree={cashfree}
+        />
+      </Modal>
+
+      {/* Bulk Status Update Modal */}
+      <Modal 
+        show={showBulkStatusModal} 
+        onClose={() => setShowBulkStatusModal(false)}
+        title="Update Status"
+      >
+        <BulkServiceUpdateStatusForm 
+          selectedIds={selectedApps}
+          applications={applications}
+          onSuccess={() => {
+            setShowBulkStatusModal(false);
+            setSelectedApps([]);
+            fetchData();
+          }} 
         />
       </Modal>
 
@@ -1559,6 +1627,18 @@ const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
   };
 
   if (isUnpaid) {
+    if (!isPartner) {
+      return (
+        <div className="space-y-6 text-center py-8 bg-amber-500/5 border border-amber-500/10 rounded-3xl p-6">
+          <AlertCircle className="w-12 h-12 mx-auto text-amber-500" />
+          <p className="text-sm font-black uppercase tracking-widest text-amber-600">Awaiting Payment</p>
+          <p className="text-xs text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+            This document request is currently unpaid. Access is locked for fulfillment administrators until the partner records or pays the fee.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-bold flex items-center gap-3">
@@ -2103,6 +2183,132 @@ const RecordPaymentForm = ({ application, onSuccess, cashfree }) => {
         ) : (
           "Record Full Payment & Process"
         )}
+      </button>
+    </form>
+  );
+};
+
+const BulkServiceUpdateStatusForm = ({ selectedIds, applications, onSuccess }) => {
+  const selectedApps = applications.filter(app => selectedIds.includes(app._id));
+  const [formData, setFormData] = useState({
+    status: selectedApps[0]?.status || "Pending Applications",
+    remarks: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+
+  const statusOrder = [
+    "Waiting for Payment",
+    "Pending Applications",
+    "Application On Progress",
+    "Documents Received",
+    "Documents Sent Courier"
+  ];
+
+  const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner" || user?.role === "partner";
+  const isUnpaid = selectedApps.some(app => app.paymentStatus !== "Paid");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.remarks.trim()) {
+      dispatch(showAlert({ type: "error", message: "Please enter remarks." }));
+      return;
+    }
+    setLoading(true);
+    try {
+      const { updateApplicationStatus } = await import("../../api/documentsServices.api");
+      const promises = selectedApps.map(app => 
+        updateApplicationStatus(app._id, formData)
+      );
+      await Promise.all(promises);
+      dispatch(showAlert({ type: "success", message: "Successfully updated status of selected applications!" }));
+      onSuccess();
+    } catch (error) {
+      dispatch(showAlert({ type: "error", message: "Failed to update status for some applications." }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isUnpaid) {
+    if (!isPartner) {
+      return (
+        <div className="space-y-6 text-center py-8 bg-amber-500/5 border border-amber-500/10 rounded-3xl p-6">
+          <AlertCircle className="w-12 h-12 mx-auto text-amber-500" />
+          <p className="text-sm font-black uppercase tracking-widest text-amber-600">Awaiting Payment</p>
+          <p className="text-xs text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+            This document bundle is currently unpaid. Access is locked for fulfillment administrators until the partner records or pays the fee.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6 text-center py-8 bg-rose-500/5 border border-rose-500/10 rounded-3xl p-6">
+        <AlertCircle className="w-12 h-12 mx-auto text-rose-500" />
+        <p className="text-sm font-black uppercase tracking-widest text-rose-600">Payment Required</p>
+        <p className="text-xs text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+          You must pay the service fee for these mandatory documents before the administrators can process them. Please go to the student's payment management page to complete the payment.
+        </p>
+      </div>
+    );
+  }
+
+  if (isPartner) {
+    return (
+      <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 text-center space-y-3">
+        <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-500" />
+        <p className="text-sm font-black uppercase tracking-widest text-emerald-600">Payment Completed</p>
+        <p className="text-xs text-muted-foreground font-medium">
+          This application fee has been successfully paid. Platform administrators will review the documents and advance the pipeline status accordingly.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Status</label>
+          <div className="grid grid-cols-2 gap-2">
+            {statusOrder.slice(1).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFormData({...formData, status: s})}
+                className={cn(
+                  "p-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                  formData.status === s 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                    : "bg-muted/30 border-border text-muted-foreground hover:bg-muted hover:border-primary/30"
+                )}
+              >
+                {s.replace(" Applications", "")}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Update Remarks</label>
+          <textarea 
+            required
+            rows={3}
+            value={formData.remarks}
+            onChange={e => setFormData({...formData, remarks: e.target.value})}
+            placeholder="Describe the action taken (e.g. Approved and dispatched)..."
+            className="w-full px-5 py-4 rounded-2xl bg-muted/30 border border-border focus:border-primary outline-none transition-all font-medium"
+          />
+        </div>
+      </div>
+
+      <button 
+        disabled={loading}
+        className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+      >
+        {loading ? "Updating..." : `Commit Status Change (${selectedApps.length})`}
       </button>
     </form>
   );
