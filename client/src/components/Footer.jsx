@@ -109,7 +109,7 @@ export default function Footer() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-16 border-b border-slate-200"
+          className="grid lg:grid-cols-12 gap-12 lg:gap-8 pb-8 border-b border-slate-200"
         >
           <motion.div
             variants={itemVariants}
@@ -246,7 +246,7 @@ export default function Footer() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          className="grid md:grid-cols-3 gap-8 py-12 mt-10"
+          className="grid md:grid-cols-3 gap-8 pt-10"
         >
           {[
             {
@@ -288,8 +288,8 @@ export default function Footer() {
               mobHref: "tel:+917356075454",
               land: "",
               landHref: "",
-              email: "partner@6askillcity.com",
-              emailHref: "mailto:partner@6askillcity.com",
+              email: "it@6askillcity.com",
+              emailHref: "mailto:it@6askillcity.com",
               blueWord: "IT",
               redWord: "Team",
               borderGradient: "from-[#17468C] to-[#B82424]",
