@@ -23,7 +23,7 @@ export const FormPhoneInput = React.forwardRef(({ label, error, className, id, c
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-semibold leading-none text-current"
+          className="text-base font-semibold leading-none text-current"
         >
           {label}
         </label>

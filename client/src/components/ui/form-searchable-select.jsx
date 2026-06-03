@@ -64,7 +64,7 @@ export const FormSearchableSelect = ({
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-semibold leading-none text-current peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="text-base font-semibold leading-none text-current peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {label}
         </label>

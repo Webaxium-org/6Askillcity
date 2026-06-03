@@ -382,48 +382,51 @@ export default function AdmissionRegistration() {
           variants={containerVariants}
           className="bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-slate-800/50 shadow-2xl rounded-[40px] p-8 md:p-14 overflow-hidden"
         >
-          <div className="flex items-center justify-between mb-20 max-w-xl mx-auto relative px-4">
-            <div className="absolute top-6 left-8 right-8 h-[1px] bg-slate-200 dark:bg-slate-800 z-0">
-              <motion.div
-                initial={{ width: "0%" }}
-                animate={{ width: `${((currentStep - 1) / 2) * 100}%` }}
-                className="h-full bg-primary shadow-[0_0_10px_rgba(184,36,36,0.5)]"
-              />
-            </div>
-
-            {steps.map((step) => {
+          <div className="flex items-start mb-20 max-w-xl mx-auto px-4 relative">
+            {steps.map((step, index) => {
               const isActive = currentStep >= step.id;
               const isCurrent = currentStep === step.id;
+              const isLineCompleted = currentStep > step.id;
               return (
-                <div
-                  key={step.id}
-                  className="relative z-10 flex flex-col items-center gap-4"
-                >
-                  <div
-                    className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 border",
-                      isActive
-                        ? "bg-white dark:bg-slate-900 border-primary text-primary shadow-[0_0_20px_rgba(184,36,36,0.15)]"
-                        : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-700",
-                    )}
-                  >
-                    {isActive && currentStep > step.id ? (
-                      <CheckCircle2 size={18} />
-                    ) : (
-                      <step.icon size={18} />
-                    )}
+                <React.Fragment key={step.id}>
+                  <div className="relative z-10 flex flex-col items-center gap-4 shrink-0">
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 border",
+                        isActive
+                          ? "bg-white dark:bg-slate-900 border-primary text-primary shadow-[0_0_20px_rgba(184,36,36,0.15)]"
+                          : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-700",
+                      )}
+                    >
+                      {isActive && currentStep > step.id ? (
+                        <CheckCircle2 size={18} />
+                      ) : (
+                        <step.icon size={18} />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "text-xs font-black uppercase tracking-[0.2em] transition-colors duration-500",
+                        isCurrent
+                          ? "text-slate-900 dark:text-white"
+                          : "text-slate-400 dark:text-slate-700",
+                      )}
+                    >
+                      {step.title}
+                    </span>
                   </div>
-                  <span
-                    className={cn(
-                      "text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-500",
-                      isCurrent
-                        ? "text-slate-900 dark:text-white"
-                        : "text-slate-400 dark:text-slate-700",
-                    )}
-                  >
-                    {step.title}
-                  </span>
-                </div>
+
+                  {index < steps.length - 1 && (
+                    <div className="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800 relative mt-6 -mx-6 z-0 overflow-hidden">
+                      <motion.div
+                        initial={{ width: "0%" }}
+                        animate={{ width: isLineCompleted ? "100%" : "0%" }}
+                        transition={{ duration: 0.5 }}
+                        className="absolute inset-y-0 left-0 bg-primary shadow-[0_0_10px_rgba(184,36,36,0.5)]"
+                      />
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
           </div>
@@ -475,7 +478,7 @@ export default function AdmissionRegistration() {
                   />
 
                   <div className="md:col-span-2 pt-6 flex items-center gap-6">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 whitespace-nowrap">
+                    <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 whitespace-nowrap">
                       Identity References
                     </span>
                     <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800/50" />
@@ -624,7 +627,7 @@ export default function AdmissionRegistration() {
                           <div className="w-10 h-10 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 rounded-xl flex items-center justify-center group-hover:text-primary group-hover:border-primary/20 transition-all shadow-inner">
                             <FileText size={18} />
                           </div>
-                          <h3 className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-[0.2em]">
+                          <h3 className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-[0.2em]">
                             {field.label}
                           </h3>
                         </div>
