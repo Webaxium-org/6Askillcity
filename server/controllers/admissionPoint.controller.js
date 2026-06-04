@@ -96,7 +96,7 @@ export const createAdmissionPoint = async (req, res, next) => {
     if (existing) {
       throw createError(
         400,
-        "An admission point with this email is already registered.",
+        "An application point with this email is already registered.",
       );
     }
 
@@ -162,6 +162,46 @@ export const createAdmissionPoint = async (req, res, next) => {
       relatedId: admissionPoint._id,
       link: `/dashboard/partner-management`
     });
+
+    // Send email to the licensee email
+    try {
+      const subject = "6A Skillcity - Admission Point Registration Received";
+      const message = `Dear ${admissionPoint.licenseeName},\n\nThank you for submitting your Admission Point Registration application for ${admissionPoint.centerName}.\n\nYour application has been received and is currently under review by our administration team. We will notify you as soon as the review process is complete.\n\nBest regards,\n6A Skillcity Administration`;
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #1e3a8a; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">6A Skillcity</h2>
+            <p style="color: #6b7280; font-size: 13px; margin: 5px 0 0 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;">Partner Portal</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px; border-radius: 12px; color: #ffffff; margin-bottom: 30px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700;">Application Received</h3>
+            <p style="margin: 0; font-size: 15px; opacity: 0.9; line-height: 1.5;">Dear ${admissionPoint.licenseeName || 'Partner'}, thank you for submitting your Admission Point Registration application.</p>
+          </div>
+
+          <p style="color: #374151; font-size: 15px; line-height: 1.6; margin-bottom: 25px;">
+            Your application for <strong>${admissionPoint.centerName}</strong> has been successfully received and is currently under review by our administration team.
+          </p>
+
+          <p style="color: #374151; font-size: 15px; line-height: 1.6; margin-bottom: 25px;">
+            We will notify you via email as soon as the review process is complete.
+          </p>
+
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} 6A Skillcity. All rights reserved.</p>
+          </div>
+        </div>
+      `;
+
+      await sendEmail({
+        email: admissionPoint.licenseeEmail,
+        subject,
+        message,
+        html,
+      });
+    } catch (err) {
+      console.error("Failed to send registration receipt email:", err);
+    }
 
     res.status(201).json({
       success: true,

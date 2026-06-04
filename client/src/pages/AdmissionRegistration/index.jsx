@@ -33,6 +33,7 @@ export default function AdmissionRegistration() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const {
     register,
@@ -43,6 +44,7 @@ export default function AdmissionRegistration() {
     control,
     trigger,
     formState: { errors },
+    reset,
   } = useForm({
     resolver: yupResolver(admissionRegistrationSchema),
     mode: "onChange",
@@ -264,7 +266,33 @@ export default function AdmissionRegistration() {
 
       const responseData = await registerAdmissionPoint(formData);
       setIsSubmitting(false);
-      setIsSuccess(true);
+      reset({
+        licenseePhoto: [],
+        licenseeAadharCard: [],
+        businessLicense: [],
+        ownershipRentalAgreement: [],
+        officePhotos: [],
+        contactPersonPhoneCode: "+91",
+        localRefMobile1Code: "+91",
+        localRefMobile2Code: "+91",
+        contactPersonName: "",
+        contactPersonPhone: "",
+        licenseeName: "",
+        licenseeEmail: "",
+        localRefName1: "",
+        localRefMobile1: "",
+        localRefName2: "",
+        localRefMobile2: "",
+        centerName: "",
+        centerAddress: "",
+        country: "",
+        state: "",
+        city: "",
+        pincode: "",
+      });
+      setCurrentStep(1);
+      setShowSuccessMessage(true);
+      window.scrollTo(0, 0);
       dispatch(
         showAlert({
           type: "success",
@@ -272,10 +300,6 @@ export default function AdmissionRegistration() {
             "Your application has been received. We will notify you as soon as review is done. Thanks",
         }),
       );
-      setTimeout(() => {
-        setIsSuccess(false);
-        navigate("/");
-      }, 3000);
     } catch (error) {
       setIsSubmitting(false);
       handleFormError(error, setError, dispatch, navigate);
@@ -336,6 +360,28 @@ export default function AdmissionRegistration() {
             Partner with 6A Skillcity. Complete the form below to register your
             center.
           </p>
+
+          {showSuccessMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-2xl mx-auto p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] text-left mb-4"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-emerald-600 mb-2">
+                    Application Submitted Successfully
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                    Your application is currently under admin review. Once processed, we will notify you via the licensee email. Thank you!
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
