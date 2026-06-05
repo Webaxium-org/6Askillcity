@@ -195,6 +195,9 @@ export const generateCertificatePDF = (partner) => {
       doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0B2545").text("Authorised Signatory", col1X + 10, sigStartY + 4, { width: 120, align: "center" });
       doc.font("Helvetica").fontSize(7.5).fillColor("#6B7280").text("6A Skill City (OPC) Pvt. Ltd.", col1X + 10, sigStartY + 14, { width: 120, align: "center" });
 
+      // Save graphics state before seal clipping
+      doc.save();
+
       // Center Dotted Seal
       const sealCX = A4_WIDTH / 2;
       const sealCY = sigStartY + 10;
@@ -206,8 +209,8 @@ export const generateCertificatePDF = (partner) => {
       doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#0B2545").text("6A SKILL CITY", sealCX - 25, sealCY - 4, { width: 50, align: "center" });
       doc.font("Helvetica-Bold").fontSize(3.5).fillColor("#6B7280").text("APPLICATION POINT", sealCX - 25, sealCY + 7, { width: 50, align: "center" });
       
-      // Reset clipping path for the rest of the document
-      doc.initClip();
+      // Restore graphics state to clear the clipping path
+      doc.restore();
 
       // Right Signature
       doc.moveTo(col2X + 80, sigStartY).lineTo(col2X + 200, sigStartY).lineWidth(0.5).stroke("#9CA3AF");
