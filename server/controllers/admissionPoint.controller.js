@@ -8,6 +8,7 @@ import path from "path";
 import { s3, bucketName } from "../utils/s3Config.js";
 import { generateStrongPassword } from "../helper/index.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import { generateCertificatePDF } from "../utils/generateCertificatePDF.js";
 import { Cashfree, CFEnvironment } from "cashfree-pg";
 
 // Smart detection of Cashfree environment based on key prefix
@@ -1023,11 +1024,21 @@ export const completePartnerInspection = async (req, res, next) => {
     `;
 
     try {
+      const pdfBuffer = await generateCertificatePDF(partner);
+      const filename = `Authorisation_Certificate_${partner.centerName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
       await sendEmail({
         email: partner.licenseeEmail,
         subject,
         message,
         html,
+        attachments: [
+          {
+            filename,
+            content: pdfBuffer,
+            contentType: "application/pdf"
+          }
+        ]
       });
     } catch (err) {
       console.error("Failed to send authorisation email:", err);
