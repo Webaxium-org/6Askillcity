@@ -33,13 +33,13 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { load } from "@cashfreepayments/cashfree-js";
-import { 
-  getPartnerDashboardStats, 
+import {
+  getPartnerDashboardStats,
   getMyProfile,
   createInspectionFeeOrder,
   verifyInspectionFeePayment,
   recordOfflineInspectionFee,
-  uploadInspectionMedia
+  uploadInspectionMedia,
 } from "../../api/partner.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -66,7 +66,7 @@ export default function PartnerDashboard() {
   const dispatch = useDispatch();
   const [partnerProfile, setPartnerProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  
+
   const [stats, setStats] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedHalf, setSelectedHalf] = useState(
@@ -96,7 +96,8 @@ export default function PartnerDashboard() {
     const initializeCashfree = async () => {
       try {
         const cf = await load({
-          mode: import.meta.env.MODE === "production" ? "production" : "sandbox",
+          mode:
+            import.meta.env.MODE === "production" ? "production" : "sandbox",
         });
         setCashfree(cf);
       } catch (err) {
@@ -164,7 +165,11 @@ export default function PartnerDashboard() {
       const res = await verifyInspectionFeePayment(orderId);
       if (res.success) {
         // Clear query parameters
-        window.history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
         setPartnerProfile(res.data);
       }
     } catch (err) {
@@ -191,7 +196,10 @@ export default function PartnerDashboard() {
       }
     } catch (err) {
       console.error("Failed to initialize fee order:", err);
-      alert(err.response?.data?.message || "Failed to initiate payment. Please try again.");
+      alert(
+        err.response?.data?.message ||
+          "Failed to initiate payment. Please try again.",
+      );
     } finally {
       setIsPaying(false);
     }
@@ -200,11 +208,21 @@ export default function PartnerDashboard() {
   const handleOfflinePay = async (e) => {
     e.preventDefault();
     if (!offlinePaymentData.transactionId) {
-      dispatch(showAlert({ type: "error", message: "Please specify the Transaction ID." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please specify the Transaction ID.",
+        }),
+      );
       return;
     }
     if (!offlineReceipt) {
-      dispatch(showAlert({ type: "error", message: "Please attach a receipt for offline payment." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Please attach a receipt for offline payment.",
+        }),
+      );
       return;
     }
 
@@ -216,29 +234,55 @@ export default function PartnerDashboard() {
       formData.append("transactionId", offlinePaymentData.transactionId);
       formData.append("remarks", offlinePaymentData.remarks);
       formData.append("receipt", offlineReceipt);
-      
+
       // Allow partner to submit their own fee by not sending partnerId (uses token) or passing it explicitly
       const res = await recordOfflineInspectionFee(formData);
       if (res.success) {
-        dispatch(showAlert({ type: "success", message: "Offline payment receipt uploaded successfully!" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Offline payment receipt uploaded successfully!",
+          }),
+        );
         setPartnerProfile(res.data);
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Failed to submit offline payment." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message:
+            err.response?.data?.message || "Failed to submit offline payment.",
+        }),
+      );
     } finally {
       setIsOfflinePaying(false);
     }
   };
 
   const handleUploadMedia = async () => {
-    if (!officeVideoFile || !officePhotosFiles || officePhotosFiles.length === 0) {
-      dispatch(showAlert({ type: "error", message: "Please select both a video file and at least one office photo." }));
+    if (
+      !officeVideoFile ||
+      !officePhotosFiles ||
+      officePhotosFiles.length === 0
+    ) {
+      dispatch(
+        showAlert({
+          type: "error",
+          message:
+            "Please select both a video file and at least one office photo.",
+        }),
+      );
       return;
     }
-    
+
     // Validate file size on client (max 200MB)
     if (officeVideoFile.size > 200 * 1024 * 1024) {
-      dispatch(showAlert({ type: "error", message: "Video file is too large. Maximum allowed size is 200MB." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: "Video file is too large. Maximum allowed size is 200MB.",
+        }),
+      );
       return;
     }
 
@@ -247,20 +291,30 @@ export default function PartnerDashboard() {
       const formData = new FormData();
       formData.append("video", officeVideoFile);
       if (officePhotosFiles && officePhotosFiles.length > 0) {
-        Array.from(officePhotosFiles).forEach(file => {
+        Array.from(officePhotosFiles).forEach((file) => {
           formData.append("photos", file);
         });
       }
-      
+
       const res = await uploadInspectionMedia(formData);
       if (res.success) {
-        dispatch(showAlert({ type: "success", message: "Inspection media uploaded successfully!" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: "Inspection media uploaded successfully!",
+          }),
+        );
         setPartnerProfile(res.data);
         setOfficeVideoFile(null);
         setOfficePhotosFiles([]);
       }
     } catch (err) {
-      dispatch(showAlert({ type: "error", message: err.response?.data?.message || "Failed to upload media." }));
+      dispatch(
+        showAlert({
+          type: "error",
+          message: err.response?.data?.message || "Failed to upload media.",
+        }),
+      );
     } finally {
       setIsUploadingMedia(false);
     }
@@ -272,7 +326,9 @@ export default function PartnerDashboard() {
       <DashboardLayout title="Partner Portal">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Initializing Portal Session...</p>
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+            Initializing Portal Session...
+          </p>
         </div>
       </DashboardLayout>
     );
@@ -281,7 +337,8 @@ export default function PartnerDashboard() {
   // Gated Onboarding View
   if (partnerProfile && partnerProfile.onboardingState !== "completed") {
     const isFeePending = partnerProfile.onboardingState === "fee_pending";
-    const isInspectionPending = partnerProfile.onboardingState === "inspection_pending";
+    const isInspectionPending =
+      partnerProfile.onboardingState === "inspection_pending";
 
     return (
       <DashboardLayout title="Partner Onboarding">
@@ -295,7 +352,8 @@ export default function PartnerDashboard() {
               Partner Activation Sequence
             </h2>
             <p className="text-muted-foreground font-medium max-w-md mx-auto text-sm sm:text-base">
-              Welcome, {partnerProfile.centerName}! Complete these two onboarding steps to activate your Application Point dashboard.
+              Welcome, {partnerProfile.centerName}! Complete these two
+              onboarding steps to activate your Application Point dashboard.
             </p>
           </div>
 
@@ -303,22 +361,27 @@ export default function PartnerDashboard() {
           {isVerifying && (
             <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
               <Loader2 className="w-12 h-12 text-primary animate-spin" />
-              <h3 className="font-bold text-lg">Verifying Inspection Fee Payment...</h3>
-              <p className="text-xs text-muted-foreground font-black uppercase tracking-widest">Querying Cashfree Network Nodes</p>
+              <h3 className="font-bold text-lg">
+                Verifying Inspection Fee Payment...
+              </h3>
+              <p className="text-xs text-muted-foreground font-black uppercase tracking-widest">
+                Querying Cashfree Network Nodes
+              </p>
             </div>
           )}
 
           {/* Interactive Step Timeline */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-              
               {/* Step 1 Card: Pay Fee */}
-              <div className={cn(
-                "p-8 rounded-[2rem] border transition-all shadow-sm relative overflow-hidden bg-card",
-                isFeePending 
-                  ? "border-primary/30 ring-1 ring-primary/10 shadow-lg shadow-primary/5" 
-                  : "border-border opacity-75"
-              )}>
+              <div
+                className={cn(
+                  "p-8 rounded-[2rem] border transition-all shadow-sm relative overflow-hidden bg-card",
+                  isFeePending
+                    ? "border-primary/30 ring-1 ring-primary/10 shadow-lg shadow-primary/5"
+                    : "border-border opacity-75",
+                )}
+              >
                 {/* Visual Ribbon */}
                 {isFeePending && (
                   <div className="absolute top-0 right-0 p-4">
@@ -329,10 +392,14 @@ export default function PartnerDashboard() {
                 )}
 
                 <div className="flex items-start gap-5">
-                  <div className={cn(
-                    "p-3 rounded-2xl flex-shrink-0 flex items-center justify-center font-black text-sm",
-                    isFeePending ? "bg-primary text-primary-foreground" : "bg-emerald-500/10 text-emerald-600"
-                  )}>
+                  <div
+                    className={cn(
+                      "p-3 rounded-2xl flex-shrink-0 flex items-center justify-center font-black text-sm",
+                      isFeePending
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-emerald-500/10 text-emerald-600",
+                    )}
+                  >
                     {!isFeePending ? <CheckCircle className="w-5 h-5" /> : "01"}
                   </div>
                   <div className="space-y-4 flex-1">
@@ -341,19 +408,26 @@ export default function PartnerDashboard() {
                         Pay Onboarding Inspection Fee
                       </h3>
                       <p className="text-xs text-muted-foreground font-medium mt-1">
-                        A mandatory one-time registration and audit fee of ₹5,000.
+                        A mandatory one-time registration and audit fee of
+                        ₹5,000.
                       </p>
                     </div>
 
                     {isFeePending ? (
                       <div className="bg-muted/30 border border-border/50 rounded-2xl p-5 space-y-4">
                         <div className="flex justify-between items-center text-sm font-bold">
-                          <span className="text-muted-foreground font-medium">Standard Audit Fee:</span>
+                          <span className="text-muted-foreground font-medium">
+                            Standard Audit Fee:
+                          </span>
                           <span className="text-foreground">₹5,000.00</span>
                         </div>
                         <div className="flex justify-between items-center text-sm font-bold border-t border-border/50 pt-3">
-                          <span className="text-muted-foreground font-medium">Total Amount Due:</span>
-                          <span className="text-primary font-black text-lg">₹5,000.00</span>
+                          <span className="text-muted-foreground font-medium">
+                            Total Amount Due:
+                          </span>
+                          <span className="text-primary font-black text-lg">
+                            ₹5,000.00
+                          </span>
                         </div>
 
                         {/* Tabs for Online vs Offline */}
@@ -364,7 +438,7 @@ export default function PartnerDashboard() {
                               "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
                               paymentMethodTab === "online"
                                 ? "bg-white shadow-sm text-foreground"
-                                : "text-muted-foreground hover:text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
                             )}
                           >
                             Pay Online
@@ -375,7 +449,7 @@ export default function PartnerDashboard() {
                               "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
                               paymentMethodTab === "offline"
                                 ? "bg-white shadow-sm text-foreground"
-                                : "text-muted-foreground hover:text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
                             )}
                           >
                             Upload Receipt
@@ -401,13 +475,23 @@ export default function PartnerDashboard() {
                             )}
                           </button>
                         ) : (
-                          <form onSubmit={handleOfflinePay} className="space-y-4 pt-2">
+                          <form
+                            onSubmit={handleOfflinePay}
+                            className="space-y-4 pt-2"
+                          >
                             <div className="space-y-3">
                               <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Payment Method</label>
-                                <select 
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">
+                                  Payment Method
+                                </label>
+                                <select
                                   value={offlinePaymentData.method}
-                                  onChange={(e) => setOfflinePaymentData({...offlinePaymentData, method: e.target.value})}
+                                  onChange={(e) =>
+                                    setOfflinePaymentData({
+                                      ...offlinePaymentData,
+                                      method: e.target.value,
+                                    })
+                                  }
                                   className="w-full px-4 py-3 bg-white border border-border rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
                                 >
                                   <option>Offline / Cash</option>
@@ -416,28 +500,41 @@ export default function PartnerDashboard() {
                                 </select>
                               </div>
                               <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Transaction ID / Ref No</label>
-                                <input 
-                                  type="text" 
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">
+                                  Transaction ID / Ref No
+                                </label>
+                                <input
+                                  type="text"
                                   placeholder="e.g. TXN12345678"
                                   value={offlinePaymentData.transactionId}
-                                  onChange={(e) => setOfflinePaymentData({...offlinePaymentData, transactionId: e.target.value})}
+                                  onChange={(e) =>
+                                    setOfflinePaymentData({
+                                      ...offlinePaymentData,
+                                      transactionId: e.target.value,
+                                    })
+                                  }
                                   className="w-full px-4 py-3 bg-white border border-border rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Payment Receipt</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">
+                                  Payment Receipt
+                                </label>
                                 <div className="relative border-2 border-dashed border-border rounded-xl p-4 text-center hover:bg-muted/50 transition-colors">
-                                  <input 
-                                    type="file" 
+                                  <input
+                                    type="file"
                                     accept="image/*,.pdf"
-                                    onChange={(e) => setOfflineReceipt(e.target.files[0])}
+                                    onChange={(e) =>
+                                      setOfflineReceipt(e.target.files[0])
+                                    }
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   />
                                   <div className="flex flex-col items-center justify-center gap-2">
                                     <Upload className="w-6 h-6 text-muted-foreground" />
                                     <span className="text-xs font-bold text-muted-foreground">
-                                      {offlineReceipt ? offlineReceipt.name : "Click or drag receipt here"}
+                                      {offlineReceipt
+                                        ? offlineReceipt.name
+                                        : "Click or drag receipt here"}
                                     </span>
                                   </div>
                                 </div>
@@ -466,7 +563,9 @@ export default function PartnerDashboard() {
                     ) : (
                       <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex items-center gap-3 text-emerald-600 text-xs font-bold">
                         <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                        <span>Payment Completed Successfully! Session Registered.</span>
+                        <span>
+                          Payment Completed Successfully! Session Registered.
+                        </span>
                       </div>
                     )}
                   </div>
@@ -474,17 +573,23 @@ export default function PartnerDashboard() {
               </div>
 
               {/* Step 2 Card: Online / Physical Inspection */}
-              <div className={cn(
-                "p-8 rounded-[2rem] border transition-all shadow-sm bg-card",
-                isInspectionPending 
-                  ? "border-blue-500/30 ring-1 ring-blue-500/10 shadow-lg shadow-blue-500/5" 
-                  : "border-border opacity-60"
-              )}>
+              <div
+                className={cn(
+                  "p-8 rounded-[2rem] border transition-all shadow-sm bg-card",
+                  isInspectionPending
+                    ? "border-blue-500/30 ring-1 ring-blue-500/10 shadow-lg shadow-blue-500/5"
+                    : "border-border opacity-60",
+                )}
+              >
                 <div className="flex items-start gap-5">
-                  <div className={cn(
-                    "p-3 rounded-2xl flex-shrink-0 flex items-center justify-center font-black text-sm",
-                    isInspectionPending ? "bg-blue-500 text-white animate-pulse" : "bg-muted text-muted-foreground"
-                  )}>
+                  <div
+                    className={cn(
+                      "p-3 rounded-2xl flex-shrink-0 flex items-center justify-center font-black text-sm",
+                      isInspectionPending
+                        ? "bg-blue-500 text-white animate-pulse"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
                     "02"
                   </div>
                   <div className="space-y-4 flex-1">
@@ -493,7 +598,8 @@ export default function PartnerDashboard() {
                         Online / Physical Inspection Verification
                       </h3>
                       <p className="text-xs text-muted-foreground font-medium mt-1">
-                        Auditing center layout, infrastructure logs, and documentation verification.
+                        Auditing center layout, infrastructure logs, and
+                        documentation verification.
                       </p>
                     </div>
 
@@ -503,22 +609,32 @@ export default function PartnerDashboard() {
                           <div className="flex items-start gap-3">
                             <Clock className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
                             <div className="space-y-1">
-                              <p className="text-xs font-bold text-red-600 uppercase tracking-widest">Inspection Rejected</p>
+                              <p className="text-xs font-bold text-red-600 uppercase tracking-widest">
+                                Inspection Rejected
+                              </p>
                               <p className="text-xs font-medium text-red-500/80 leading-relaxed">
                                 Your inspection media was rejected by our team.
                               </p>
                               <div className="bg-red-500/10 p-3 rounded-xl border border-red-500/20 mt-2 text-sm text-red-700 font-medium">
-                                <strong>Reason:</strong> {partnerProfile.inspectionRejectionReason || "Please upload clear video and photos."}
+                                <strong>Reason:</strong>{" "}
+                                {partnerProfile.inspectionRejectionReason ||
+                                  "Please upload clear video and photos."}
                               </div>
                             </div>
                           </div>
-                        ) : partnerProfile.documents?.officeVideo?.length > 0 ? (
+                        ) : partnerProfile.documents?.officeVideo?.length >
+                          0 ? (
                           <div className="flex items-start gap-3">
                             <Clock className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                             <div className="space-y-1">
-                              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Verification In Progress</p>
+                              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest">
+                                Verification In Progress
+                              </p>
                               <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                                Your fee and center media have been successfully submitted. Our auditing panel is currently reviewing your application. You will be notified of the outcome shortly.
+                                Your fee and center media have been successfully
+                                submitted. Our auditing panel is currently
+                                reviewing your application. You will be notified
+                                of the outcome shortly.
                               </p>
                             </div>
                           </div>
@@ -526,9 +642,20 @@ export default function PartnerDashboard() {
                           <div className="flex items-start gap-3">
                             <Clock className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                             <div className="space-y-1">
-                              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Inspection In Progress</p>
+                              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                                Inspection In Progress
+                              </p>
                               <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                                Our auditing panel has been notified of your fee completion. An administrator will contact you shortly at your corporate email <strong>{partnerProfile.licenseeEmail}</strong> or telephone <strong>{partnerProfile.licenseeContactNumber}</strong> to coordinate the digital or physical site inspection.
+                                Our auditing panel has been notified of your fee
+                                completion. An administrator will contact you
+                                shortly at your corporate email{" "}
+                                <strong>{partnerProfile.licenseeEmail}</strong>{" "}
+                                or telephone{" "}
+                                <strong>
+                                  {partnerProfile.licenseeContactNumber}
+                                </strong>{" "}
+                                to coordinate the digital or physical site
+                                inspection.
                               </p>
                             </div>
                           </div>
@@ -541,59 +668,81 @@ export default function PartnerDashboard() {
                             Upload Center Media
                           </h4>
                           <p className="text-xs text-muted-foreground mb-4">
-                            Please upload a brief video and clear photos showing your center's facilities. This helps expedite the physical inspection process. (Max video size: 200MB)
+                            Please upload a brief video and clear photos showing
+                            your center's facilities. This helps expedite the
+                            physical inspection process. (Max video size: 200MB)
                           </p>
-                          
-                          {partnerProfile.documents?.officeVideo?.length > 0 && partnerProfile.inspectionStatus !== "rejected" ? (
+
+                          {partnerProfile.documents?.officeVideo?.length > 0 &&
+                          partnerProfile.inspectionStatus !== "rejected" ? (
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3 text-emerald-700">
                               <CheckCircle className="w-5 h-5 flex-shrink-0" />
                               <div className="text-sm font-bold">
                                 Media Uploaded Successfully
-                                <div className="text-xs font-medium opacity-80 mt-0.5">Your center media has been received by the audit team.</div>
+                                <div className="text-xs font-medium opacity-80 mt-0.5">
+                                  Your center media has been received by the
+                                  audit team.
+                                </div>
                               </div>
                             </div>
                           ) : (
                             <div className="space-y-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="relative border-2 border-dashed border-blue-500/20 rounded-xl p-6 text-center hover:bg-blue-500/5 transition-colors">
-                                  <input 
-                                    type="file" 
+                                  <input
+                                    type="file"
                                     accept="video/*"
-                                    onChange={(e) => setOfficeVideoFile(e.target.files[0])}
+                                    onChange={(e) =>
+                                      setOfficeVideoFile(e.target.files[0])
+                                    }
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   />
                                   <div className="flex flex-col items-center justify-center gap-2">
                                     <Video className="w-6 h-6 text-blue-500/50" />
                                     <span className="text-xs font-bold text-blue-900">
-                                      {officeVideoFile ? officeVideoFile.name : "Select Center Video (Required)"}
+                                      {officeVideoFile
+                                        ? officeVideoFile.name
+                                        : "Select Center Video (Required)"}
                                     </span>
                                     {officeVideoFile && (
                                       <span className="text-[10px] text-muted-foreground">
-                                        {(officeVideoFile.size / (1024 * 1024)).toFixed(2)} MB
+                                        {(
+                                          officeVideoFile.size /
+                                          (1024 * 1024)
+                                        ).toFixed(2)}{" "}
+                                        MB
                                       </span>
                                     )}
                                   </div>
                                 </div>
 
                                 <div className="relative border-2 border-dashed border-blue-500/20 rounded-xl p-6 text-center hover:bg-blue-500/5 transition-colors">
-                                  <input 
-                                    type="file" 
+                                  <input
+                                    type="file"
                                     accept="image/*"
                                     multiple
-                                    onChange={(e) => setOfficePhotosFiles(e.target.files)}
+                                    onChange={(e) =>
+                                      setOfficePhotosFiles(e.target.files)
+                                    }
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   />
                                   <div className="flex flex-col items-center justify-center gap-2">
                                     <Image className="w-6 h-6 text-blue-500/50" />
                                     <span className="text-xs font-bold text-blue-900">
-                                      {officePhotosFiles.length > 0 ? `${officePhotosFiles.length} Photo(s) Selected` : "Select Office Photos (Required)"}
+                                      {officePhotosFiles.length > 0
+                                        ? `${officePhotosFiles.length} Photo(s) Selected`
+                                        : "Select Office Photos (Required)"}
                                     </span>
                                   </div>
                                 </div>
                               </div>
                               <button
                                 onClick={handleUploadMedia}
-                                disabled={!officeVideoFile || officePhotosFiles.length === 0 || isUploadingMedia}
+                                disabled={
+                                  !officeVideoFile ||
+                                  officePhotosFiles.length === 0 ||
+                                  isUploadingMedia
+                                }
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {isUploadingMedia ? (
@@ -620,35 +769,64 @@ export default function PartnerDashboard() {
                   </div>
                 </div>
               </div>
-
             </div>
 
             {/* Right Side: Step Summary & Help */}
             <div className="space-y-6">
               <div className="bg-card border border-border p-6 rounded-[2rem] space-y-6 shadow-sm">
-                <h4 className="font-black text-xs uppercase tracking-widest text-muted-foreground">Sequence Summary</h4>
-                
+                <h4 className="font-black text-xs uppercase tracking-widest text-muted-foreground">
+                  Sequence Summary
+                </h4>
+
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
-                      isFeePending ? "bg-primary/10 text-primary" : "bg-emerald-500/10 text-emerald-600"
-                    )}>
-                      {!isFeePending ? <CheckCircle className="w-4 h-4" /> : "1"}
+                    <div
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+                        isFeePending
+                          ? "bg-primary/10 text-primary"
+                          : "bg-emerald-500/10 text-emerald-600",
+                      )}
+                    >
+                      {!isFeePending ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        "1"
+                      )}
                     </div>
-                    <span className={cn("text-xs font-bold", !isFeePending ? "text-emerald-600" : "text-foreground")}>Inspection Fee Payment</span>
+                    <span
+                      className={cn(
+                        "text-xs font-bold",
+                        !isFeePending ? "text-emerald-600" : "text-foreground",
+                      )}
+                    >
+                      Inspection Fee Payment
+                    </span>
                   </div>
 
                   <div className="h-4 w-0.5 bg-border ml-3.5" />
 
                   <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
-                      isInspectionPending ? "bg-blue-500/10 text-blue-600" : "bg-muted text-muted-foreground"
-                    )}>
+                    <div
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+                        isInspectionPending
+                          ? "bg-blue-500/10 text-blue-600"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
                       "2"
                     </div>
-                    <span className={cn("text-xs font-bold", isInspectionPending ? "text-blue-600" : "text-muted-foreground")}>Site & Document Audit</span>
+                    <span
+                      className={cn(
+                        "text-xs font-bold",
+                        isInspectionPending
+                          ? "text-blue-600"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      Online / Physical Inspection Verification
+                    </span>
                   </div>
 
                   <div className="h-4 w-0.5 bg-border ml-3.5" />
@@ -657,14 +835,20 @@ export default function PartnerDashboard() {
                     <div className="w-7 h-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold">
                       "3"
                     </div>
-                    <span className="text-xs font-bold text-muted-foreground">Dashboard Access & Letter</span>
+                    <span className="text-xs font-bold text-muted-foreground">
+                      Dashboard Access & Letter
+                    </span>
                   </div>
                 </div>
 
                 <div className="border-t border-border pt-5 space-y-3">
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Need Assistance?</h5>
+                  <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Need Assistance?
+                  </h5>
                   <p className="text-[11px] font-medium text-muted-foreground leading-relaxed">
-                    If you have questions about the onboarding sequence, inspection checklist, or payment receipt, please write to us at <strong>partner@6askillcity.com</strong>.
+                    If you have questions about the onboarding sequence,
+                    inspection checklist, or payment receipt, please write to us
+                    at <strong>partner@6askillcity.com</strong>.
                   </p>
                 </div>
               </div>
@@ -691,7 +875,7 @@ export default function PartnerDashboard() {
   })();
 
   const currentMonthData = enrollmentData.find(
-    (item) => item.name === currentMonthLabel
+    (item) => item.name === currentMonthLabel,
   );
 
   const currentMonthEnrollment = currentMonthData
@@ -708,9 +892,6 @@ export default function PartnerDashboard() {
   return (
     <DashboardLayout title="Partner Dashboard">
       <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
-        
-
-
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
