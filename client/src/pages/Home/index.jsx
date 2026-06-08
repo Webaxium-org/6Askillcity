@@ -1195,11 +1195,11 @@ export default function App() {
           {/* RECRUITMENT PATHWAYS */}
           <section
             id="partnership"
-            className="py-32 bg-slate-950 text-slate-50 overflow-hidden relative"
+            className="py-32 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-hidden relative"
           >
             {/* Background elements */}
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-[#17468C]/20 to-transparent blur-[120px] rounded-full pointer-events-none translate-x-1/3 -translate-y-1/3" />
-            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-[#B82424]/10 to-transparent blur-[100px] rounded-full pointer-events-none -translate-x-1/3 translate-y-1/3" />
+            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-[#17468C]/5 dark:from-[#17468C]/20 to-transparent blur-[120px] rounded-full pointer-events-none translate-x-1/3 -translate-y-1/3" />
+            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-[#B82424]/3 dark:from-[#B82424]/10 to-transparent blur-[100px] rounded-full pointer-events-none -translate-x-1/3 translate-y-1/3" />
 
             <div className="container mx-auto px-6 relative z-10">
               <motion.div
@@ -1207,14 +1207,13 @@ export default function App() {
                 whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, type: "spring" }}
-                className="text-center max-w-3xl mx-auto mb-20 space-y-6"
+                className="text-center max-w-3xl mx-auto mb-20 space-y-4"
               >
-                <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-white">
+                <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#17468C] to-[#B82424] pb-1">
                   Partner Ecosystem
                 </h2>
-                <p className="text-white/60 text-lg leading-relaxed">
-                  Choose your pathway and start your journey as an official 6A
-                  Skillcity partner.
+                <p className="text-lg lg:text-xl font-semibold leading-relaxed text-transparent bg-clip-text bg-gradient-to-r from-[#17468C] to-[#B82424] inline-block">
+                  Choose your pathway and start your journey as an official 6A Skillcity partner.
                 </p>
               </motion.div>
 
@@ -1225,13 +1224,9 @@ export default function App() {
                     subtitle: "Application Recruitment",
                     description:
                       "6A Skillcity invites ADMISSION APPLICATION POINT from across India to partner and facilitate the admission process for students. Partnering with us allows admission recruiters to streamline the admission process for students, providing them with access to a diverse range of UGC-approved courses.",
-                    color: "text-blue-400",
-                    hoverGradient:
-                      "from-[#17468C]/20 via-[#17468C]/5 to-transparent",
-                    bgBadge:
-                      "bg-[#17468C]/20 text-blue-300 border border-[#17468C]/30",
-                    buttonClass:
-                      "bg-gradient-to-r from-[#1570ff] to-[#0949d0] shadow-[#1570ff]/25 hover:shadow-[#1570ff]/40 border-transparent",
+                    color: "text-[#17468C] dark:text-blue-400",
+                    titleClass: "text-[#17468C] dark:text-blue-400",
+                    buttonClass: "bg-[#1570ff] hover:bg-[#0949d0] shadow-[#1570ff]/15 hover:shadow-[#1570ff]/25 text-white",
                     points: [
                       "Assist students in the application process for The Global University programs.",
                       "Provide guidance and support to applicants throughout the admission journey.",
@@ -1245,13 +1240,9 @@ export default function App() {
                     subtitle: "Skill-Based Learning",
                     description:
                       "6A Skillcity recognizes the importance of skill education in preparing students for the dynamic demands of the workforce. We invite skill education centers across India to partner with us in offering specialized courses that cater to the needs of various industries.",
-                    color: "text-red-400",
-                    hoverGradient:
-                      "from-[#B82424]/20 via-[#B82424]/5 to-transparent",
-                    bgBadge:
-                      "bg-[#B82424]/20 text-red-300 border border-[#B82424]/30",
-                    buttonClass:
-                      "bg-gradient-to-r from-[#e60000] to-[#990000] shadow-[#e60000]/25 hover:shadow-[#e60000]/40 border-transparent",
+                    color: "text-[#B82424] dark:text-red-400",
+                    titleClass: "text-[#B82424] dark:text-red-400",
+                    buttonClass: "bg-[#B82424] hover:bg-[#990000] shadow-[#B82424]/15 hover:shadow-[#B82424]/25 text-white",
                     points: [
                       "Offer The Global University skill-enhancing programs to your students.",
                       "Provide hands-on training and practical experience in alignment with industry requirements.",
@@ -1261,17 +1252,13 @@ export default function App() {
                     ],
                   },
                   {
-                    title: "Skill Testing Centres",
+                    title: "Skill Assessment Centres",
                     subtitle: "Skill Testing & Certification",
                     description:
                       "6A Skillcity invites SKILL TESTING CENTRES to partner with us in facilitating assessments for individuals who possess practical skills but lack formal certification. Our partner universities evaluate their real-world expertise and award UGC-approved certificates to validate their capabilities.",
-                    color: "text-emerald-400",
-                    hoverGradient:
-                      "from-[#10b981]/20 via-[#10b981]/5 to-transparent",
-                    bgBadge:
-                      "bg-[#10b981]/20 text-emerald-300 border border-[#10b981]/30",
-                    buttonClass:
-                      "bg-gradient-to-r from-[#008F35] to-[#008F35] shadow-[#10b981]/25 hover:shadow-[#10b981]/40 border-transparent",
+                    color: "text-[#047857] dark:text-emerald-400",
+                    titleClass: "text-[#047857] dark:text-emerald-400",
+                    buttonClass: "bg-[#047857] hover:bg-[#03543e] shadow-[#047857]/15 hover:shadow-[#047857]/25 text-white",
                     points: [
                       "Partner with universities to test and evaluate candidates' existing practical skills.",
                       "Facilitate formal UGC-approved certification for experienced individuals.",
@@ -1294,69 +1281,52 @@ export default function App() {
                     }}
                     className="h-full"
                   >
-                    <Card className="bg-white/5 backdrop-blur-xl border-white/10 text-white h-full flex flex-col relative overflow-hidden group hover:border-white/20 transition-all duration-500 shadow-2xl rounded-3xl">
-                      {/* Animated gradient background on hover */}
-                      <div
-                        className={cn(
-                          "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none bg-gradient-to-br",
-                          path.hoverGradient,
-                        )}
-                      />
-
-                      <CardHeader className="pb-8 pt-10 px-10 relative z-10">
-                        <div className="mb-6">
-                          <span
-                            className={cn(
-                              "inline-flex px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-inner",
-                              path.bgBadge,
-                            )}
-                          >
+                    <Card className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 text-slate-900 dark:text-slate-100 h-full flex flex-col relative overflow-hidden group transition-all duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[2.5rem] hover:-translate-y-2 hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_25px_60px_rgba(0,0,0,0.4)]">
+                      <CardHeader className="pb-4 pt-10 px-8 relative z-10 flex flex-col items-start">
+                        <div className="mb-4">
+                          <span className="inline-flex px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#e2e8f0]/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/30 dark:border-slate-700/50">
                             {path.subtitle}
                           </span>
                         </div>
-                        <CardTitle className="text-4xl font-bold text-white group-hover:translate-x-2 transition-transform duration-500">
+                        <CardTitle className={cn("text-2xl font-bold tracking-tight mb-2 transition-transform duration-500", path.titleClass)}>
                           {path.title}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="flex-grow space-y-6 px-10 relative z-10">
+                      <CardContent className="flex-grow space-y-6 px-8 pb-8 relative z-10">
                         {path.description && (
-                          <p className="text-white/50 text-[15px] leading-relaxed mb-6 line-clamp-4 group-hover:line-clamp-none transition-all duration-500">
+                          <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6 font-normal">
                             {path.description}
                           </p>
                         )}
 
-                        {path.points.map((point, idx) => (
-                          <div key={idx} className="flex items-center gap-4">
-                            <CheckCircle
-                              size={22}
-                              className={cn(
-                                "transition-transform duration-500 group-hover:scale-125",
-                                path.color,
-                              )}
-                            />
-                            <span className="text-white/70 font-medium text-lg">
-                              {point}
-                            </span>
-                          </div>
-                        ))}
+                        <div className="space-y-4">
+                          {path.points.map((point, idx) => (
+                            <div key={idx} className="flex items-start gap-3">
+                              <CheckCircle
+                                size={18}
+                                className={cn("mt-1 shrink-0", path.color)}
+                              />
+                              <span className="text-slate-600 dark:text-slate-300 font-normal text-sm leading-relaxed">
+                                {point}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </CardContent>
-                      <CardFooter className="px-10 pb-10 pt-6 relative z-10">
+                      <CardFooter className="px-8 pb-10 pt-4 relative z-10 flex justify-center">
                         <Button
                           variant="none"
                           size="none"
                           className={cn(
-                            "w-full py-3 px-6 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-2xl hover:-translate-y-1 border-transparent text-lg h-auto",
-                            path.buttonClass,
+                            "w-full py-3.5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-md hover:-translate-y-0.5 border-transparent text-sm h-auto flex items-center justify-center gap-2",
+                            path.buttonClass
                           )}
                           onClick={() => navigate("/register-admission-point")}
                         >
                           <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
                           <span className="relative z-10 flex items-center justify-center gap-2">
                             Be a Partner
-                            <MoveRight
-                              size={24}
-                              className="transition-transform duration-300 group-hover/btn:translate-x-1"
-                            />
+                            <MoveRight size={16} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
                           </span>
                         </Button>
                       </CardFooter>
@@ -1665,7 +1635,7 @@ export default function App() {
                 >
                   Curriculum & Pathways
                 </Badge>
-                <h2 className="text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-none">
+                <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#17468C] to-[#B82424] pb-1">
                   Academic Programs
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-xl mx-auto">
