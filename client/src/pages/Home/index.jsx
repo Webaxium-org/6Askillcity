@@ -17,7 +17,7 @@ import {
   Eye,
   Handshake,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import { axiosInstance } from "../../api/axiosInstance";
@@ -523,7 +523,10 @@ export default function App() {
   const dispatch = useDispatch();
 
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState("bachelors");
+  const location = useLocation();
+  const [activeCategory, setActiveCategory] = useState(() => {
+    return location.state?.fromCategory || "bachelors";
+  });
   const [highlightInquiry, setHighlightInquiry] = useState(false);
   const [dbPrograms, setDbPrograms] = useState([]);
   const [dbBranches, setDbBranches] = useState([]);
@@ -560,20 +563,20 @@ export default function App() {
     bachelors.length > 0
       ? bachelors
       : staticBachelors.map((name, i) => ({
-          _id: `fallback-bach-${i}`,
-          name,
-          isFallback: true,
-        }));
+        _id: `fallback-bach-${i}`,
+        name,
+        isFallback: true,
+      }));
 
   const masters = dbPrograms.filter((p) => p.programType === "Masters Degree");
   const mastersList =
     masters.length > 0
       ? masters
       : staticMasters.map((name, i) => ({
-          _id: `fallback-mast-${i}`,
-          name,
-          isFallback: true,
-        }));
+        _id: `fallback-mast-${i}`,
+        name,
+        isFallback: true,
+      }));
 
   const pgDiplomaBranches = dbBranches.filter(
     (b) =>
@@ -584,15 +587,15 @@ export default function App() {
   const pgDiplomasList =
     pgDiplomaBranches.length > 0
       ? pgDiplomaBranches.map((b) => ({
-          _id: b.program._id,
-          name: b.name,
-          isFallback: false,
-        }))
+        _id: b.program._id,
+        name: b.name,
+        isFallback: false,
+      }))
       : staticPgDiplomas.map((name, i) => ({
-          _id: `fallback-pgd-${i}`,
-          name,
-          isFallback: true,
-        }));
+        _id: `fallback-pgd-${i}`,
+        name,
+        isFallback: true,
+      }));
 
   const skillPrograms = dbPrograms.filter(
     (p) => p.programType === "Skill Programs",
@@ -601,16 +604,16 @@ export default function App() {
     skillPrograms.length > 0
       ? skillPrograms
       : staticSkillPrograms.map((name, i) => ({
-          _id: `fallback-skill-${i}`,
-          name,
-          isFallback: true,
-        }));
+        _id: `fallback-skill-${i}`,
+        name,
+        isFallback: true,
+      }));
 
   const programCategories = [
     {
       id: "bachelors",
-      title: "Bachelors Degree",
-      subtitle: "Undergraduate Education",
+      title: "Under Graduate",
+      subtitle: "Education",
       count: `${bachelorsList.length} Programs`,
       icon: GraduationCap,
       color: "from-blue-600 to-indigo-600",
@@ -624,7 +627,7 @@ export default function App() {
     },
     {
       id: "masters",
-      title: "Masters Degree",
+      title: "Master Graduate",
       subtitle: "Postgraduate Excellence",
       count: `${mastersList.length} Programs`,
       icon: School,
@@ -654,7 +657,7 @@ export default function App() {
     },
     {
       id: "skill-programs",
-      title: "Skill Programs",
+      title: "Post Graduate Certificate",
       subtitle: "Skilled & Practical Learning",
       count: `${skillProgramsList.length} Programs`,
       icon: Sparkles,
@@ -889,31 +892,31 @@ export default function App() {
                   animate={
                     highlightInquiry
                       ? {
-                          scale: [1, 1.06, 0.96, 1.02, 1],
-                          rotateY: [0, 360],
-                          z: [0, 40, -10, 5, 0],
-                        }
+                        scale: [1, 1.06, 0.96, 1.02, 1],
+                        rotateY: [0, 360],
+                        z: [0, 40, -10, 5, 0],
+                      }
                       : {
-                          opacity: 1,
-                          scale: 1,
-                          filter: "blur(0px)",
-                          y: 0,
-                          rotateX: 0,
-                          rotateY: 0,
-                        }
+                        opacity: 1,
+                        scale: 1,
+                        filter: "blur(0px)",
+                        y: 0,
+                        rotateX: 0,
+                        rotateY: 0,
+                      }
                   }
                   transition={
                     highlightInquiry
                       ? {
-                          duration: 2.5,
-                          ease: "easeInOut",
-                        }
+                        duration: 2.5,
+                        ease: "easeInOut",
+                      }
                       : {
-                          delay: 0.4,
-                          duration: 1,
-                          type: "spring",
-                          bounce: 0.3,
-                        }
+                        delay: 0.4,
+                        duration: 1,
+                        type: "spring",
+                        bounce: 0.3,
+                      }
                   }
                   style={{ perspective: 1000 }}
                   className="lg:col-span-5 relative group"
@@ -1688,8 +1691,8 @@ export default function App() {
                             style={
                               isActive
                                 ? {
-                                    backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
-                                  }
+                                  backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
+                                }
                                 : {}
                             }
                           >
@@ -1800,11 +1803,11 @@ export default function App() {
                                 )}
                                 style={
                                   cat.id === "skill-programs" ||
-                                  cat.id === "pg-diploma"
+                                    cat.id === "pg-diploma"
                                     ? {
-                                        scrollbarWidth: "thin",
-                                        scrollbarColor: `${cat.accentColor}33 transparent`,
-                                      }
+                                      scrollbarWidth: "thin",
+                                      scrollbarColor: `${cat.accentColor}33 transparent`,
+                                    }
                                     : {}
                                 }
                               >
@@ -1839,8 +1842,10 @@ export default function App() {
                                       }}
                                       onClick={() => {
                                         if (!prog.isFallback) {
+                                          navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
                                           navigate(
                                             `/specialization/${prog._id}`,
+                                            { state: { fromCategory: cat.id } }
                                           );
                                         }
                                       }}

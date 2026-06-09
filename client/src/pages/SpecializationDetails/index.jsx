@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
@@ -18,14 +18,64 @@ import Footer from "../../components/Footer";
 // Simplified cn utility for class merging
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
+const getProgramLabel = (programType) => {
+  if (!programType) return "Skilled";
+  const type = programType.trim();
+  const lowerType = type.toLowerCase();
+  
+  if (lowerType.includes("bachelor")) {
+    return "Under Graduate";
+  }
+  if (lowerType.includes("master")) {
+    return "Master Graduate";
+  }
+  if (lowerType.includes("pg diploma") || lowerType.includes("pg deploma")) {
+    return "PG Diploma";
+  }
+  if (lowerType.includes("skill")) {
+    return "Post Graduate Certificate";
+  }
+  return type;
+};
+
 const SpecializationDetails = () => {
   const { programId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+
+  const fromCategory = location.state?.fromCategory;
 
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [programInfo, setProgramInfo] = useState(null);
+  const [selectedDuration, setSelectedDuration] = useState(null);
+
+  // Group branches by duration
+  const branchesByDuration = branches.reduce((acc, branch) => {
+    const duration = branch.duration || "N/A";
+    if (!acc[duration]) {
+      acc[duration] = [];
+    }
+    acc[duration].push(branch);
+    return acc;
+  }, {});
+
+  const uniqueDurations = Object.keys(branchesByDuration);
+
+  // Auto-select duration if there is only one option available
+  useEffect(() => {
+    if (branches.length > 0) {
+      const uniqueList = Object.keys(branchesByDuration);
+      if (uniqueList.length === 1) {
+        setSelectedDuration(uniqueList[0]);
+      } else {
+        setSelectedDuration(null);
+      }
+    } else {
+      setSelectedDuration(null);
+    }
+  }, [branches]);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -62,7 +112,7 @@ const SpecializationDetails = () => {
           {/* Back Navigation Bar */}
           <div className="mb-10">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/#programs", { state: { fromCategory } })}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-border text-sm font-bold shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 text-foreground/80 hover:text-foreground cursor-pointer group"
             >
               <ArrowLeft size={16} className="transition-transform duration-300 group-hover:-translate-x-1" />
@@ -108,16 +158,16 @@ const SpecializationDetails = () => {
               </motion.div>
 
               {/* Branches Section */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
+              <div className="space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-black text-foreground">Available Branches</h2>
+                    <h2 className="text-2xl font-black text-foreground">Available Tracks</h2>
                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
-                      Choose your professional track or stream
+                      Explore programs grouped by course duration
                     </p>
                   </div>
-                  <span className="px-4 py-1.5 rounded-full bg-slate-200/50 text-foreground font-bold text-xs">
-                    {branches.length} Tracks Available
+                  <span className="px-4 py-1.5 rounded-full bg-slate-200/50 text-foreground font-bold text-xs w-fit">
+                    {branches.length} Total Streams
                   </span>
                 </div>
 
@@ -129,60 +179,168 @@ const SpecializationDetails = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid gap-6">
-                    {branches.map((branch, idx) => (
-                      <motion.div
-                        key={branch._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1, duration: 0.5 }}
-                        className="bg-white border border-border/80 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 rounded-3xl p-6 md:p-8 transition-all duration-300 relative overflow-hidden group flex flex-col md:flex-row md:items-center justify-between gap-6"
-                      >
-                        <div className="space-y-4 flex-grow">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
-                              {branch.type || "Skilled"}
-                            </span>
-                            <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full">
-                              <Calendar size={14} />
-                              {branch.duration}
-                            </span>
-                          </div>
+                  <div className="space-y-8">
+                    {/* Group wise Cards of Duration */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {uniqueDurations.map((duration, index) => {
+                        const count = branchesByDuration[duration].length;
+                        const isSelected = selectedDuration === duration;
+                        return (
+                          <motion.button
+                            key={duration}
+                            onClick={() => setSelectedDuration(isSelected ? null : duration)}
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={cn(
+                              "p-6 rounded-[2rem] border text-left transition-all duration-300 cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-md flex items-center justify-between gap-4",
+                              isSelected
+                                ? "bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-950/15"
+                                : "bg-white border-border/80 hover:border-primary/20 text-slate-800"
+                            )}
+                          >
+                            {/* Decorative soft glowing spot inside duration card */}
+                            <div className={cn(
+                              "absolute -right-8 -bottom-8 w-24 h-24 rounded-full blur-2xl opacity-10 group-hover:scale-125 transition-transform duration-500",
+                              isSelected ? "bg-white" : "bg-primary"
+                            )} />
 
-                          <div>
-                            <h3 className="text-xl font-extrabold text-foreground group-hover:text-primary transition-colors">
-                              {branch.name}
-                            </h3>
-                          </div>
-                        </div>
-
-                        {/* Fee Grid (If fees are set) */}
-                        {branch.currentFee ? (
-                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-                              Total Course Fee
-                            </p>
-                            <div>
-                              <p className="text-xl font-black text-foreground">
-                                ₹{branch.currentFee.totalFee?.toLocaleString()}
-                              </p>
-                              <p className="text-[9px] font-bold text-muted-foreground mt-0.5">
-                                (Tuition: ₹{branch.currentFee.tuitionFee?.toLocaleString()})
-                              </p>
+                            <div className="flex items-center gap-4 relative z-10">
+                              <div className={cn(
+                                "p-3 rounded-2xl transition-colors",
+                                isSelected ? "bg-white/10 text-white" : "bg-primary/5 text-primary"
+                              )}>
+                                <Calendar size={20} />
+                              </div>
+                              <div>
+                                <h3 className={cn(
+                                  "text-lg font-extrabold tracking-tight",
+                                  isSelected ? "text-white" : "text-slate-900"
+                                )}>
+                                  {duration}
+                                </h3>
+                                <p className={cn(
+                                  "text-xs font-semibold mt-0.5",
+                                  isSelected ? "text-slate-300" : "text-muted-foreground"
+                                )}>
+                                  {count} {count === 1 ? "Track" : "Tracks"} Available
+                                </p>
+                              </div>
                             </div>
+                            
+                            <div className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-300",
+                              isSelected 
+                                ? "bg-white text-slate-900 border-white" 
+                                : "border-border text-muted-foreground group-hover:border-primary/30 group-hover:text-primary"
+                            )}>
+                              <ChevronRight size={16} className={cn("transition-transform duration-300", isSelected && "rotate-90")} />
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Branches list for selected duration */}
+                    <AnimatePresence mode="wait">
+                      {selectedDuration ? (
+                        <motion.div
+                          key={selectedDuration}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                          className="space-y-4"
+                        >
+                          <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                            <h3 className="text-sm font-black text-muted-foreground uppercase tracking-widest">
+                              Showing {selectedDuration} Streams
+                            </h3>
+                            {uniqueDurations.length > 1 && (
+                              <button
+                                onClick={() => setSelectedDuration(null)}
+                                className="text-[10px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest bg-rose-50 hover:bg-rose-100/80 px-3 py-1.5 rounded-full transition-all cursor-pointer"
+                              >
+                                Collapse
+                              </button>
+                            )}
                           </div>
-                        ) : (
-                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-                              Admission Status
-                            </p>
-                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
-                              Admissions Open
-                            </span>
+
+                          <div className="grid gap-6">
+                            {branchesByDuration[selectedDuration].map((branch, idx) => (
+                              <motion.div
+                                key={branch._id}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.05, duration: 0.4 }}
+                                className="bg-white border border-border/80 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 rounded-3xl p-6 md:p-8 transition-all duration-300 relative overflow-hidden group flex flex-col md:flex-row md:items-center justify-between gap-6"
+                              >
+                                <div className="space-y-4 flex-grow">
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
+                                      {getProgramLabel(branch.program?.programType || programInfo?.programType)}
+                                    </span>
+                                  </div>
+
+                                  <div>
+                                    <h3 className="text-xl font-extrabold text-foreground group-hover:text-primary transition-colors">
+                                      {branch.name}
+                                    </h3>
+                                  </div>
+
+                                  {branch.duration && (
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground bg-slate-100 px-3 py-1 rounded-full w-fit">
+                                      <Calendar size={14} />
+                                      <span>{branch.duration}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Fee Grid (If fees are set) */}
+                                {branch.currentFee ? (
+                                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+                                      Total Course Fee
+                                    </p>
+                                    <div>
+                                      <p className="text-xl font-black text-foreground">
+                                        ₹{branch.currentFee.totalFee?.toLocaleString()}
+                                      </p>
+                                      <p className="text-[9px] font-bold text-muted-foreground mt-0.5">
+                                        (Tuition: ₹{branch.currentFee.tuitionFee?.toLocaleString()})
+                                      </p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+                                      Admission Status
+                                    </p>
+                                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                      Admissions Open
+                                    </span>
+                                  </div>
+                                )}
+                              </motion.div>
+                            ))}
                           </div>
-                        )}
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="p-12 text-center bg-white border border-border/60 rounded-3xl space-y-3 shadow-inner"
+                        >
+                          <BookOpen size={40} className="mx-auto text-muted-foreground/30 animate-bounce" />
+                          <p className="text-sm font-extrabold text-foreground uppercase tracking-widest">
+                            Select a duration above to view branches
+                          </p>
+                          <p className="text-xs text-muted-foreground max-w-sm mx-auto font-medium">
+                            Explore dynamic streams, eligibility requirements, and tuition fees sorted by study length.
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
               </div>
