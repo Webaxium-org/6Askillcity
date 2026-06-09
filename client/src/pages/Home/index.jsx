@@ -612,7 +612,7 @@ export default function App() {
   const programCategories = [
     {
       id: "bachelors",
-      title: "Under Graduate",
+      title: "Bachelors Degree",
       subtitle: "Education",
       count: `${bachelorsList.length} Programs`,
       icon: GraduationCap,
@@ -627,7 +627,7 @@ export default function App() {
     },
     {
       id: "masters",
-      title: "Master Graduate",
+      title: "Masters Degree",
       subtitle: "Postgraduate Excellence",
       count: `${mastersList.length} Programs`,
       icon: School,
@@ -642,7 +642,7 @@ export default function App() {
     },
     {
       id: "pg-diploma",
-      title: "PG Diploma",
+      title: "Postgraduate Diploma",
       subtitle: "Specialized Certifications",
       count: `${pgDiplomasList.length} Programs`,
       icon: ShieldCheck,
@@ -657,9 +657,9 @@ export default function App() {
     },
     {
       id: "skill-programs",
-      title: "Post Graduate Certificate",
+      title: "Skill Programs",
       subtitle: "Skilled & Practical Learning",
-      count: `${skillProgramsList.length} Programs`,
+      count: `8 Programs`,
       icon: Sparkles,
       color: "from-amber-600 to-orange-500",
       accentColor: "#d97706",
@@ -668,7 +668,16 @@ export default function App() {
       borderColor: "border-amber-100",
       description:
         "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
-      programs: skillProgramsList,
+      programs: [
+        { _id: "post-graduate-certificate", name: "Post Graduate Certificate" },
+        { _id: "diploma", name: "Diploma program" },
+        { _id: "post-diploma", name: "Post Diploma program" },
+        { _id: "advanced-diploma", name: "Advanced Diploma program" },
+        { _id: "dit", name: "Diploma in integrated Technology (DIT)" },
+        { _id: "professional-diploma", name: "Professional Diploma program" },
+        { _id: "pdit", name: "Post Diploma in integrated Technology (PDIT)" },
+        { _id: "certificate", name: "Certificate Program" },
+      ],
     },
   ];
 
@@ -1841,7 +1850,13 @@ export default function App() {
                                         duration: 0.3,
                                       }}
                                       onClick={() => {
-                                        if (!prog.isFallback) {
+                                        if (cat.id === "skill-programs") {
+                                          navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
+                                          navigate(
+                                            `/specialization/skill-programs?level=${prog._id}`,
+                                            { state: { fromCategory: cat.id } }
+                                          );
+                                        } else if (!prog.isFallback) {
                                           navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
                                           navigate(
                                             `/specialization/${prog._id}`,

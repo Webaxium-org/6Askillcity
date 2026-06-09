@@ -23,7 +23,7 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 const subPrograms = [
   {
     id: "post-graduate-certificate",
-    name: "Post graduate Certificate Program",
+    name: "Post Graduate Certificate",
     duration: "1 year",
     eligibility: "Any Degree",
   },
@@ -71,19 +71,121 @@ const subPrograms = [
   },
 ];
 
+const staticSkillPrograms = [
+  "CARPET",
+  "AUTOMOTIVE REPAIR",
+  "FABRICATION",
+  "ELECTRONICS",
+  "FASHION DESIGN",
+  "GARMENT MAKING",
+  "HANDICRAFTS",
+  "LEATHER AND FOOTWEAR",
+  "PRINTING TECHNOLOGY",
+  "POULTRY FARMING",
+  "DAIRYING",
+  "LIVESTOCK BREEDING",
+  "ORGANIC FARMING",
+  "HORTICULTURE AND FORESTRY",
+  "APICULTURE AND SERICULTURE",
+  "AGRICULTURE MACHINERY AND IMPLEMENTS SECTOR",
+  "BEAUTY CULTURE",
+  "HAIR STYLING",
+  "SPA AND WELLNESS SECTOR",
+  "RENEWABLE ENERGY AND POWER SECTOR",
+  "GLASS DIVERSIFIED SECTOR",
+  "CLAY ART SECTOR",
+  "WATER RE-CYCLING AND SEWERAGE TREATMENT SECTOR",
+  "COSMETOLOGY AND TRICHOLOGY SECTOR",
+  "AEROSPACE AND AVIATION SECTOR",
+  "TELECOM SECTOR",
+  "COUNSELLING SKILLS SECTOR",
+  "MARINE AND SHIPPING SECTOR",
+  "HEALTH EDUCATION SECTOR",
+  "REIKI SECTOR",
+  "AYURVEDA SECTOR",
+  "STED BEAUTY SCHOOL SECTOR",
+  "COMPUTER SYSTEM AND APPLICATIONS SECTOR",
+  "BUSINESS AND MANAGEMENT EDUCATION SECTOR",
+  "MUSIC AND MEDIA SECTOR",
+  "ALLIED HEALTH EDUCATION SECTOR",
+  "CREATIVE ART AND CRAFTS SECTOR",
+  "FIRE AND SAFETY SECTOR",
+  "CIVIL ENGINEERING SECTOR",
+  "TEXTILE SECTOR",
+  "INTERIOR DESIGNING SECTOR",
+  "TEXTILE RE-CYCLING SECTOR",
+  "BEAUTY THERAPIST",
+  "BEAUTY CONSULTANT",
+  "FASHION DESIGNER",
+  "SEWING MACHINE OPERATOR",
+  "OFFICE ASSISTANT",
+  "COMPUTER OPERATOR",
+  "TALLY OPERATOR",
+  "LOGISTICS COORDINATOR",
+  "SOLAR TECHNICIAN",
+  "SPINNING TECHNICIAN",
+  "WEAVING TECHNICIAN",
+  "YOGA TEACHER",
+  "FIRE & SAFETY INSPECTOR",
+  "CRAFT INSTRUCTOR",
+  "DENTAL ASSISTANT",
+  "NURSING ASSISTANT",
+  "PHARMACY ASSISTANT",
+  "PANJAKARMA THERAPIST",
+  "SOUND ENGINEER",
+  "VEDIO EDITOR",
+  "PRE-SCHOOL TEACHER",
+  "TAILORING",
+  "REFRIGERATION & AC MECHANIC",
+  "PLUMBER",
+  "ELECTRICIAN",
+  "DRAFTSMAN CIVIL",
+  "DRAFTSMAN MECHANICAL",
+  "HOTEL MANAGEMENT",
+  "TOURIST GUIDE",
+  "CATERING",
+  "FOOD PRODUCTION",
+  "NURSERY MANAGEMENT",
+  "POULTRY FEED TECHNICIAN",
+  "BEEKEEPER",
+  "SILKWORM REARER",
+  "FIBER OPTICS TECHNICIAN",
+  "ROUTING AND SWITCHING",
+  "CALL CENTER EXECUTIVE",
+  "TENT DESIGNER",
+  "EVENT MANAGER",
+  "PHOTOGRAPHER",
+  "GRAPHIC DESIGNER",
+  "WEB DEVELOPER",
+  "APP DEVELOPER",
+  "CYBER SECURITY SPECIALIST",
+  "CLOUDE ARCHITECT",
+  "DATA ANALYST",
+  "AI ENGINEER",
+  "ROBOTIC TECHNICIAN",
+  "3D PRINTING OPERATOR",
+  "CNC MACHINE OPERATOR",
+  "WELDING INSPECTOR",
+  "NCTE APPROVED TRAINER",
+  "PCI VERIFIED PHARMACIST",
+  "BCI ADVOCATE ASSISTANT",
+  "AIU REGISTRATION DESK OFFICER",
+  "UGC COMPLIANCE SPECIALIST",
+];
+
 const getProgramLabel = (programType) => {
   if (!programType) return "Skilled";
   const type = programType.trim();
   const lowerType = type.toLowerCase();
-  
+
   if (lowerType.includes("bachelor")) {
     return "Under Graduate";
   }
   if (lowerType.includes("master")) {
-    return "Master Graduate";
+    return "Postgraduate";
   }
   if (lowerType.includes("pg diploma") || lowerType.includes("pg deploma")) {
-    return "PG Diploma";
+    return "Postgraduate Diploma";
   }
   if (lowerType.includes("skill")) {
     return "Post Graduate Certificate";
@@ -108,12 +210,28 @@ const SpecializationDetails = () => {
     const fetchDetails = async () => {
       setLoading(true);
       try {
-        const res = await getPublicBranches(programId);
-        if (res.success) {
-          setBranches(res.data);
-          // Set parent program information from the first branch returned
-          if (res.data.length > 0 && res.data[0].program) {
-            setProgramInfo(res.data[0].program);
+        const isSkillProgramsRoute = programId === "skill-programs";
+        if (isSkillProgramsRoute) {
+          const mappedBranches = staticSkillPrograms.map((name, i) => ({
+            _id: `static-skill-${i}`,
+            name,
+            program: {
+              programType: "Skill Programs",
+            },
+          }));
+          setBranches(mappedBranches);
+          setProgramInfo({
+            name: "Post Graduate Certificate",
+            programType: "Skill Programs",
+            university: { name: "The Global University" }
+          });
+        } else {
+          const res = await getPublicBranches(programId);
+          if (res.success) {
+            setBranches(res.data);
+            if (res.data.length > 0 && res.data[0].program) {
+              setProgramInfo(res.data[0].program);
+            }
           }
         }
       } catch (err) {
@@ -125,7 +243,27 @@ const SpecializationDetails = () => {
     fetchDetails();
   }, [programId]);
 
-  const isPostGraduateCertificate = (programInfo?.programType && programInfo.programType.toLowerCase().includes("skill")) || fromCategory === "skill-programs";
+  useEffect(() => {
+    // Resolve level from query params
+    const queryParams = new URLSearchParams(location.search);
+    const levelId = queryParams.get("level");
+    if (levelId) {
+      const found = subPrograms.find(sub => sub.id === levelId);
+      if (found) {
+        setSelectedSubProgram(found);
+      } else {
+        // Fallback to first subprogram if not found
+        setSelectedSubProgram(subPrograms[0]);
+      }
+    } else if (programId === "skill-programs") {
+      // Default to first subprogram if we are on the skill-programs route without a level param
+      setSelectedSubProgram(subPrograms[0]);
+    } else {
+      setSelectedSubProgram(null);
+    }
+  }, [location.search, programId]);
+
+  const isPostGraduateCertificate = (programInfo?.programType && programInfo.programType.toLowerCase().includes("skill")) || fromCategory === "skill-programs" || programId === "skill-programs";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -142,16 +280,12 @@ const SpecializationDetails = () => {
           <div className="mb-10">
             <button
               onClick={() => {
-                if (isPostGraduateCertificate && selectedSubProgram) {
-                  setSelectedSubProgram(null);
-                } else {
-                  navigate("/#programs", { state: { fromCategory } });
-                }
+                navigate("/#programs", { state: { fromCategory } });
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-border text-sm font-bold shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 text-foreground/80 hover:text-foreground cursor-pointer group"
             >
               <ArrowLeft size={16} className="transition-transform duration-300 group-hover:-translate-x-1" />
-              {isPostGraduateCertificate && selectedSubProgram ? "Back to Program Levels" : "Back to Programs"}
+              Back to Programs
             </button>
           </div>
 
@@ -177,10 +311,10 @@ const SpecializationDetails = () => {
 
                 <div className="relative z-10 space-y-4">
                   <span className="inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 text-blue-300 border border-white/10">
-                    {programInfo?.programType || "Specialization"}
+                    {isPostGraduateCertificate ? "Post Graduate Certificate" : (programInfo?.programType || "Specialization")}
                   </span>
                   <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-                    {programInfo?.name || "Program Details"}
+                    {isPostGraduateCertificate ? (selectedSubProgram?.name || "Post Graduate Certificate") : (programInfo?.name || "Program Details")}
                   </h1>
                   <p className="text-lg text-white/70 leading-relaxed font-medium">
                     Offered by <span className="text-white font-extrabold underline decoration-[#17468C] decoration-4 underline-offset-4">{programInfo?.university?.name || "The Global University"}</span>
@@ -192,218 +326,145 @@ const SpecializationDetails = () => {
                 </div>
               </motion.div>
 
-              {/* Conditional Display: Post Graduate Certificate Multi-Program Level Cards */}
-              <AnimatePresence mode="wait">
-                {isPostGraduateCertificate && !selectedSubProgram ? (
-                  <motion.div
-                    key="sub-programs-grid"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    className="space-y-6"
-                  >
-                    <div>
-                      <h2 className="text-2xl font-black text-slate-800">Select Program Level</h2>
-                      <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
-                        Select a program level to view its specializations
-                      </p>
+              <motion.div
+                key={selectedSubProgram ? `branches-list-${selectedSubProgram.id}` : "branches-list-default"}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-6"
+              >
+                {/* Selected Subprogram Header Card (only when inside a skill program) */}
+                {isPostGraduateCertificate && selectedSubProgram && (
+                  <div className="bg-amber-50/50 border border-amber-100/60 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-full pointer-events-none" />
+
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest">
+                          Skill Level Info
+                        </span>
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-800">{selectedSubProgram.name}</h2>
+
+                      <div className="flex flex-wrap gap-4 pt-1">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-100 px-3 py-1 rounded-full">
+                          <Clock size={14} className="text-slate-400" />
+                          <span>Duration: {selectedSubProgram.duration}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-100 px-3 py-1 rounded-full">
+                          <GraduationCap size={14} className="text-slate-400" />
+                          <span>Eligibility: {selectedSubProgram.eligibility}</span>
+                        </span>
+                      </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {subPrograms.map((sub, idx) => (
-                        <motion.div
-                          key={sub.id}
-                          whileHover={{ y: -4, scale: 1.01 }}
-                          transition={{ type: "spring", stiffness: 300 }}
-                          onClick={() => setSelectedSubProgram(sub)}
-                          className="bg-white border border-slate-100 hover:border-amber-500/20 hover:shadow-xl hover:shadow-amber-500/5 rounded-[2rem] p-6 md:p-8 transition-all duration-300 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                        >
-                          {/* Subtle decorative color card background */}
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/5 to-transparent rounded-bl-full pointer-events-none" />
-                          
-                          <div className="space-y-4">
-                            <div className="flex items-start gap-3">
-                              <span className="mt-1 flex items-center justify-center text-emerald-500 bg-emerald-50 rounded-full p-1.5 shrink-0 group-hover:scale-110 transition-transform">
-                                <CheckCircle size={18} className="stroke-[2.5]" />
-                              </span>
-                              <h3 className="text-xl font-extrabold text-slate-800 group-hover:text-amber-600 transition-colors leading-snug">
-                                {sub.name}
-                              </h3>
-                            </div>
-                            
-                            <div className="space-y-3.5 pt-2 border-t border-slate-50">
-                              <div className="flex items-center gap-2.5 text-sm font-semibold text-slate-600">
-                                <span className="p-1.5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
-                                  <Clock size={15} />
-                                </span>
-                                <div>
-                                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block leading-none mb-0.5">Duration</span>
-                                  <span className="font-bold text-slate-700">{sub.duration}</span>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-start gap-2.5 text-sm font-semibold text-slate-600">
-                                <span className="p-1.5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors mt-0.5">
-                                  <GraduationCap size={15} />
-                                </span>
-                                <div>
-                                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block leading-none mb-0.5">Eligibility</span>
-                                  <span className="font-bold text-slate-700 leading-relaxed">{sub.eligibility}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-6 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground group-hover:text-amber-600 transition-colors duration-300">
-                            View Specializations
-                            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={selectedSubProgram ? `branches-list-${selectedSubProgram.id}` : "branches-list-default"}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    className="space-y-6"
-                  >
-                    {/* Selected Subprogram Header Card (only when inside a subprogram selection) */}
-                    {isPostGraduateCertificate && selectedSubProgram && (
-                      <div className="bg-amber-50/50 border border-amber-100/60 rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-full pointer-events-none" />
-                        
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest">
-                              Active Level
-                            </span>
-                          </div>
-                          <h2 className="text-2xl font-black text-slate-800">{selectedSubProgram.name}</h2>
-                          
-                          <div className="flex flex-wrap gap-4 pt-1">
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-100 px-3 py-1 rounded-full">
-                              <Clock size={14} className="text-slate-400" />
-                              <span>Duration: {selectedSubProgram.duration}</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-100 px-3 py-1 rounded-full">
-                              <GraduationCap size={14} className="text-slate-400" />
-                              <span>Eligibility: {selectedSubProgram.eligibility}</span>
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <button
-                          onClick={() => setSelectedSubProgram(null)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-black uppercase tracking-wider text-slate-600 hover:text-slate-800 hover:border-slate-300 shadow-sm hover:shadow transition-all cursor-pointer"
-                        >
-                          Change Level
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-2xl font-black text-foreground">Available Branches</h2>
-                        <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
-                          Choose your professional track or stream
-                        </p>
-                      </div>
-                      <span className="px-4 py-1.5 rounded-full bg-slate-200/50 text-foreground font-bold text-xs">
-                        {branches.length} Tracks Available
-                      </span>
-                    </div>
-
-                    {branches.length === 0 ? (
-                      <div className="p-12 text-center bg-white border border-border rounded-3xl space-y-3">
-                        <BookOpen size={48} className="mx-auto text-muted-foreground/30" />
-                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                          No branches available for this specialization.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="grid gap-6">
-                        {branches.map((branch, idx) => (
-                          <motion.div
-                            key={branch._id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.1, duration: 0.5 }}
-                            className="bg-white border border-border/80 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 rounded-3xl p-6 md:p-8 transition-all duration-300 relative overflow-hidden group flex flex-col md:flex-row md:items-center justify-between gap-6"
-                          >
-                            <div className="space-y-4 flex-grow">
-                              <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
-                                  {isPostGraduateCertificate 
-                                    ? "Post Graduate Certificate" 
-                                    : getProgramLabel(branch.program?.programType || programInfo?.programType)
-                                  }
-                                </span>
-                              </div>
-
-                              <div>
-                                <h3 className="text-xl font-extrabold text-foreground group-hover:text-primary transition-colors">
-                                  {branch.name}
-                                </h3>
-                              </div>
-
-                              {isPostGraduateCertificate && selectedSubProgram ? (
-                                <div className="flex flex-wrap gap-4 pt-1">
-                                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full w-fit">
-                                    <Clock size={13} className="text-slate-400" />
-                                    <span>Duration: {selectedSubProgram.duration}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full w-fit">
-                                    <GraduationCap size={13} className="text-slate-400" />
-                                    <span>Eligibility: {selectedSubProgram.eligibility}</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                branch.duration && (
-                                  <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground bg-slate-100 px-3 py-1 rounded-full w-fit">
-                                    <Calendar size={14} />
-                                    <span>{branch.duration}</span>
-                                  </div>
-                                )
-                              )}
-                            </div>
-
-                            {/* Fee Grid (If fees are set) */}
-                            {branch.currentFee ? (
-                              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
-                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-                                  Total Course Fee
-                                </p>
-                                <div>
-                                  <p className="text-xl font-black text-foreground">
-                                    ₹{branch.currentFee.totalFee?.toLocaleString()}
-                                  </p>
-                                  <p className="text-[9px] font-bold text-muted-foreground mt-0.5">
-                                    (Tuition: ₹{branch.currentFee.tuitionFee?.toLocaleString()})
-                                  </p>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
-                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-                                  Admission Status
-                                </p>
-                                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
-                                  Admissions Open
-                                </span>
-                              </div>
-                            )}
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-black text-foreground">Available Branches</h2>
+                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
+                      Choose your professional track or stream
+                    </p>
+                  </div>
+                  <span className="px-4 py-1.5 rounded-full bg-slate-200/50 text-foreground font-bold text-xs">
+                    {branches.length} Tracks Available
+                  </span>
+                </div>
+
+                {branches.length === 0 ? (
+                  <div className="p-12 text-center bg-white border border-border rounded-3xl space-y-3">
+                    <BookOpen size={48} className="mx-auto text-muted-foreground/30" />
+                    <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                      No branches available for this specialization.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6">
+                    {branches.map((branch, idx) => (
+                      <motion.div
+                        key={branch._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05, duration: 0.4 }}
+                        className="bg-white border border-border/80 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 rounded-3xl p-6 md:p-8 transition-all duration-300 relative overflow-hidden group flex flex-col md:flex-row md:items-center justify-between gap-6"
+                      >
+                        <div className="space-y-4 flex-grow">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
+                              {isPostGraduateCertificate
+                                ? "Post Graduate Certificate"
+                                : getProgramLabel(branch.program?.programType || programInfo?.programType)
+                              }
+                            </span>
+                          </div>
+
+                          <div>
+                            <h3 className="text-xl font-extrabold text-foreground group-hover:text-primary transition-colors">
+                              {branch.name}
+                            </h3>
+                          </div>
+
+                          {isPostGraduateCertificate && selectedSubProgram ? (
+                            <div className="flex flex-wrap gap-4 pt-1">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full w-fit">
+                                <Clock size={14} className="text-slate-400 shrink-0" />
+                                <span>Duration: {selectedSubProgram.duration}</span>
+                              </div>
+                              <div className="flex items-start gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3.5 py-2 rounded-2xl w-fit">
+                                <GraduationCap size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                                <span className="leading-relaxed">Eligibility: {selectedSubProgram.eligibility}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-4 pt-1">
+                              {branch.duration && (
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full w-fit">
+                                  <Calendar size={14} className="text-slate-400 shrink-0" />
+                                  <span>Duration: {branch.duration}</span>
+                                </div>
+                              )}
+                              {((branch.program?.eligibilityChecklist && branch.program.eligibilityChecklist.length > 0) ||
+                                (programInfo?.eligibilityChecklist && programInfo.eligibilityChecklist.length > 0)) && (
+                                  <div className="flex items-start gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3.5 py-2 rounded-2xl w-fit">
+                                    <GraduationCap size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                                    <span className="leading-relaxed">Eligibility: {(branch.program?.eligibilityChecklist || programInfo?.eligibilityChecklist).join(", ")}</span>
+                                  </div>
+                                )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Fee Grid (If fees are set) */}
+                        {branch.currentFee ? (
+                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+                              Total Course Fee
+                            </p>
+                            <div>
+                              <p className="text-xl font-black text-foreground">
+                                ₹{branch.currentFee.totalFee?.toLocaleString()}
+                              </p>
+                              <p className="text-[9px] font-bold text-muted-foreground mt-0.5">
+                                (Tuition: ₹{branch.currentFee.tuitionFee?.toLocaleString()})
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 md:text-right shrink-0 flex md:flex-col justify-between items-center md:items-end gap-2 min-w-[160px]">
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+                              Admission Status
+                            </p>
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                              Admissions Open
+                            </span>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
             </div>
           )}
         </div>
