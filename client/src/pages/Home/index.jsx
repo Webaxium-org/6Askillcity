@@ -16,6 +16,7 @@ import {
   Target,
   Eye,
   Handshake,
+  ArrowLeft,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -527,6 +528,12 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState(() => {
     return location.state?.fromCategory || "bachelors";
   });
+  const [selectedSkillLevel, setSelectedSkillLevel] = useState(null);
+
+  useEffect(() => {
+    setSelectedSkillLevel(null);
+  }, [activeCategory]);
+
   const [highlightInquiry, setHighlightInquiry] = useState(false);
   const [dbPrograms, setDbPrograms] = useState([]);
   const [dbBranches, setDbBranches] = useState([]);
@@ -609,6 +616,17 @@ export default function App() {
         isFallback: true,
       }));
 
+  const skillLevels = [
+    { _id: "post-graduate-certificate", name: "Post Graduate Certificate" },
+    { _id: "diploma", name: "Diploma program" },
+    { _id: "post-diploma", name: "Post Diploma program" },
+    { _id: "advanced-diploma", name: "Advanced Diploma program" },
+    { _id: "dit", name: "Diploma in integrated Technology (DIT)" },
+    { _id: "professional-diploma", name: "Professional Diploma program" },
+    { _id: "pdit", name: "Post Diploma in integrated Technology (PDIT)" },
+    { _id: "certificate", name: "Certificate Program" },
+  ];
+
   const programCategories = [
     {
       id: "bachelors",
@@ -659,7 +677,7 @@ export default function App() {
       id: "skill-programs",
       title: "Skill Programs",
       subtitle: "Skilled & Practical Learning",
-      count: `8 Programs`,
+      count: `8 Levels`,
       icon: Sparkles,
       color: "from-amber-600 to-orange-500",
       accentColor: "#d97706",
@@ -668,16 +686,7 @@ export default function App() {
       borderColor: "border-amber-100",
       description:
         "Acquire high-income, job-ready capabilities with hands-on skill enhancement courses developed in direct collaboration with leading industry experts.",
-      programs: [
-        { _id: "post-graduate-certificate", name: "Post Graduate Certificate" },
-        { _id: "diploma", name: "Diploma program" },
-        { _id: "post-diploma", name: "Post Diploma program" },
-        { _id: "advanced-diploma", name: "Advanced Diploma program" },
-        { _id: "dit", name: "Diploma in integrated Technology (DIT)" },
-        { _id: "professional-diploma", name: "Professional Diploma program" },
-        { _id: "pdit", name: "Post Diploma in integrated Technology (PDIT)" },
-        { _id: "certificate", name: "Certificate Program" },
-      ],
+      programs: skillLevels,
     },
   ];
 
@@ -1789,7 +1798,9 @@ export default function App() {
                                 background: `linear-gradient(to right, ${cat.accentColor}, ${cat.accentColor}cc)`,
                               }}
                             >
-                              {cat.count} Available
+                              {cat.id === "skill-programs"
+                                ? (selectedSkillLevel ? `${staticSkillPrograms.length} Programs` : `${skillLevels.length} Levels`)
+                                : cat.count} Available
                             </Badge>
                           </div>
 
@@ -1799,9 +1810,28 @@ export default function App() {
                             </p>
 
                             <div>
-                              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
-                                Available Specializations
-                              </p>
+                              {cat.id === "skill-programs" && selectedSkillLevel ? (
+                                <div className="flex items-center gap-3 mb-6 bg-slate-50 border border-slate-100/80 p-3 rounded-2xl w-full">
+                                  <button
+                                    onClick={() => setSelectedSkillLevel(null)}
+                                    className="p-2 rounded-full hover:bg-slate-200 transition-colors cursor-pointer group"
+                                  >
+                                    <ArrowLeft size={16} className="text-slate-600 transition-transform duration-300 group-hover:-translate-x-0.5" />
+                                  </button>
+                                  <div>
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">
+                                      Skill Program Category
+                                    </p>
+                                    <h4 className="text-sm font-extrabold text-foreground leading-none">
+                                      {selectedSkillLevel.name}
+                                    </h4>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
+                                  Available Specializations
+                                </p>
+                              )}
                               <div
                                 className={cn(
                                   "transition-all duration-500 ease-in-out",
@@ -1840,9 +1870,12 @@ export default function App() {
                                   }}
                                 />
                                 <div className="grid sm:grid-cols-2 gap-4">
-                                  {cat.programs.map((prog, pIdx) => (
+                                  {((cat.id === "skill-programs" && selectedSkillLevel)
+                                    ? staticSkillPrograms.map((name, i) => ({ _id: `static-skill-${i}`, name }))
+                                    : cat.programs
+                                  ).map((prog, pIdx) => (
                                     <motion.div
-                                      key={prog._id}
+                                      key={`${prog._id}-${selectedSkillLevel ? 'courses' : 'levels'}`}
                                       initial={{ opacity: 0, y: 10 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       transition={{
@@ -1851,11 +1884,15 @@ export default function App() {
                                       }}
                                       onClick={() => {
                                         if (cat.id === "skill-programs") {
-                                          navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
-                                          navigate(
-                                            `/specialization/skill-programs?level=${prog._id}`,
-                                            { state: { fromCategory: cat.id } }
-                                          );
+                                          if (!selectedSkillLevel) {
+                                            setSelectedSkillLevel(prog);
+                                          } else {
+                                            navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
+                                            navigate(
+                                              `/specialization/skill-programs?programName=${encodeURIComponent(prog.name)}&level=${selectedSkillLevel._id}`,
+                                              { state: { fromCategory: cat.id } }
+                                            );
+                                          }
                                         } else if (!prog.isFallback) {
                                           navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
                                           navigate(

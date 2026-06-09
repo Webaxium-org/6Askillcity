@@ -12,7 +12,7 @@ import {
   Clock,
   CheckCircle,
 } from "lucide-react";
-import { getPublicBranches } from "../../api/university.api";
+import { getPublicBranches, getPublicPrograms } from "../../api/university.api";
 import { useDispatch } from "react-redux";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -185,7 +185,7 @@ const getProgramLabel = (programType) => {
     return "Postgraduate";
   }
   if (lowerType.includes("pg diploma") || lowerType.includes("pg deploma")) {
-    return "Postgraduate Diploma";
+    return "Postgraduate Certificate";
   }
   if (lowerType.includes("skill")) {
     return "Post Graduate Certificate";
@@ -211,20 +211,48 @@ const SpecializationDetails = () => {
       setLoading(true);
       try {
         const isSkillProgramsRoute = programId === "skill-programs";
+        const queryParams = new URLSearchParams(location.search);
+        const programName = queryParams.get("programName");
+
         if (isSkillProgramsRoute) {
-          const mappedBranches = staticSkillPrograms.map((name, i) => ({
-            _id: `static-skill-${i}`,
-            name,
-            program: {
+          if (programName) {
+            const resPrograms = await getPublicPrograms({ isActive: "true" });
+            let dbProg = null;
+            if (resPrograms.success) {
+              dbProg = resPrograms.data.find(
+                (p) => p.name.trim().toLowerCase() === programName.trim().toLowerCase()
+              );
+            }
+
+            if (dbProg) {
+              const resBranches = await getPublicBranches(dbProg._id);
+              if (resBranches.success) {
+                setBranches(resBranches.data);
+                setProgramInfo(dbProg);
+              }
+            } else {
+              setBranches([]);
+              setProgramInfo({
+                name: programName,
+                programType: "Skill Programs",
+                university: { name: "The Global University" }
+              });
+            }
+          } else {
+            const mappedBranches = staticSkillPrograms.map((name, i) => ({
+              _id: `static-skill-${i}`,
+              name,
+              program: {
+                programType: "Skill Programs",
+              },
+            }));
+            setBranches(mappedBranches);
+            setProgramInfo({
+              name: "Post Graduate Certificate",
               programType: "Skill Programs",
-            },
-          }));
-          setBranches(mappedBranches);
-          setProgramInfo({
-            name: "Post Graduate Certificate",
-            programType: "Skill Programs",
-            university: { name: "The Global University" }
-          });
+              university: { name: "The Global University" }
+            });
+          }
         } else {
           const res = await getPublicBranches(programId);
           if (res.success) {
@@ -241,12 +269,13 @@ const SpecializationDetails = () => {
       }
     };
     fetchDetails();
-  }, [programId]);
+  }, [programId, location.search]);
 
   useEffect(() => {
     // Resolve level from query params
     const queryParams = new URLSearchParams(location.search);
     const levelId = queryParams.get("level");
+    const programName = queryParams.get("programName");
     if (levelId) {
       const found = subPrograms.find(sub => sub.id === levelId);
       if (found) {
@@ -255,8 +284,8 @@ const SpecializationDetails = () => {
         // Fallback to first subprogram if not found
         setSelectedSubProgram(subPrograms[0]);
       }
-    } else if (programId === "skill-programs") {
-      // Default to first subprogram if we are on the skill-programs route without a level param
+    } else if (programId === "skill-programs" && !programName) {
+      // Default to first subprogram if we are on the skill-programs route without a level or programName param
       setSelectedSubProgram(subPrograms[0]);
     } else {
       setSelectedSubProgram(null);
@@ -314,7 +343,7 @@ const SpecializationDetails = () => {
                     {isPostGraduateCertificate ? "Post Graduate Certificate" : (programInfo?.programType || "Specialization")}
                   </span>
                   <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-                    {isPostGraduateCertificate ? (selectedSubProgram?.name || "Post Graduate Certificate") : (programInfo?.name || "Program Details")}
+                    {isPostGraduateCertificate ? (selectedSubProgram?.name || programInfo?.name || "Post Graduate Certificate") : (programInfo?.name || "Program Details")}
                   </h1>
                   <p className="text-lg text-white/70 leading-relaxed font-medium">
                     Offered by <span className="text-white font-extrabold underline decoration-[#17468C] decoration-4 underline-offset-4">{programInfo?.university?.name || "The Global University"}</span>
