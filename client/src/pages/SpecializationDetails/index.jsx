@@ -422,7 +422,7 @@ const SpecializationDetails = () => {
                           <div className="flex flex-wrap items-center gap-3">
                             <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
                               {isPostGraduateCertificate
-                                ? "Post Graduate Certificate"
+                                ? "Postgraduate Certificate"
                                 : getProgramLabel(branch.program?.programType || programInfo?.programType)
                               }
                             </span>
