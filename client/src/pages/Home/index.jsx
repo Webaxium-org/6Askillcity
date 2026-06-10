@@ -570,20 +570,20 @@ export default function App() {
     bachelors.length > 0
       ? bachelors
       : staticBachelors.map((name, i) => ({
-        _id: `fallback-bach-${i}`,
-        name,
-        isFallback: true,
-      }));
+          _id: `fallback-bach-${i}`,
+          name,
+          isFallback: true,
+        }));
 
   const masters = dbPrograms.filter((p) => p.programType === "Masters Degree");
   const mastersList =
     masters.length > 0
       ? masters
       : staticMasters.map((name, i) => ({
-        _id: `fallback-mast-${i}`,
-        name,
-        isFallback: true,
-      }));
+          _id: `fallback-mast-${i}`,
+          name,
+          isFallback: true,
+        }));
 
   const pgDiplomaBranches = dbBranches.filter(
     (b) =>
@@ -594,15 +594,15 @@ export default function App() {
   const pgDiplomasList =
     pgDiplomaBranches.length > 0
       ? pgDiplomaBranches.map((b) => ({
-        _id: b.program._id,
-        name: b.name,
-        isFallback: false,
-      }))
+          _id: b.program._id,
+          name: b.name,
+          isFallback: false,
+        }))
       : staticPgDiplomas.map((name, i) => ({
-        _id: `fallback-pgd-${i}`,
-        name,
-        isFallback: true,
-      }));
+          _id: `fallback-pgd-${i}`,
+          name,
+          isFallback: true,
+        }));
 
   const skillPrograms = dbPrograms.filter(
     (p) => p.programType === "Skill Programs",
@@ -611,13 +611,13 @@ export default function App() {
     skillPrograms.length > 0
       ? skillPrograms
       : staticSkillPrograms.map((name, i) => ({
-        _id: `fallback-skill-${i}`,
-        name,
-        isFallback: true,
-      }));
+          _id: `fallback-skill-${i}`,
+          name,
+          isFallback: true,
+        }));
 
   const skillLevels = [
-    { _id: "post-graduate-certificate", name: "Post Graduate Certificate" },
+    { _id: "post-graduate-certificate", name: "Post Graduate Diploma" },
     { _id: "diploma", name: "Diploma program" },
     { _id: "post-diploma", name: "Post Diploma program" },
     { _id: "advanced-diploma", name: "Advanced Diploma program" },
@@ -910,31 +910,31 @@ export default function App() {
                   animate={
                     highlightInquiry
                       ? {
-                        scale: [1, 1.06, 0.96, 1.02, 1],
-                        rotateY: [0, 360],
-                        z: [0, 40, -10, 5, 0],
-                      }
+                          scale: [1, 1.06, 0.96, 1.02, 1],
+                          rotateY: [0, 360],
+                          z: [0, 40, -10, 5, 0],
+                        }
                       : {
-                        opacity: 1,
-                        scale: 1,
-                        filter: "blur(0px)",
-                        y: 0,
-                        rotateX: 0,
-                        rotateY: 0,
-                      }
+                          opacity: 1,
+                          scale: 1,
+                          filter: "blur(0px)",
+                          y: 0,
+                          rotateX: 0,
+                          rotateY: 0,
+                        }
                   }
                   transition={
                     highlightInquiry
                       ? {
-                        duration: 2.5,
-                        ease: "easeInOut",
-                      }
+                          duration: 2.5,
+                          ease: "easeInOut",
+                        }
                       : {
-                        delay: 0.4,
-                        duration: 1,
-                        type: "spring",
-                        bounce: 0.3,
-                      }
+                          delay: 0.4,
+                          duration: 1,
+                          type: "spring",
+                          bounce: 0.3,
+                        }
                   }
                   style={{ perspective: 1000 }}
                   className="lg:col-span-5 relative group"
@@ -1234,7 +1234,8 @@ export default function App() {
                   Partner Ecosystem
                 </h2>
                 <p className="text-lg lg:text-xl font-semibold leading-relaxed text-transparent bg-clip-text bg-gradient-to-r from-[#17468C] to-[#B82424] inline-block">
-                  Choose your pathway and start your journey as an official 6A Skillcity partner.
+                  Choose your pathway and start your journey as an official 6A
+                  Skillcity partner.
                 </p>
               </motion.div>
 
@@ -1247,7 +1248,8 @@ export default function App() {
                       "6A Skillcity invites ADMISSION APPLICATION POINT from across India to partner and facilitate the admission process for students. Partnering with us allows admission recruiters to streamline the admission process for students, providing them with access to a diverse range of UGC-approved courses.",
                     color: "text-[#17468C] dark:text-blue-400",
                     titleClass: "text-[#17468C] dark:text-blue-400",
-                    buttonClass: "bg-[#1570ff] hover:bg-[#0949d0] shadow-[#1570ff]/15 hover:shadow-[#1570ff]/25 text-white",
+                    buttonClass:
+                      "bg-[#1570ff] hover:bg-[#0949d0] shadow-[#1570ff]/15 hover:shadow-[#1570ff]/25 text-white",
                     points: [
                       "Assist students in the application process for The Global University programs.",
                       "Provide guidance and support to applicants throughout the admission journey.",
@@ -1263,7 +1265,8 @@ export default function App() {
                       "6A Skillcity recognizes the importance of skill education in preparing students for the dynamic demands of the workforce. We invite skill education centers across India to partner with us in offering specialized courses that cater to the needs of various industries.",
                     color: "text-[#B82424] dark:text-red-400",
                     titleClass: "text-[#B82424] dark:text-red-400",
-                    buttonClass: "bg-[#B82424] hover:bg-[#990000] shadow-[#B82424]/15 hover:shadow-[#B82424]/25 text-white",
+                    buttonClass:
+                      "bg-[#B82424] hover:bg-[#990000] shadow-[#B82424]/15 hover:shadow-[#B82424]/25 text-white",
                     points: [
                       "Offer The Global University skill-enhancing programs to your students.",
                       "Provide hands-on training and practical experience in alignment with industry requirements.",
@@ -1279,7 +1282,8 @@ export default function App() {
                       "6A Skillcity invites SKILL TESTING CENTRES to partner with us in facilitating assessments for individuals who possess practical skills but lack formal certification. Our partner universities evaluate their real-world expertise and award UGC-approved certificates to validate their capabilities.",
                     color: "text-[#047857] dark:text-emerald-400",
                     titleClass: "text-[#047857] dark:text-emerald-400",
-                    buttonClass: "bg-[#047857] hover:bg-[#03543e] shadow-[#047857]/15 hover:shadow-[#047857]/25 text-white",
+                    buttonClass:
+                      "bg-[#047857] hover:bg-[#03543e] shadow-[#047857]/15 hover:shadow-[#047857]/25 text-white",
                     points: [
                       "Partner with universities to test and evaluate candidates' existing practical skills.",
                       "Facilitate formal UGC-approved certification for experienced individuals.",
@@ -1309,7 +1313,12 @@ export default function App() {
                             {path.subtitle}
                           </span>
                         </div>
-                        <CardTitle className={cn("text-2xl font-bold tracking-tight mb-2 transition-transform duration-500", path.titleClass)}>
+                        <CardTitle
+                          className={cn(
+                            "text-2xl font-bold tracking-tight mb-2 transition-transform duration-500",
+                            path.titleClass,
+                          )}
+                        >
                           {path.title}
                         </CardTitle>
                       </CardHeader>
@@ -1340,14 +1349,17 @@ export default function App() {
                           size="none"
                           className={cn(
                             "w-full py-3.5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-md hover:-translate-y-0.5 border-transparent text-sm h-auto flex items-center justify-center gap-2",
-                            path.buttonClass
+                            path.buttonClass,
                           )}
                           onClick={() => navigate("/register-admission-point")}
                         >
                           <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
                           <span className="relative z-10 flex items-center justify-center gap-2">
                             Be a Partner
-                            <MoveRight size={16} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
+                            <MoveRight
+                              size={16}
+                              className="transition-transform duration-300 group-hover/btn:translate-x-1"
+                            />
                           </span>
                         </Button>
                       </CardFooter>
@@ -1709,8 +1721,8 @@ export default function App() {
                             style={
                               isActive
                                 ? {
-                                  backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
-                                }
+                                    backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
+                                  }
                                 : {}
                             }
                           >
@@ -1799,8 +1811,11 @@ export default function App() {
                               }}
                             >
                               {cat.id === "skill-programs"
-                                ? (selectedSkillLevel ? `${staticSkillPrograms.length} Programs` : `${skillLevels.length} Levels`)
-                                : cat.count} Available
+                                ? selectedSkillLevel
+                                  ? `${staticSkillPrograms.length} Programs`
+                                  : `${skillLevels.length} Levels`
+                                : cat.count}{" "}
+                              Available
                             </Badge>
                           </div>
 
@@ -1810,13 +1825,17 @@ export default function App() {
                             </p>
 
                             <div>
-                              {cat.id === "skill-programs" && selectedSkillLevel ? (
+                              {cat.id === "skill-programs" &&
+                              selectedSkillLevel ? (
                                 <div className="flex items-center gap-3 mb-6 bg-slate-50 border border-slate-100/80 p-3 rounded-2xl w-full">
                                   <button
                                     onClick={() => setSelectedSkillLevel(null)}
                                     className="p-2 rounded-full hover:bg-slate-200 transition-colors cursor-pointer group"
                                   >
-                                    <ArrowLeft size={16} className="text-slate-600 transition-transform duration-300 group-hover:-translate-x-0.5" />
+                                    <ArrowLeft
+                                      size={16}
+                                      className="text-slate-600 transition-transform duration-300 group-hover:-translate-x-0.5"
+                                    />
                                   </button>
                                   <div>
                                     <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">
@@ -1842,11 +1861,11 @@ export default function App() {
                                 )}
                                 style={
                                   cat.id === "skill-programs" ||
-                                    cat.id === "pg-diploma"
+                                  cat.id === "pg-diploma"
                                     ? {
-                                      scrollbarWidth: "thin",
-                                      scrollbarColor: `${cat.accentColor}33 transparent`,
-                                    }
+                                        scrollbarWidth: "thin",
+                                        scrollbarColor: `${cat.accentColor}33 transparent`,
+                                      }
                                     : {}
                                 }
                               >
@@ -1870,12 +1889,16 @@ export default function App() {
                                   }}
                                 />
                                 <div className="grid sm:grid-cols-2 gap-4">
-                                  {((cat.id === "skill-programs" && selectedSkillLevel)
-                                    ? staticSkillPrograms.map((name, i) => ({ _id: `static-skill-${i}`, name }))
+                                  {(cat.id === "skill-programs" &&
+                                  selectedSkillLevel
+                                    ? staticSkillPrograms.map((name, i) => ({
+                                        _id: `static-skill-${i}`,
+                                        name,
+                                      }))
                                     : cat.programs
                                   ).map((prog, pIdx) => (
                                     <motion.div
-                                      key={`${prog._id}-${selectedSkillLevel ? 'courses' : 'levels'}`}
+                                      key={`${prog._id}-${selectedSkillLevel ? "courses" : "levels"}`}
                                       initial={{ opacity: 0, y: 10 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       transition={{
@@ -1887,17 +1910,25 @@ export default function App() {
                                           if (!selectedSkillLevel) {
                                             setSelectedSkillLevel(prog);
                                           } else {
-                                            navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
+                                            navigate("/#programs", {
+                                              replace: true,
+                                              state: { fromCategory: cat.id },
+                                            });
                                             navigate(
                                               `/specialization/skill-programs?programName=${encodeURIComponent(prog.name)}&level=${selectedSkillLevel._id}`,
-                                              { state: { fromCategory: cat.id } }
+                                              {
+                                                state: { fromCategory: cat.id },
+                                              },
                                             );
                                           }
                                         } else if (!prog.isFallback) {
-                                          navigate("/#programs", { replace: true, state: { fromCategory: cat.id } });
+                                          navigate("/#programs", {
+                                            replace: true,
+                                            state: { fromCategory: cat.id },
+                                          });
                                           navigate(
                                             `/specialization/${prog._id}`,
-                                            { state: { fromCategory: cat.id } }
+                                            { state: { fromCategory: cat.id } },
                                           );
                                         }
                                       }}

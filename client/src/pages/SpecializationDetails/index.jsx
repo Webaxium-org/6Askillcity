@@ -23,7 +23,7 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 const subPrograms = [
   {
     id: "post-graduate-certificate",
-    name: "Post Graduate Certificate",
+    name: "Post Graduate Diploma",
     duration: "1 year",
     eligibility: "Any Degree",
   },
@@ -185,10 +185,10 @@ const getProgramLabel = (programType) => {
     return "Postgraduate";
   }
   if (lowerType.includes("pg diploma") || lowerType.includes("pg deploma")) {
-    return "Postgraduate Certificate";
+    return "Postgraduate Diploma";
   }
   if (lowerType.includes("skill")) {
-    return "Post Graduate Certificate";
+    return "Skilled";
   }
   return type;
 };
@@ -220,7 +220,9 @@ const SpecializationDetails = () => {
             let dbProg = null;
             if (resPrograms.success) {
               dbProg = resPrograms.data.find(
-                (p) => p.name.trim().toLowerCase() === programName.trim().toLowerCase()
+                (p) =>
+                  p.name.trim().toLowerCase() ===
+                  programName.trim().toLowerCase(),
               );
             }
 
@@ -233,9 +235,9 @@ const SpecializationDetails = () => {
             } else {
               setBranches([]);
               setProgramInfo({
-                name: programName,
+                name: "Post Graduate Diploma",
                 programType: "Skill Programs",
-                university: { name: "The Global University" }
+                university: { name: "The Global University" },
               });
             }
           } else {
@@ -250,7 +252,7 @@ const SpecializationDetails = () => {
             setProgramInfo({
               name: "Post Graduate Certificate",
               programType: "Skill Programs",
-              university: { name: "The Global University" }
+              university: { name: "The Global University" },
             });
           }
         } else {
@@ -277,7 +279,7 @@ const SpecializationDetails = () => {
     const levelId = queryParams.get("level");
     const programName = queryParams.get("programName");
     if (levelId) {
-      const found = subPrograms.find(sub => sub.id === levelId);
+      const found = subPrograms.find((sub) => sub.id === levelId);
       if (found) {
         setSelectedSubProgram(found);
       } else {
@@ -292,7 +294,11 @@ const SpecializationDetails = () => {
     }
   }, [location.search, programId]);
 
-  const isPostGraduateCertificate = (programInfo?.programType && programInfo.programType.toLowerCase().includes("skill")) || fromCategory === "skill-programs" || programId === "skill-programs";
+  const isPostGraduateCertificate =
+    (programInfo?.programType &&
+      programInfo.programType.toLowerCase().includes("skill")) ||
+    fromCategory === "skill-programs" ||
+    programId === "skill-programs";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -313,7 +319,10 @@ const SpecializationDetails = () => {
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-border text-sm font-bold shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 text-foreground/80 hover:text-foreground cursor-pointer group"
             >
-              <ArrowLeft size={16} className="transition-transform duration-300 group-hover:-translate-x-1" />
+              <ArrowLeft
+                size={16}
+                className="transition-transform duration-300 group-hover:-translate-x-1"
+              />
               Back to Programs
             </button>
           </div>
@@ -340,13 +349,22 @@ const SpecializationDetails = () => {
 
                 <div className="relative z-10 space-y-4">
                   <span className="inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 text-blue-300 border border-white/10">
-                    {isPostGraduateCertificate ? "Post Graduate Certificate" : (programInfo?.programType || "Specialization")}
+                    {isPostGraduateCertificate
+                      ? "Skilled"
+                      : programInfo?.programType || "Specialization"}
                   </span>
                   <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-                    {isPostGraduateCertificate ? (selectedSubProgram?.name || programInfo?.name || "Post Graduate Certificate") : (programInfo?.name || "Program Details")}
+                    {isPostGraduateCertificate
+                      ? selectedSubProgram?.name ||
+                        programInfo?.name ||
+                        "Post Graduate Diploma"
+                      : programInfo?.name || "Program Details"}
                   </h1>
                   <p className="text-lg text-white/70 leading-relaxed font-medium">
-                    Offered by <span className="text-white font-extrabold underline decoration-[#17468C] decoration-4 underline-offset-4">{programInfo?.university?.name || "The Global University"}</span>
+                    Offered by{" "}
+                    <span className="text-white font-extrabold underline decoration-[#17468C] decoration-4 underline-offset-4">
+                      {programInfo?.university?.name || "The Global University"}
+                    </span>
                   </p>
                   <div className="flex items-center gap-3 pt-4 text-xs font-bold text-white/50 uppercase tracking-widest">
                     <ShieldCheck size={18} className="text-emerald-400" />
@@ -356,7 +374,11 @@ const SpecializationDetails = () => {
               </motion.div>
 
               <motion.div
-                key={selectedSubProgram ? `branches-list-${selectedSubProgram.id}` : "branches-list-default"}
+                key={
+                  selectedSubProgram
+                    ? `branches-list-${selectedSubProgram.id}`
+                    : "branches-list-default"
+                }
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -373,7 +395,9 @@ const SpecializationDetails = () => {
                           Skill Level Info
                         </span>
                       </div>
-                      <h2 className="text-2xl font-black text-slate-800">{selectedSubProgram.name}</h2>
+                      <h2 className="text-2xl font-black text-slate-800">
+                        {selectedSubProgram.name}
+                      </h2>
 
                       <div className="flex flex-wrap gap-4 pt-1">
                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-100 px-3 py-1 rounded-full">
@@ -382,7 +406,9 @@ const SpecializationDetails = () => {
                         </span>
                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-100 px-3 py-1 rounded-full">
                           <GraduationCap size={14} className="text-slate-400" />
-                          <span>Eligibility: {selectedSubProgram.eligibility}</span>
+                          <span>
+                            Eligibility: {selectedSubProgram.eligibility}
+                          </span>
                         </span>
                       </div>
                     </div>
@@ -391,7 +417,9 @@ const SpecializationDetails = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-black text-foreground">Available Branches</h2>
+                    <h2 className="text-2xl font-black text-foreground">
+                      Available Branches
+                    </h2>
                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
                       Choose your professional track or stream
                     </p>
@@ -403,7 +431,10 @@ const SpecializationDetails = () => {
 
                 {branches.length === 0 ? (
                   <div className="p-12 text-center bg-white border border-border rounded-3xl space-y-3">
-                    <BookOpen size={48} className="mx-auto text-muted-foreground/30" />
+                    <BookOpen
+                      size={48}
+                      className="mx-auto text-muted-foreground/30"
+                    />
                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                       No branches available for this specialization.
                     </p>
@@ -422,9 +453,11 @@ const SpecializationDetails = () => {
                           <div className="flex flex-wrap items-center gap-3">
                             <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
                               {isPostGraduateCertificate
-                                ? "Postgraduate Certificate"
-                                : getProgramLabel(branch.program?.programType || programInfo?.programType)
-                              }
+                                ? "Skilled"
+                                : getProgramLabel(
+                                    branch.program?.programType ||
+                                      programInfo?.programType,
+                                  )}
                             </span>
                           </div>
 
@@ -437,29 +470,55 @@ const SpecializationDetails = () => {
                           {isPostGraduateCertificate && selectedSubProgram ? (
                             <div className="flex flex-wrap gap-4 pt-1">
                               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full w-fit">
-                                <Clock size={14} className="text-slate-400 shrink-0" />
-                                <span>Duration: {selectedSubProgram.duration}</span>
+                                <Clock
+                                  size={14}
+                                  className="text-slate-400 shrink-0"
+                                />
+                                <span>
+                                  Duration: {selectedSubProgram.duration}
+                                </span>
                               </div>
                               <div className="flex items-start gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3.5 py-2 rounded-2xl w-fit">
-                                <GraduationCap size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                                <span className="leading-relaxed">Eligibility: {selectedSubProgram.eligibility}</span>
+                                <GraduationCap
+                                  size={14}
+                                  className="text-slate-400 shrink-0 mt-0.5"
+                                />
+                                <span className="leading-relaxed">
+                                  Eligibility: {selectedSubProgram.eligibility}
+                                </span>
                               </div>
                             </div>
                           ) : (
                             <div className="flex flex-wrap gap-4 pt-1">
                               {branch.duration && (
                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full w-fit">
-                                  <Calendar size={14} className="text-slate-400 shrink-0" />
+                                  <Calendar
+                                    size={14}
+                                    className="text-slate-400 shrink-0"
+                                  />
                                   <span>Duration: {branch.duration}</span>
                                 </div>
                               )}
-                              {((branch.program?.eligibilityChecklist && branch.program.eligibilityChecklist.length > 0) ||
-                                (programInfo?.eligibilityChecklist && programInfo.eligibilityChecklist.length > 0)) && (
-                                  <div className="flex items-start gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3.5 py-2 rounded-2xl w-fit">
-                                    <GraduationCap size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                                    <span className="leading-relaxed">Eligibility: {(branch.program?.eligibilityChecklist || programInfo?.eligibilityChecklist).join(", ")}</span>
-                                  </div>
-                                )}
+                              {((branch.program?.eligibilityChecklist &&
+                                branch.program.eligibilityChecklist.length >
+                                  0) ||
+                                (programInfo?.eligibilityChecklist &&
+                                  programInfo.eligibilityChecklist.length >
+                                    0)) && (
+                                <div className="flex items-start gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-100 px-3.5 py-2 rounded-2xl w-fit">
+                                  <GraduationCap
+                                    size={14}
+                                    className="text-slate-400 shrink-0 mt-0.5"
+                                  />
+                                  <span className="leading-relaxed">
+                                    Eligibility:{" "}
+                                    {(
+                                      branch.program?.eligibilityChecklist ||
+                                      programInfo?.eligibilityChecklist
+                                    ).join(", ")}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -475,7 +534,9 @@ const SpecializationDetails = () => {
                                 ₹{branch.currentFee.totalFee?.toLocaleString()}
                               </p>
                               <p className="text-[9px] font-bold text-muted-foreground mt-0.5">
-                                (Tuition: ₹{branch.currentFee.tuitionFee?.toLocaleString()})
+                                (Tuition: ₹
+                                {branch.currentFee.tuitionFee?.toLocaleString()}
+                                )
                               </p>
                             </div>
                           </div>
