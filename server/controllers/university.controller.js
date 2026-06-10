@@ -312,9 +312,15 @@ export const getActivityLogs = async (req, res, next) => {
 
 export const importUniversityData = async (req, res, next) => {
   try {
-    const { universityId } = req.body;
+    const { universityId, programType, mode } = req.body;
     if (!universityId) {
       throw createError(400, "University ID is required");
+    }
+    if (!programType) {
+      throw createError(400, "Program Type is required");
+    }
+    if (!mode) {
+      throw createError(400, "Mode is required");
     }
     if (!req.file) {
       throw createError(400, "Excel file is required");
@@ -368,23 +374,6 @@ export const importUniversityData = async (req, res, next) => {
     let currentEligibility = "";
     let importCount = 0;
 
-    const determineProgramType = (name) => {
-      const n = name.toLowerCase();
-      if (n.includes("master") || n.includes("post graduate") || n.includes("m.com") || n.includes("mba") || n.includes("m.ca") || n.includes("m.tech") || n.includes("m.sc") || n.includes("m.a")) {
-        return "Masters Degree";
-      }
-      if (n.includes("diploma") || n.includes("pgd")) {
-        return "PG Diploma";
-      }
-      if (n.includes("skill programs") || n.includes("vocational")) {
-        return "Skill Programs";
-      }
-      if (n.includes("skill test")) {
-        return "Skill Test";
-      }
-      return "Bachelors Degree";
-    };
-
     const parseEligibility = (raw) => {
       if (!raw) return [];
       return raw
@@ -413,7 +402,6 @@ export const importUniversityData = async (req, res, next) => {
 
       if (!currentStream) continue;
 
-      const progType = determineProgramType(currentStream);
       const checklist = parseEligibility(currentEligibility);
 
       // Find or create Program
@@ -426,14 +414,16 @@ export const importUniversityData = async (req, res, next) => {
         program = new Program({
           name: currentStream,
           university: universityId,
-          programType: progType,
+          programType: programType,
+          mode: mode,
           eligibilityChecklist: checklist,
           isActive: true
         });
         await program.save();
       } else {
         program.eligibilityChecklist = checklist;
-        program.programType = progType;
+        program.programType = programType;
+        program.mode = mode;
         await program.save();
       }
 

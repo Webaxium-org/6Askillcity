@@ -102,6 +102,8 @@ export default function UniversityManagement() {
   const [importUniversityId, setImportUniversityId] = useState("");
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [importProgramType, setImportProgramType] = useState("");
+  const [importMode, setImportMode] = useState("");
 
   // Pagination state
   const PAGE_SIZE = 10;
@@ -115,17 +117,27 @@ export default function UniversityManagement() {
       dispatch(showAlert({ type: "error", message: "Please select a university." }));
       return;
     }
+    if (!importProgramType) {
+      dispatch(showAlert({ type: "error", message: "Please select a Course Type." }));
+      return;
+    }
+    if (!importMode) {
+      dispatch(showAlert({ type: "error", message: "Please select a Mode." }));
+      return;
+    }
     if (!importFile) {
       dispatch(showAlert({ type: "error", message: "Please select an Excel file." }));
       return;
     }
     setImporting(true);
     try {
-      const res = await importUniversityExcel(importUniversityId, importFile);
+      const res = await importUniversityExcel(importUniversityId, importFile, importProgramType, importMode);
       if (res.success) {
         dispatch(showAlert({ type: "success", message: res.message || "Data imported successfully!" }));
         setIsImportModalOpen(false);
         setImportUniversityId("");
+        setImportProgramType("");
+        setImportMode("");
         setImportFile(null);
         fetchData();
       }
@@ -608,6 +620,8 @@ export default function UniversityManagement() {
               onClick={() => {
                 setImportUniversityId("");
                 setImportFile(null);
+                setImportProgramType("");
+                setImportMode("");
                 setIsImportModalOpen(true);
               }}
               className="flex items-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-emerald-600"
@@ -1901,6 +1915,44 @@ export default function UniversityManagement() {
                       {universities.map((u) => (
                         <option key={u._id} value={u._id}>
                           {u.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">
+                      Course Type
+                    </label>
+                    <select
+                      value={importProgramType}
+                      onChange={(e) => setImportProgramType(e.target.value)}
+                      required
+                      className="w-full px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-xs font-bold"
+                    >
+                      <option value="">Select Course Type</option>
+                      {PROGRAM_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">
+                      Mode
+                    </label>
+                    <select
+                      value={importMode}
+                      onChange={(e) => setImportMode(e.target.value)}
+                      required
+                      className="w-full px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-xs font-bold"
+                    >
+                      <option value="">Select Mode</option>
+                      {PROGRAM_MODES.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
                         </option>
                       ))}
                     </select>

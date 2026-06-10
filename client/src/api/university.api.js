@@ -64,10 +64,12 @@ export const getActivityLogs = async () => {
   return response.data;
 };
 
-export const importUniversityExcel = async (universityId, file) => {
+export const importUniversityExcel = async (universityId, file, programType, mode) => {
   const formData = new FormData();
   formData.append("universityId", universityId);
   formData.append("file", file);
+  if (programType) formData.append("programType", programType);
+  if (mode) formData.append("mode", mode);
   const response = await axiosInstance.post("/university-management/universities/import", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
