@@ -418,11 +418,11 @@ export default function App() {
 
   const skillLevels = [
     { _id: "post-graduate-certificate", name: "Post Graduate Diploma" },
-    { _id: "diploma", name: "Diploma program" },
-    { _id: "post-diploma", name: "Post Diploma program" },
-    { _id: "advanced-diploma", name: "Advanced Diploma program" },
+    { _id: "diploma", name: "Diploma Program" },
+    { _id: "post-diploma", name: "Post Diploma Program" },
+    { _id: "advanced-diploma", name: "Advanced Diploma Program" },
     { _id: "dit", name: "Diploma in integrated Technology (DIT)" },
-    { _id: "professional-diploma", name: "Professional Diploma program" },
+    { _id: "professional-diploma", name: "Professional Diploma Program" },
     { _id: "pdit", name: "Post Diploma in integrated Technology (PDIT)" },
     { _id: "certificate", name: "Certificate Program" },
   ];
@@ -710,31 +710,31 @@ export default function App() {
                   animate={
                     highlightInquiry
                       ? {
-                          scale: [1, 1.06, 0.96, 1.02, 1],
-                          rotateY: [0, 360],
-                          z: [0, 40, -10, 5, 0],
-                        }
+                        scale: [1, 1.06, 0.96, 1.02, 1],
+                        rotateY: [0, 360],
+                        z: [0, 40, -10, 5, 0],
+                      }
                       : {
-                          opacity: 1,
-                          scale: 1,
-                          filter: "blur(0px)",
-                          y: 0,
-                          rotateX: 0,
-                          rotateY: 0,
-                        }
+                        opacity: 1,
+                        scale: 1,
+                        filter: "blur(0px)",
+                        y: 0,
+                        rotateX: 0,
+                        rotateY: 0,
+                      }
                   }
                   transition={
                     highlightInquiry
                       ? {
-                          duration: 2.5,
-                          ease: "easeInOut",
-                        }
+                        duration: 2.5,
+                        ease: "easeInOut",
+                      }
                       : {
-                          delay: 0.4,
-                          duration: 1,
-                          type: "spring",
-                          bounce: 0.3,
-                        }
+                        delay: 0.4,
+                        duration: 1,
+                        type: "spring",
+                        bounce: 0.3,
+                      }
                   }
                   style={{ perspective: 1000 }}
                   className="lg:col-span-5 relative group"
@@ -1521,8 +1521,8 @@ export default function App() {
                             style={
                               isActive
                                 ? {
-                                    backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
-                                  }
+                                  backgroundImage: `linear-gradient(to bottom right, ${cat.accentColor}, ${cat.accentColor}dd)`,
+                                }
                                 : {}
                             }
                           >
@@ -1626,7 +1626,7 @@ export default function App() {
 
                             <div>
                               {cat.id === "skill-programs" &&
-                              selectedSkillLevel ? (
+                                selectedSkillLevel ? (
                                 <div className="flex items-center gap-3 mb-6 bg-slate-50 border border-slate-100/80 p-3 rounded-2xl w-full">
                                   <button
                                     onClick={() => setSelectedSkillLevel(null)}
@@ -1661,11 +1661,11 @@ export default function App() {
                                 )}
                                 style={
                                   cat.id === "skill-programs" ||
-                                  cat.id === "pg-diploma"
+                                    cat.id === "pg-diploma"
                                     ? {
-                                        scrollbarWidth: "thin",
-                                        scrollbarColor: `${cat.accentColor}33 transparent`,
-                                      }
+                                      scrollbarWidth: "thin",
+                                      scrollbarColor: `${cat.accentColor}33 transparent`,
+                                    }
                                     : {}
                                 }
                               >
@@ -1690,7 +1690,7 @@ export default function App() {
                                 />
                                 <div className="grid sm:grid-cols-2 gap-4">
                                   {(cat.id === "skill-programs" &&
-                                  selectedSkillLevel
+                                    selectedSkillLevel
                                     ? skillProgramsList
                                     : cat.programs
                                   ).map((prog, pIdx) => (
@@ -1742,7 +1742,7 @@ export default function App() {
                                           className="transition-colors duration-300 shrink-0"
                                           style={{ color: cat.accentColor }}
                                         />
-                                        <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors uppercase text-sm sm:text-base tracking-tight truncate break-words">
+                                        <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors text-sm sm:text-base tracking-tight truncate break-words">
                                           {prog.name}
                                         </span>
                                       </div>
