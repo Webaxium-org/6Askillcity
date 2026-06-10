@@ -585,19 +585,14 @@ export default function App() {
           isFallback: true,
         }));
 
-  const pgDiplomaBranches = dbBranches.filter(
-    (b) =>
-      b.program &&
-      (b.program.programType === "PG Diploma" ||
-        b.program.programType === "PG Deploma"),
+  const pgDiplomas = dbPrograms.filter(
+    (p) =>
+      p.programType === "PG Diploma" ||
+      p.programType === "PG Deploma",
   );
   const pgDiplomasList =
-    pgDiplomaBranches.length > 0
-      ? pgDiplomaBranches.map((b) => ({
-          _id: b.program._id,
-          name: b.name,
-          isFallback: false,
-        }))
+    pgDiplomas.length > 0
+      ? pgDiplomas
       : staticPgDiplomas.map((name, i) => ({
           _id: `fallback-pgd-${i}`,
           name,
