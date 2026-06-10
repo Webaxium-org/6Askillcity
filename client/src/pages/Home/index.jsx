@@ -352,171 +352,7 @@ const LoadingScreen = ({ onFinished }) => {
   );
 };
 
-const staticBachelors = [
-  "Bachelor of Commerce (BCom)",
-  "Bachelor of Arts (BA)",
-  "Bachelor of Science (BSc)",
-  "Bachelor of Computer Applications (BCA)",
-  "Bachelor of Business Administration (BBA)",
-];
-const staticMasters = [
-  "Master of Commerce (MCom)",
-  "Master of Arts (MA)",
-  "Master of Science (MSc)",
-  "Master of Computer Applications (MCA)",
-  "Master of Business Administration (MBA)",
-];
-const staticPgDiplomas = [
-  "Addiction Counselling",
-  "Banking & Finance",
-  "Beauty Therapy",
-  "Business & Marketing",
-  "Business Management",
-  "Child Psychology",
-  "Cognitive Behaviour Therapy",
-  "Computer Application",
-  "Cosmetology",
-  "Counselling Psychology",
-  "Disaster Risk Reduction",
-  "Environmental & Social Governance",
-  "Environmental Health & Safety",
-  "Environmental Management",
-  "Fashion & Creative Makeup",
-  "Finance Management",
-  "Fire & Safety",
-  "Fire Fighting",
-  "Fire Safety & Audit",
-  "Fire Technology & Industrial Safety Operation",
-  "GIS & Remote Sensing",
-  "Hair Dressing",
-  "Health Management",
-  "Hospital & Tourism",
-  "Hospital Management",
-  "Hotel Management",
-  "HR Management",
-  "Industrial Safety",
-  "Industrial Safety & Environment Management",
-  "Journalism & Mass Communication",
-  "Makeup Artistry",
-  "Marketing",
-  "Mass Communication",
-  "Material Management",
-  "Metallurgy",
-  "Nail Technology",
-  "Personal Management",
-  "Personnel Management",
-  "PGDIT",
-  "Physical Education",
-  "Rural Development",
-  "Salon Management",
-  "School Counselling",
-  "Special Effects Makeup",
-  "Special Need",
-  "Styling & Makeup Artistry",
-  "Script Writing & Direction",
-  "Supply Chain Management",
-];
-const staticSkillPrograms = [
-  "CARPET",
-  "AUTOMOTIVE REPAIR",
-  "FABRICATION",
-  "ELECTRONICS",
-  "FASHION DESIGN",
-  "GARMENT MAKING",
-  "HANDICRAFTS",
-  "LEATHER AND FOOTWEAR",
-  "PRINTING TECHNOLOGY",
-  "POULTRY FARMING",
-  "DAIRYING",
-  "LIVESTOCK BREEDING",
-  "ORGANIC FARMING",
-  "HORTICULTURE AND FORESTRY",
-  "APICULTURE AND SERICULTURE",
-  "AGRICULTURE MACHINERY AND IMPLEMENTS SECTOR",
-  "BEAUTY CULTURE",
-  "HAIR STYLING",
-  "SPA AND WELLNESS SECTOR",
-  "RENEWABLE ENERGY AND POWER SECTOR",
-  "GLASS DIVERSIFIED SECTOR",
-  "CLAY ART SECTOR",
-  "WATER RE-CYCLING AND SEWERAGE TREATMENT SECTOR",
-  "COSMETOLOGY AND TRICHOLOGY SECTOR",
-  "AEROSPACE AND AVIATION SECTOR",
-  "TELECOM SECTOR",
-  "COUNSELLING SKILLS SECTOR",
-  "MARINE AND SHIPPING SECTOR",
-  "HEALTH EDUCATION SECTOR",
-  "REIKI SECTOR",
-  "AYURVEDA SECTOR",
-  "STED BEAUTY SCHOOL SECTOR",
-  "COMPUTER SYSTEM AND APPLICATIONS SECTOR",
-  "BUSINESS AND MANAGEMENT EDUCATION SECTOR",
-  "MUSIC AND MEDIA SECTOR",
-  "ALLIED HEALTH EDUCATION SECTOR",
-  "CREATIVE ART AND CRAFTS SECTOR",
-  "FIRE AND SAFETY SECTOR",
-  "CIVIL ENGINEERING SECTOR",
-  "TEXTILE SECTOR",
-  "INTERIOR DESIGNING SECTOR",
-  "TEXTILE RE-CYCLING SECTOR",
-  "BEAUTY THERAPIST",
-  "BEAUTY CONSULTANT",
-  "FASHION DESIGNER",
-  "SEWING MACHINE OPERATOR",
-  "OFFICE ASSISTANT",
-  "COMPUTER OPERATOR",
-  "TALLY OPERATOR",
-  "LOGISTICS COORDINATOR",
-  "SOLAR TECHNICIAN",
-  "SPINNING TECHNICIAN",
-  "WEAVING TECHNICIAN",
-  "YOGA TEACHER",
-  "FIRE & SAFETY INSPECTOR",
-  "CRAFT INSTRUCTOR",
-  "DENTAL ASSISTANT",
-  "NURSING ASSISTANT",
-  "PHARMACY ASSISTANT",
-  "PANJAKARMA THERAPIST",
-  "SOUND ENGINEER",
-  "VEDIO EDITOR",
-  "PRE-SCHOOL TEACHER",
-  "TAILORING",
-  "REFRIGERATION & AC MECHANIC",
-  "PLUMBER",
-  "ELECTRICIAN",
-  "DRAFTSMAN CIVIL",
-  "DRAFTSMAN MECHANICAL",
-  "HOTEL MANAGEMENT",
-  "TOURIST GUIDE",
-  "CATERING",
-  "FOOD PRODUCTION",
-  "NURSERY MANAGEMENT",
-  "POULTRY FEED TECHNICIAN",
-  "BEEKEEPER",
-  "SILKWORM REARER",
-  "FIBER OPTICS TECHNICIAN",
-  "ROUTING AND SWITCHING",
-  "CALL CENTER EXECUTIVE",
-  "TENT DESIGNER",
-  "EVENT MANAGER",
-  "PHOTOGRAPHER",
-  "GRAPHIC DESIGNER",
-  "WEB DEVELOPER",
-  "APP DEVELOPER",
-  "CYBER SECURITY SPECIALIST",
-  "CLOUDE ARCHITECT",
-  "DATA ANALYST",
-  "AI ENGINEER",
-  "ROBOTIC TECHNICIAN",
-  "3D PRINTING OPERATOR",
-  "CNC MACHINE OPERATOR",
-  "WELDING INSPECTOR",
-  "NCTE APPROVED TRAINER",
-  "PCI VERIFIED PHARMACIST",
-  "BCI ADVOCATE ASSISTANT",
-  "AIU REGISTRATION DESK OFFICER",
-  "UGC COMPLIANCE SPECIALIST",
-];
+// Static program listings removed to retrieve all data from the database
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -563,53 +399,22 @@ export default function App() {
     fetchBranches();
   }, []);
 
-  const bachelors = dbPrograms.filter(
+  const bachelorsList = dbPrograms.filter(
     (p) => p.programType === "Bachelors Degree",
   );
-  const bachelorsList =
-    bachelors.length > 0
-      ? bachelors
-      : staticBachelors.map((name, i) => ({
-          _id: `fallback-bach-${i}`,
-          name,
-          isFallback: true,
-        }));
 
-  const masters = dbPrograms.filter((p) => p.programType === "Masters Degree");
-  const mastersList =
-    masters.length > 0
-      ? masters
-      : staticMasters.map((name, i) => ({
-          _id: `fallback-mast-${i}`,
-          name,
-          isFallback: true,
-        }));
+  const mastersList = dbPrograms.filter((p) => p.programType === "Masters Degree");
 
-  const pgDiplomas = dbPrograms.filter(
+  const pgDiplomasList = dbPrograms.filter(
     (p) =>
       p.programType === "PG Diploma" ||
       p.programType === "PG Deploma",
   );
-  const pgDiplomasList =
-    pgDiplomas.length > 0
-      ? pgDiplomas
-      : staticPgDiplomas.map((name, i) => ({
-          _id: `fallback-pgd-${i}`,
-          name,
-          isFallback: true,
-        }));
 
-  const skillPrograms = dbPrograms.filter(
+  const skillProgramsList = dbPrograms.filter(
     (p) => p.programType === "Skill Programs",
   );
-  const skillProgramsList =
-    skillPrograms.length > 0
-      ? skillPrograms
-      : staticSkillPrograms.map((name, i) => ({
-          _id: `fallback-skill-${i}`,
-          name,
-          isFallback: true,
-        }));
+
 
   const skillLevels = [
     { _id: "post-graduate-certificate", name: "Post Graduate Diploma" },
@@ -1807,7 +1612,7 @@ export default function App() {
                             >
                               {cat.id === "skill-programs"
                                 ? selectedSkillLevel
-                                  ? `${staticSkillPrograms.length} Programs`
+                                  ? `${skillProgramsList.length} Programs`
                                   : `${skillLevels.length} Levels`
                                 : cat.count}{" "}
                               Available
@@ -1886,10 +1691,7 @@ export default function App() {
                                 <div className="grid sm:grid-cols-2 gap-4">
                                   {(cat.id === "skill-programs" &&
                                   selectedSkillLevel
-                                    ? staticSkillPrograms.map((name, i) => ({
-                                        _id: `static-skill-${i}`,
-                                        name,
-                                      }))
+                                    ? skillProgramsList
                                     : cat.programs
                                   ).map((prog, pIdx) => (
                                     <motion.div

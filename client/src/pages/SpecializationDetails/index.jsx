@@ -70,108 +70,7 @@ const subPrograms = [
     eligibility: "Highscholers / 10 th / Plus two / Graduation.",
   },
 ];
-
-const staticSkillPrograms = [
-  "CARPET",
-  "AUTOMOTIVE REPAIR",
-  "FABRICATION",
-  "ELECTRONICS",
-  "FASHION DESIGN",
-  "GARMENT MAKING",
-  "HANDICRAFTS",
-  "LEATHER AND FOOTWEAR",
-  "PRINTING TECHNOLOGY",
-  "POULTRY FARMING",
-  "DAIRYING",
-  "LIVESTOCK BREEDING",
-  "ORGANIC FARMING",
-  "HORTICULTURE AND FORESTRY",
-  "APICULTURE AND SERICULTURE",
-  "AGRICULTURE MACHINERY AND IMPLEMENTS SECTOR",
-  "BEAUTY CULTURE",
-  "HAIR STYLING",
-  "SPA AND WELLNESS SECTOR",
-  "RENEWABLE ENERGY AND POWER SECTOR",
-  "GLASS DIVERSIFIED SECTOR",
-  "CLAY ART SECTOR",
-  "WATER RE-CYCLING AND SEWERAGE TREATMENT SECTOR",
-  "COSMETOLOGY AND TRICHOLOGY SECTOR",
-  "AEROSPACE AND AVIATION SECTOR",
-  "TELECOM SECTOR",
-  "COUNSELLING SKILLS SECTOR",
-  "MARINE AND SHIPPING SECTOR",
-  "HEALTH EDUCATION SECTOR",
-  "REIKI SECTOR",
-  "AYURVEDA SECTOR",
-  "STED BEAUTY SCHOOL SECTOR",
-  "COMPUTER SYSTEM AND APPLICATIONS SECTOR",
-  "BUSINESS AND MANAGEMENT EDUCATION SECTOR",
-  "MUSIC AND MEDIA SECTOR",
-  "ALLIED HEALTH EDUCATION SECTOR",
-  "CREATIVE ART AND CRAFTS SECTOR",
-  "FIRE AND SAFETY SECTOR",
-  "CIVIL ENGINEERING SECTOR",
-  "TEXTILE SECTOR",
-  "INTERIOR DESIGNING SECTOR",
-  "TEXTILE RE-CYCLING SECTOR",
-  "BEAUTY THERAPIST",
-  "BEAUTY CONSULTANT",
-  "FASHION DESIGNER",
-  "SEWING MACHINE OPERATOR",
-  "OFFICE ASSISTANT",
-  "COMPUTER OPERATOR",
-  "TALLY OPERATOR",
-  "LOGISTICS COORDINATOR",
-  "SOLAR TECHNICIAN",
-  "SPINNING TECHNICIAN",
-  "WEAVING TECHNICIAN",
-  "YOGA TEACHER",
-  "FIRE & SAFETY INSPECTOR",
-  "CRAFT INSTRUCTOR",
-  "DENTAL ASSISTANT",
-  "NURSING ASSISTANT",
-  "PHARMACY ASSISTANT",
-  "PANJAKARMA THERAPIST",
-  "SOUND ENGINEER",
-  "VEDIO EDITOR",
-  "PRE-SCHOOL TEACHER",
-  "TAILORING",
-  "REFRIGERATION & AC MECHANIC",
-  "PLUMBER",
-  "ELECTRICIAN",
-  "DRAFTSMAN CIVIL",
-  "DRAFTSMAN MECHANICAL",
-  "HOTEL MANAGEMENT",
-  "TOURIST GUIDE",
-  "CATERING",
-  "FOOD PRODUCTION",
-  "NURSERY MANAGEMENT",
-  "POULTRY FEED TECHNICIAN",
-  "BEEKEEPER",
-  "SILKWORM REARER",
-  "FIBER OPTICS TECHNICIAN",
-  "ROUTING AND SWITCHING",
-  "CALL CENTER EXECUTIVE",
-  "TENT DESIGNER",
-  "EVENT MANAGER",
-  "PHOTOGRAPHER",
-  "GRAPHIC DESIGNER",
-  "WEB DEVELOPER",
-  "APP DEVELOPER",
-  "CYBER SECURITY SPECIALIST",
-  "CLOUDE ARCHITECT",
-  "DATA ANALYST",
-  "AI ENGINEER",
-  "ROBOTIC TECHNICIAN",
-  "3D PRINTING OPERATOR",
-  "CNC MACHINE OPERATOR",
-  "WELDING INSPECTOR",
-  "NCTE APPROVED TRAINER",
-  "PCI VERIFIED PHARMACIST",
-  "BCI ADVOCATE ASSISTANT",
-  "AIU REGISTRATION DESK OFFICER",
-  "UGC COMPLIANCE SPECIALIST",
-];
+// staticSkillPrograms array removed to use DB programs
 
 const getProgramLabel = (programType) => {
   if (!programType) return "Skilled";
@@ -241,14 +140,20 @@ const SpecializationDetails = () => {
               });
             }
           } else {
-            const mappedBranches = staticSkillPrograms.map((name, i) => ({
-              _id: `static-skill-${i}`,
-              name,
-              program: {
-                programType: "Skill Programs",
-              },
-            }));
-            setBranches(mappedBranches);
+            const resPrograms = await getPublicPrograms({ isActive: "true" });
+            if (resPrograms.success) {
+              const skillProgs = resPrograms.data.filter(
+                (p) => p.programType === "Skill Programs",
+              );
+              const mappedBranches = skillProgs.map((p) => ({
+                _id: p._id,
+                name: p.name,
+                program: p,
+              }));
+              setBranches(mappedBranches);
+            } else {
+              setBranches([]);
+            }
             setProgramInfo({
               name: "Post Graduate Certificate",
               programType: "Skill Programs",
