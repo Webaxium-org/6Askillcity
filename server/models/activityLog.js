@@ -16,13 +16,20 @@ const ActivityLogSchema = new mongoose.Schema(
     },
     targetType: {
       type: String,
-      enum: ["University", "Program", "ProgramFee", "AdmissionPoint", "PartnerPermission"],
+      enum: [
+        "University",
+        "Program",
+        "Branch",
+        "ProgramFee",
+        "AdmissionPoint",
+        "PartnerPermission",
+      ],
     },
     targetId: {
       type: mongoose.Schema.Types.ObjectId,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("ActivityLog", ActivityLogSchema);
