@@ -9,7 +9,13 @@ import xlsx from "xlsx";
 import mongoose from "mongoose";
 
 // Helper to log activity
-const logActivity = async (action, details, performedBy, targetType, targetId) => {
+const logActivity = async (
+  action,
+  details,
+  performedBy,
+  targetType,
+  targetId,
+) => {
   try {
     await ActivityLog.create({
       action,
@@ -47,7 +53,7 @@ export const createUniversity = async (req, res, next) => {
       `Created university: ${university.name}`,
       req.user.userId,
       "University",
-      university._id
+      university._id,
     );
 
     res.status(201).json({ success: true, data: university });
@@ -59,7 +65,9 @@ export const createUniversity = async (req, res, next) => {
 export const updateUniversity = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const university = await University.findByIdAndUpdate(id, req.body, { new: true });
+    const university = await University.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
     if (!university) throw createError(404, "University not found");
 
     await logActivity(
@@ -67,7 +75,7 @@ export const updateUniversity = async (req, res, next) => {
       `Updated university: ${university.name}`,
       req.user.userId,
       "University",
-      university._id
+      university._id,
     );
 
     res.status(200).json({ success: true, data: university });
@@ -89,7 +97,9 @@ export const getPrograms = async (req, res, next) => {
     if (isActive !== undefined) {
       filter.isActive = isActive === "true";
     }
-    const programs = await Program.find(filter).populate("university", "name").sort({ name: 1 });
+    const programs = await Program.find(filter)
+      .populate("university", "name")
+      .sort({ name: 1 });
     res.status(200).json({ success: true, data: programs });
   } catch (error) {
     next(error);
@@ -99,8 +109,22 @@ export const getPrograms = async (req, res, next) => {
 export const createProgram = async (req, res, next) => {
   try {
     console.log("Creating Program with body:", req.body);
-    const { name, university, isActive, programType, eligibilityChecklist, mode } = req.body;
-    const program = new Program({ name, university, isActive, programType, eligibilityChecklist, mode });
+    const {
+      name,
+      university,
+      isActive,
+      programType,
+      eligibilityChecklist,
+      mode,
+    } = req.body;
+    const program = new Program({
+      name,
+      university,
+      isActive,
+      programType,
+      eligibilityChecklist,
+      mode,
+    });
     await program.save();
 
     // Removed fee creation from program, it will now be handled at branch level
@@ -110,7 +134,7 @@ export const createProgram = async (req, res, next) => {
       `Created program: ${program.name}`,
       req.user.userId,
       "Program",
-      program._id
+      program._id,
     );
 
     res.status(201).json({ success: true, data: program });
@@ -122,7 +146,9 @@ export const createProgram = async (req, res, next) => {
 export const updateProgram = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const program = await Program.findByIdAndUpdate(id, req.body, { new: true });
+    const program = await Program.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
     if (!program) throw createError(404, "Program not found");
 
     await logActivity(
@@ -130,7 +156,7 @@ export const updateProgram = async (req, res, next) => {
       `Updated program: ${program.name}`,
       req.user.userId,
       "Program",
-      program._id
+      program._id,
     );
 
     res.status(200).json({ success: true, data: program });
@@ -161,8 +187,8 @@ export const getBranches = async (req, res, next) => {
           from: "programs",
           localField: "program",
           foreignField: "_id",
-          as: "program"
-        }
+          as: "program",
+        },
       },
       { $unwind: { path: "$program", preserveNullAndEmptyArrays: true } },
       {
@@ -170,22 +196,36 @@ export const getBranches = async (req, res, next) => {
           from: "universities",
           localField: "program.university",
           foreignField: "_id",
-          as: "program.university"
-        }
+          as: "program.university",
+        },
       },
-      { $unwind: { path: "$program.university", preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: "$program.university",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $lookup: {
           from: "programfees",
           let: { branchId: "$_id" },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ["$branch", "$$branchId"] }, { $eq: ["$isCurrent", true] }] } } }
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$branch", "$$branchId"] },
+                    { $eq: ["$isCurrent", true] },
+                  ],
+                },
+              },
+            },
           ],
-          as: "currentFee"
-        }
+          as: "currentFee",
+        },
       },
       { $unwind: { path: "$currentFee", preserveNullAndEmptyArrays: true } },
-      { $sort: { name: 1 } }
+      { $sort: { name: 1 } },
     ]);
 
     res.status(200).json({ success: true, data: branches });
@@ -196,20 +236,33 @@ export const getBranches = async (req, res, next) => {
 
 export const createBranch = async (req, res, next) => {
   try {
-    console.log("Creating Branch with body:", req.body);
-    const { name, program, duration, type, isActive, applicationFee, tuitionFee, totalFee } = req.body;
+    const {
+      name,
+      program,
+      duration,
+      type,
+      isActive,
+      applicationFee,
+      tuitionFee,
+      totalFee,
+    } = req.body;
 
     const branch = new Branch({ name, program, duration, type, isActive });
     await branch.save();
 
     // If fee details are provided and at least one is greater than zero, create an initial fee record
-    if ((applicationFee && Number(applicationFee) > 0) || (tuitionFee && Number(tuitionFee) > 0) || (totalFee && Number(totalFee) > 0)) {
+    if (
+      (applicationFee && Number(applicationFee) > 0) ||
+      (tuitionFee && Number(tuitionFee) > 0) ||
+      (totalFee && Number(totalFee) > 0)
+    ) {
       const newFee = new ProgramFee({
         branch: branch._id,
         applicationFee: applicationFee || 0,
         tuitionFee: tuitionFee || 0,
-        totalFee: totalFee || (Number(applicationFee || 0) + Number(tuitionFee || 0)),
-        isCurrent: true
+        totalFee:
+          totalFee || Number(applicationFee || 0) + Number(tuitionFee || 0),
+        isCurrent: true,
       });
       await newFee.save();
     }
@@ -219,7 +272,7 @@ export const createBranch = async (req, res, next) => {
       `Created branch: ${branch.name}`,
       req.user.userId,
       "Branch",
-      branch._id
+      branch._id,
     );
 
     res.status(201).json({ success: true, data: branch });
@@ -239,7 +292,7 @@ export const updateBranch = async (req, res, next) => {
       `Updated branch: ${branch.name}`,
       req.user.userId,
       "Branch",
-      branch._id
+      branch._id,
     );
 
     res.status(200).json({ success: true, data: branch });
@@ -255,7 +308,9 @@ export const updateBranch = async (req, res, next) => {
 export const getProgramFees = async (req, res, next) => {
   try {
     const { branchId } = req.params;
-    const fees = await ProgramFee.find({ branch: branchId }).sort({ createdAt: -1 });
+    const fees = await ProgramFee.find({ branch: branchId }).sort({
+      createdAt: -1,
+    });
     res.status(200).json({ success: true, data: fees });
   } catch (error) {
     next(error);
@@ -268,7 +323,10 @@ export const updateProgramFee = async (req, res, next) => {
     const { totalFee, applicationFee, tuitionFee, otherFees } = req.body;
 
     // Mark current fee as not current
-    await ProgramFee.updateMany({ branch: branchId, isCurrent: true }, { isCurrent: false });
+    await ProgramFee.updateMany(
+      { branch: branchId, isCurrent: true },
+      { isCurrent: false },
+    );
 
     // Create new fee version
     const newFee = new ProgramFee({
@@ -286,7 +344,7 @@ export const updateProgramFee = async (req, res, next) => {
       `Updated fee for branch ID: ${branchId}. New total: ${totalFee}`,
       req.user.userId,
       "ProgramFee",
-      newFee._id
+      newFee._id,
     );
 
     res.status(201).json({ success: true, data: newFee });
@@ -351,15 +409,23 @@ export const importUniversityData = async (req, res, next) => {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       if (!row) continue;
-      const rowStr = Array.from(row).map(cell => cell?.toString().toLowerCase() || "");
-      const hasStream = rowStr.some(cell => cell.includes("stream"));
-      const hasCourse = rowStr.some(cell => cell.includes("course"));
+      const rowStr = Array.from(row).map(
+        (cell) => cell?.toString().toLowerCase() || "",
+      );
+      const hasStream = rowStr.some((cell) => cell.includes("stream"));
+      const hasCourse = rowStr.some((cell) => cell.includes("course"));
       if (hasStream && hasCourse) {
         headerRowIdx = i;
-        const streamIdx = rowStr.findIndex(cell => cell.includes("stream"));
-        const courseIdx = rowStr.findIndex(cell => cell.includes("course") || cell.includes("branch"));
-        const durationIdx = rowStr.findIndex(cell => cell.includes("duration"));
-        const eligibilityIdx = rowStr.findIndex(cell => cell.includes("eligibility"));
+        const streamIdx = rowStr.findIndex((cell) => cell.includes("stream"));
+        const courseIdx = rowStr.findIndex(
+          (cell) => cell.includes("course") || cell.includes("branch"),
+        );
+        const durationIdx = rowStr.findIndex((cell) =>
+          cell.includes("duration"),
+        );
+        const eligibilityIdx = rowStr.findIndex((cell) =>
+          cell.includes("eligibility"),
+        );
 
         if (streamIdx !== -1) streamColIdx = streamIdx;
         if (courseIdx !== -1) courseColIdx = courseIdx;
@@ -379,8 +445,8 @@ export const importUniversityData = async (req, res, next) => {
       if (!raw) return [];
       return raw
         .split(/\r?\n/)
-        .map(line => line.replace(/^\d+[\.\)]\s*/, "").trim())
-        .filter(line => line.length > 0);
+        .map((line) => line.replace(/^\d+[\.\)]\s*/, "").trim())
+        .filter((line) => line.length > 0);
     };
 
     for (let i = startRowIdx; i < rows.length; i++) {
@@ -397,7 +463,13 @@ export const importUniversityData = async (req, res, next) => {
       if (eligibility) currentEligibility = eligibility;
 
       // Skip row if there is no branch course name, or if it matches a header name or index serials
-      if (!course || course.toLowerCase() === "course" || course.toLowerCase() === "stream" || course.toLowerCase() === "branch" || course.match(/^\d+$/)) {
+      if (
+        !course ||
+        course.toLowerCase() === "course" ||
+        course.toLowerCase() === "stream" ||
+        course.toLowerCase() === "branch" ||
+        course.match(/^\d+$/)
+      ) {
         continue;
       }
 
@@ -408,7 +480,7 @@ export const importUniversityData = async (req, res, next) => {
       // Find or create Program
       let program = await Program.findOne({
         university: universityId,
-        name: currentStream
+        name: currentStream,
       });
 
       if (!program) {
@@ -418,7 +490,7 @@ export const importUniversityData = async (req, res, next) => {
           programType: programType,
           mode: mode,
           eligibilityChecklist: checklist,
-          isActive: true
+          isActive: true,
         });
         await program.save();
       } else {
@@ -431,7 +503,7 @@ export const importUniversityData = async (req, res, next) => {
       // Find or create Branch
       let branch = await Branch.findOne({
         program: program._id,
-        name: course
+        name: course,
       });
 
       if (!branch) {
@@ -439,7 +511,7 @@ export const importUniversityData = async (req, res, next) => {
           name: course,
           program: program._id,
           duration: currentDuration || "N/A",
-          isActive: true
+          isActive: true,
         });
         await branch.save();
       } else {
@@ -455,10 +527,15 @@ export const importUniversityData = async (req, res, next) => {
       `Imported ${importCount} branches/courses for university: ${university.name}`,
       req.user.userId,
       "University",
-      university._id
+      university._id,
     );
 
-    res.status(200).json({ success: true, message: `Successfully imported ${importCount} courses/branches.` });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: `Successfully imported ${importCount} courses/branches.`,
+      });
   } catch (error) {
     next(error);
   }
@@ -471,7 +548,10 @@ export const deleteBranch = async (req, res, next) => {
     // Check if the branch is referenced by any Student
     const studentCount = await Student.countDocuments({ branch: id });
     if (studentCount > 0) {
-      throw createError(400, `Cannot delete branch because it is linked to ${studentCount} student application(s).`);
+      throw createError(
+        400,
+        `Cannot delete branch because it is linked to ${studentCount} student application(s).`,
+      );
     }
 
     const branch = await Branch.findById(id);
@@ -488,10 +568,12 @@ export const deleteBranch = async (req, res, next) => {
       `Deleted branch: ${branch.name}`,
       req.user.userId,
       "Branch",
-      branch._id
+      branch._id,
     );
 
-    res.status(200).json({ success: true, message: "Branch deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Branch deleted successfully" });
   } catch (error) {
     next(error);
   }
