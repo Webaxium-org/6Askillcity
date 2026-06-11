@@ -101,6 +101,9 @@ const SpecializationDetails = () => {
   const fromCategory = location.state?.fromCategory;
   const fromSkillLevel = location.state?.fromSkillLevel;
 
+  const queryParams = new URLSearchParams(location.search);
+  const programName = queryParams.get("programName");
+
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [programInfo, setProgramInfo] = useState(null);
@@ -211,17 +214,21 @@ const SpecializationDetails = () => {
       <Navbar />
 
       {/* Main Content Area */}
-      <main className="flex-grow pt-24 pb-20 relative overflow-hidden">
+      <main className="flex-grow pt-24 pb-20 relative">
         {/* Ambient Glowing Blobs */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#17468C]/5 rounded-full blur-[100px] pointer-events-none translate-x-1/4 -translate-y-1/4" />
-        <div className="absolute bottom-20 left-0 w-[500px] h-[500px] bg-[#B82424]/5 rounded-full blur-[100px] pointer-events-none -translate-x-1/4 translate-y-1/4" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#17468C]/5 rounded-full blur-[100px] translate-x-1/4 -translate-y-1/4" />
+          <div className="absolute bottom-20 left-0 w-[500px] h-[500px] bg-[#B82424]/5 rounded-full blur-[100px] -translate-x-1/4 translate-y-1/4" />
+        </div>
 
         <div className="container mx-auto px-6 relative z-10 max-w-4xl">
           {/* Back Navigation Bar */}
-          <div className="mb-10">
+          <div className="sticky top-24 z-20 mb-10 w-fit">
             <button
               onClick={() => {
-                navigate("/#programs", { state: { fromCategory, fromSkillLevel } });
+                navigate("/#programs", {
+                  state: { fromCategory, fromSkillLevel },
+                });
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-border text-sm font-bold shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 text-foreground/80 hover:text-foreground cursor-pointer group"
             >
@@ -261,7 +268,9 @@ const SpecializationDetails = () => {
                   </span>
                   <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
                     {isPostGraduateCertificate
-                      ? selectedSubProgram?.name ||
+                      ? (programName
+                          ? programInfo?.name
+                          : selectedSubProgram?.name) ||
                         programInfo?.name ||
                         "Post Graduate Certificate"
                       : programInfo?.name || "Program Details"}
