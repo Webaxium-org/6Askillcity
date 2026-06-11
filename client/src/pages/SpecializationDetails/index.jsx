@@ -99,6 +99,7 @@ const SpecializationDetails = () => {
   const dispatch = useDispatch();
 
   const fromCategory = location.state?.fromCategory;
+  const fromSkillLevel = location.state?.fromSkillLevel;
 
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -220,7 +221,7 @@ const SpecializationDetails = () => {
           <div className="mb-10">
             <button
               onClick={() => {
-                navigate("/#programs", { state: { fromCategory } });
+                navigate("/#programs", { state: { fromCategory, fromSkillLevel } });
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-border text-sm font-bold shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 text-foreground/80 hover:text-foreground cursor-pointer group"
             >

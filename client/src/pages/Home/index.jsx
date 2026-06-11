@@ -364,11 +364,9 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState(() => {
     return location.state?.fromCategory || "bachelors";
   });
-  const [selectedSkillLevel, setSelectedSkillLevel] = useState(null);
-
-  useEffect(() => {
-    setSelectedSkillLevel(null);
-  }, [activeCategory]);
+  const [selectedSkillLevel, setSelectedSkillLevel] = useState(() => {
+    return location.state?.fromSkillLevel || null;
+  });
 
   const [highlightInquiry, setHighlightInquiry] = useState(false);
   const [dbPrograms, setDbPrograms] = useState([]);
@@ -1514,7 +1512,10 @@ export default function App() {
                     return (
                       <motion.button
                         key={cat.id}
-                        onClick={() => setActiveCategory(cat.id)}
+                        onClick={() => {
+                          setActiveCategory(cat.id);
+                          setSelectedSkillLevel(null);
+                        }}
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -1736,12 +1737,18 @@ export default function App() {
                                           } else {
                                             navigate("/#programs", {
                                               replace: true,
-                                              state: { fromCategory: cat.id },
+                                              state: { 
+                                                fromCategory: cat.id,
+                                                fromSkillLevel: selectedSkillLevel
+                                              },
                                             });
                                             navigate(
                                               `/specialization/skill-programs?programName=${encodeURIComponent(prog.name)}&level=${selectedSkillLevel._id}`,
                                               {
-                                                state: { fromCategory: cat.id },
+                                                state: { 
+                                                  fromCategory: cat.id,
+                                                  fromSkillLevel: selectedSkillLevel
+                                                },
                                               },
                                             );
                                           }
