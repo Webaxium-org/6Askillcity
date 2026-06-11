@@ -3,6 +3,7 @@ import Program from "../models/program.js";
 import Branch from "../models/branch.js";
 import ProgramFee from "../models/programFee.js";
 import ActivityLog from "../models/activityLog.js";
+import Student from "../models/student.js";
 import createError from "http-errors";
 import xlsx from "xlsx";
 import mongoose from "mongoose";
@@ -458,6 +459,39 @@ export const importUniversityData = async (req, res, next) => {
     );
 
     res.status(200).json({ success: true, message: `Successfully imported ${importCount} courses/branches.` });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteBranch = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check if the branch is referenced by any Student
+    const studentCount = await Student.countDocuments({ branch: id });
+    if (studentCount > 0) {
+      throw createError(400, `Cannot delete branch because it is linked to ${studentCount} student application(s).`);
+    }
+
+    const branch = await Branch.findById(id);
+    if (!branch) throw createError(404, "Branch not found");
+
+    // Perform hard delete
+    await Branch.findByIdAndDelete(id);
+
+    // Delete associated fees
+    await ProgramFee.deleteMany({ branch: id });
+
+    await logActivity(
+      "DELETE_BRANCH",
+      `Deleted branch: ${branch.name}`,
+      req.user.userId,
+      "Branch",
+      branch._id
+    );
+
+    res.status(200).json({ success: true, message: "Branch deleted successfully" });
   } catch (error) {
     next(error);
   }

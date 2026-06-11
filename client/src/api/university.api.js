@@ -49,6 +49,11 @@ export const updateBranch = async (id, data) => {
   return response.data;
 };
 
+export const deleteBranch = async (id) => {
+  const response = await axiosInstance.delete(`/university-management/branches/${id}`);
+  return response.data;
+};
+
 export const getProgramFees = async (branchId) => {
   const response = await axiosInstance.get(`/university-management/branches/${branchId}/fees`);
   return response.data;

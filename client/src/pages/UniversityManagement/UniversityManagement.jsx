@@ -39,6 +39,7 @@ import {
   getBranches,
   createBranch,
   updateBranch,
+  deleteBranch,
   getProgramFees,
   updateProgramFee,
   getActivityLogs,
@@ -190,6 +191,9 @@ export default function UniversityManagement() {
   const [feeHistory, setFeeHistory] = useState([]);
   const [loadingFees, setLoadingFees] = useState(false);
   const [modalTab, setModalTab] = useState("setup"); // setup or history
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [branchToDelete, setBranchToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [feeForm, setFeeForm] = useState({
     applicationFee: 0,
     tuitionFee: 0,
@@ -335,6 +339,27 @@ export default function UniversityManagement() {
       fetchData();
     } catch (error) {
       handleFormError(error, null, dispatch, navigate);
+    }
+  };
+
+  const handleDeleteBranch = async () => {
+    if (!branchToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteBranch(branchToDelete._id);
+      dispatch(
+        showAlert({
+          type: "success",
+          message: "Branch deleted successfully",
+        }),
+      );
+      setIsDeleteModalOpen(false);
+      setBranchToDelete(null);
+      fetchData();
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1081,6 +1106,16 @@ export default function UniversityManagement() {
                                 >
                                   <Edit className="w-4 h-4" />
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    setBranchToDelete(branch);
+                                    setIsDeleteModalOpen(true);
+                                  }}
+                                  className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20"
+                                  title="Delete Branch"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1529,6 +1564,62 @@ export default function UniversityManagement() {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {isDeleteModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex items-center gap-3 text-rose-500 mb-4">
+                  <div className="p-2 bg-rose-500/10 rounded-xl">
+                    <Trash2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">
+                      Delete Branch
+                    </h3>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                  Are you sure you want to delete <span className="font-bold text-foreground">{branchToDelete?.name}</span>? This action is permanent and cannot be undone. All associated fee records will be deleted.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDeleteModalOpen(false);
+                      setBranchToDelete(null);
+                    }}
+                    disabled={isDeleting}
+                    className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteBranch}
+                    disabled={isDeleting}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      "Delete Branch"
+                    )}
+                  </button>
+                </div>
               </motion.div>
             </div>
           )}

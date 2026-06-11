@@ -416,14 +416,42 @@ export default function App() {
   );
 
   const skillLevels = [
-    { _id: "post-graduate-certificate", name: "Post Graduate Diploma" },
-    { _id: "diploma", name: "Diploma Program" },
-    { _id: "post-diploma", name: "Post Diploma Program" },
-    { _id: "advanced-diploma", name: "Advanced Diploma Program" },
-    { _id: "dit", name: "Diploma In Integrated Technology (DIT)" },
-    { _id: "professional-diploma", name: "Professional Diploma Program" },
-    { _id: "pdit", name: "Post Diploma In Integrated Technology (PDIT)" },
-    { _id: "certificate", name: "Certificate Program" },
+    {
+      _id: "post-graduate-certificate",
+      name: "Post Graduate Diploma",
+      duration: "1 year",
+    },
+    { _id: "diploma", name: "Diploma Program", duration: "1 year" },
+    {
+      _id: "post-diploma",
+      name: "Post Diploma Program",
+      duration: "6 Months | 1 year",
+    },
+    {
+      _id: "advanced-diploma",
+      name: "Advanced Diploma Program",
+      duration: "9 Months",
+    },
+    {
+      _id: "dit",
+      name: "Diploma In Integrated Technology (DIT)",
+      duration: "6 months",
+    },
+    {
+      _id: "professional-diploma",
+      name: "Professional Diploma Program",
+      duration: "4 | 5 | 6 Months",
+    },
+    {
+      _id: "pdit",
+      name: "Post Diploma In Integrated Technology (PDIT)",
+      duration: "3 months",
+    },
+    {
+      _id: "certificate",
+      name: "Certificate Program",
+      duration: "1- 15 Days | 1,2,3, Months",
+    },
   ];
 
   const programCategories = [
@@ -1741,9 +1769,16 @@ export default function App() {
                                           className="transition-colors duration-300 shrink-0"
                                           style={{ color: cat.accentColor }}
                                         />
-                                        <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors text-sm sm:text-base tracking-tight truncate break-words">
-                                          {prog.name}
-                                        </span>
+                                        <div className="flex flex-col min-w-0">
+                                          <span className="font-semibold text-foreground/80 group-hover/item:text-foreground transition-colors text-sm sm:text-base tracking-tight truncate break-words">
+                                            {prog.name}
+                                          </span>
+                                          {prog.duration && (
+                                            <span className="text-xs text-muted-foreground font-medium mt-0.5">
+                                              Duration: {prog.duration}
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
                                       <MoveRight
                                         size={14}

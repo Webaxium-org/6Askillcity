@@ -12,6 +12,7 @@ import {
   getBranches,
   createBranch,
   updateBranch,
+  deleteBranch,
   importUniversityData,
 } from "../controllers/university.controller.js";
 import { requireAuth, isAuthorized } from "../middleware/auth.js";
@@ -51,7 +52,8 @@ router.route("/branches")
   .post(isAuthorized({ roles: ["admin", "manager"] }), createBranch);
 
 router.route("/branches/:id")
-  .put(isAuthorized({ roles: ["admin", "manager"] }), updateBranch);
+  .put(isAuthorized({ roles: ["admin", "manager"] }), updateBranch)
+  .delete(isAuthorized({ roles: ["admin", "manager"] }), deleteBranch);
 
 router.route("/branches/:branchId/fees")
   .get(getProgramFees)
