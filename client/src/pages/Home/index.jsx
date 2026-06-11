@@ -418,7 +418,7 @@ export default function App() {
   const skillLevels = [
     {
       _id: "post-graduate-certificate",
-      name: "Post Graduate Diploma",
+      name: "Post Graduate Certificate",
       duration: "1 year",
     },
     { _id: "diploma", name: "Diploma Program", duration: "1 year" },

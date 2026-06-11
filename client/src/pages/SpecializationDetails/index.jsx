@@ -23,7 +23,7 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 const subPrograms = [
   {
     id: "post-graduate-certificate",
-    name: "Post Graduate Diploma",
+    name: "Post Graduate Certificate",
     duration: "1 year",
     eligibility: "Any Degree",
   },
@@ -134,7 +134,7 @@ const SpecializationDetails = () => {
             } else {
               setBranches([]);
               setProgramInfo({
-                name: "Post Graduate Diploma",
+                name: "Post Graduate Certificate",
                 programType: "Skill Programs",
                 university: { name: "The Global University" },
               });
@@ -262,7 +262,7 @@ const SpecializationDetails = () => {
                     {isPostGraduateCertificate
                       ? selectedSubProgram?.name ||
                         programInfo?.name ||
-                        "Post Graduate Diploma"
+                        "Post Graduate Certificate"
                       : programInfo?.name || "Program Details"}
                   </h1>
                   <p className="text-lg text-white/70 leading-relaxed font-medium">
