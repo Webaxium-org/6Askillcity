@@ -2218,7 +2218,7 @@ export default function App() {
                   id="be-a-partner"
                   whileHover={{ y: -4 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group w-full max-w-xl"
+                  className="scroll-mt-28 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group w-full max-w-xl"
                 >
                   <div className="absolute -inset-1 bg-gradient-to-r from-[#17468C] to-[#B82424] rounded-[2rem] blur-xl opacity-20 pointer-events-none" />
 
