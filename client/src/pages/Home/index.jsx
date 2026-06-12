@@ -2056,7 +2056,7 @@ export default function App() {
 
           {/* CTA BANNER SECTION */}
           <section
-            className="relative overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] text-white"
+            className="relative bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] text-white"
           >
             {/* Full-bleed layered backgrounds */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(255,255,255,0.07),transparent_60%)] pointer-events-none" />
@@ -2082,12 +2082,11 @@ export default function App() {
 
             <div className="relative z-10 grid lg:grid-cols-2 min-h-[85vh] items-stretch">
               {/* ── LEFT COLUMN ─────────────────────────────────────── */}
-              <div className="flex flex-col justify-center gap-10 px-10 md:px-16 lg:px-20 xl:px-28 py-24">
+              <div className="flex flex-col justify-center gap-10 px-10 md:px-16 lg:px-20 xl:px-28 pt-36 pb-24 lg:py-24">
                 {/* Badge */}
                 <motion.div
                   initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
+                  animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6 }}
                 >
                   <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-amber-400/30 bg-amber-400/10 text-amber-300 backdrop-blur-sm">
@@ -2100,8 +2099,7 @@ export default function App() {
                 <div className="space-y-5">
                   <motion.h2
                     initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, delay: 0.1 }}
                     className="text-5xl md:text-6xl xl:text-7xl font-black tracking-tighter leading-[1.05]"
                   >
@@ -2113,8 +2111,7 @@ export default function App() {
                       <motion.span
                         className="absolute -bottom-1 left-0 h-[3px] rounded-full bg-gradient-to-r from-amber-300 to-amber-500"
                         initial={{ width: 0 }}
-                        whileInView={{ width: "100%" }}
-                        viewport={{ once: true }}
+                        animate={{ width: "100%" }}
                         transition={{
                           delay: 0.8,
                           duration: 1,
@@ -2128,8 +2125,7 @@ export default function App() {
 
                   <motion.p
                     initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="text-base md:text-lg text-white/75 leading-relaxed max-w-lg font-medium"
                   >
@@ -2142,8 +2138,7 @@ export default function App() {
                 {/* Benefits list */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.3 }}
                   className="space-y-4"
                 >
@@ -2168,8 +2163,7 @@ export default function App() {
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: 0.35 + i * 0.08 }}
                       className="flex items-center gap-3.5 group"
                     >
@@ -2186,8 +2180,7 @@ export default function App() {
                 {/* Stats row */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.55 }}
                   className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10"
                 >
