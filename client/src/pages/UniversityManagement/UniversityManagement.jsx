@@ -40,6 +40,7 @@ import {
   createBranch,
   updateBranch,
   deleteBranch,
+  deleteProgram,
   getProgramFees,
   updateProgramFee,
   getActivityLogs,
@@ -86,6 +87,7 @@ const tabs = [
 
 export default function UniversityManagement() {
   const [activeTab, setActiveTab] = useState("universities");
+  const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [universities, setUniversities] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -193,6 +195,8 @@ export default function UniversityManagement() {
   const [modalTab, setModalTab] = useState("setup"); // setup or history
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [branchToDelete, setBranchToDelete] = useState(null);
+  const [isProgramDeleteModalOpen, setIsProgramDeleteModalOpen] = useState(false);
+  const [programToDelete, setProgramToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [feeForm, setFeeForm] = useState({
     applicationFee: 0,
@@ -210,6 +214,9 @@ export default function UniversityManagement() {
 
   useEffect(() => {
     fetchData();
+    if (activeTab !== "branches") {
+      setSelectedProgramId(null);
+    }
   }, [activeTab]);
 
   // Reset pages when filters/search/tab changes
@@ -363,6 +370,27 @@ export default function UniversityManagement() {
     }
   };
 
+  const handleDeleteProgram = async () => {
+    if (!programToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteProgram(programToDelete._id);
+      dispatch(
+        showAlert({
+          type: "success",
+          message: "Program deleted successfully",
+        }),
+      );
+      setIsProgramDeleteModalOpen(false);
+      setProgramToDelete(null);
+      fetchData();
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleUpdateFee = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -445,6 +473,7 @@ export default function UniversityManagement() {
   });
 
   const filteredBranches = branches.filter((b) => {
+    const matchesProgram = !selectedProgramId || b.program?._id === selectedProgramId;
     const matchesSearch =
       b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.program?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -461,7 +490,7 @@ export default function UniversityManagement() {
         new Date(b.createdAt) <=
           new Date(new Date(endDate).setHours(23, 59, 59, 999)));
 
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesProgram && matchesSearch && matchesStatus && matchesDate;
   });
 
   // Pagination derived slices
@@ -533,7 +562,7 @@ export default function UniversityManagement() {
       <div className="space-y-6">
         {/* Active Filter Chips */}
         <AnimatePresence>
-          {(filterStatus !== "all" || startDate || endDate) && (
+          {(filterStatus !== "all" || startDate || endDate || selectedProgramId) && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -572,11 +601,24 @@ export default function UniversityManagement() {
                 </div>
               )}
 
+              {selectedProgramId && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-[10px] font-bold text-blue-600">
+                  Program: {programs.find((p) => p._id === selectedProgramId)?.name || "Selected"}
+                  <button
+                    onClick={() => setSelectedProgramId(null)}
+                    className="hover:text-rose-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   setFilterStatus("all");
                   setStartDate("");
                   setEndDate("");
+                  setSelectedProgramId(null);
                 }}
                 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 hover:underline ml-2"
               >
@@ -990,8 +1032,8 @@ export default function UniversityManagement() {
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => {
+                                    setSelectedProgramId(prog._id);
                                     setActiveTab("branches");
-                                    setSearchTerm(prog.name);
                                   }}
                                   className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
                                   title="View Branches"
@@ -1010,6 +1052,16 @@ export default function UniversityManagement() {
                                   title="Edit Program"
                                 >
                                   <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setProgramToDelete(prog);
+                                    setIsProgramDeleteModalOpen(true);
+                                  }}
+                                  className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20"
+                                  title="Delete Program"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
                             </td>
@@ -1617,6 +1669,62 @@ export default function UniversityManagement() {
                       </>
                     ) : (
                       "Delete Branch"
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Program Delete Confirmation Modal */}
+        <AnimatePresence>
+          {isProgramDeleteModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-card w-full max-w-md p-6 rounded-2xl shadow-xl border border-border max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex items-center gap-3 text-rose-500 mb-4">
+                  <div className="p-2 bg-rose-500/10 rounded-xl">
+                    <Trash2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">
+                      Delete Program
+                    </h3>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                  Are you sure you want to delete <span className="font-bold text-foreground">{programToDelete?.name}</span>? This action is permanent and cannot be undone. All associated branches, fee structures, and partner permissions will also be deleted.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProgramDeleteModalOpen(false);
+                      setProgramToDelete(null);
+                    }}
+                    disabled={isDeleting}
+                    className="flex-1 py-2.5 rounded-xl border border-border hover:bg-muted font-medium transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteProgram}
+                    disabled={isDeleting}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      "Delete Program"
                     )}
                   </button>
                 </div>

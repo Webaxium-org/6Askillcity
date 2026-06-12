@@ -4,6 +4,7 @@ import Branch from "../models/branch.js";
 import ProgramFee from "../models/programFee.js";
 import ActivityLog from "../models/activityLog.js";
 import Student from "../models/student.js";
+import PartnerPermission from "../models/partnerPermission.js";
 import createError from "http-errors";
 import xlsx from "xlsx";
 import mongoose from "mongoose";
@@ -160,6 +161,74 @@ export const updateProgram = async (req, res, next) => {
     );
 
     res.status(200).json({ success: true, data: program });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteProgram = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check if the program is referenced by any Student
+    const studentCount = await Student.countDocuments({ program: id });
+    if (studentCount > 0) {
+      throw createError(
+        400,
+        `Cannot delete program because it is linked to ${studentCount} student application(s).`,
+      );
+    }
+
+    const program = await Program.findById(id);
+    if (!program) throw createError(404, "Program not found");
+
+    // Get all branches under this program
+    const branches = await Branch.find({ program: id });
+    const branchIds = branches.map((b) => b._id);
+
+    // Double check if any branch is linked to any Student
+    if (branchIds.length > 0) {
+      const studentBranchCount = await Student.countDocuments({
+        branch: { $in: branchIds },
+      });
+      if (studentBranchCount > 0) {
+        throw createError(
+          400,
+          `Cannot delete program because one of its branches is linked to ${studentBranchCount} student application(s).`,
+        );
+      }
+    }
+
+    // Perform hard delete on the program
+    await Program.findByIdAndDelete(id);
+
+    // Delete associated branches
+    await Branch.deleteMany({ program: id });
+
+    // Delete associated fees
+    if (branchIds.length > 0) {
+      await ProgramFee.deleteMany({ branch: { $in: branchIds } });
+    }
+
+    // Delete associated partner permissions (both program and branch level)
+    await PartnerPermission.deleteMany({
+      $or: [
+        { programId: id },
+        { branchId: { $in: branchIds } },
+      ],
+    });
+
+    await logActivity(
+      "DELETE_PROGRAM",
+      `Deleted program: ${program.name}`,
+      req.user.userId,
+      "Program",
+      program._id,
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: "Program deleted successfully" });
   } catch (error) {
     next(error);
   }
@@ -562,6 +631,9 @@ export const deleteBranch = async (req, res, next) => {
 
     // Delete associated fees
     await ProgramFee.deleteMany({ branch: id });
+
+    // Delete associated partner permissions
+    await PartnerPermission.deleteMany({ branchId: id });
 
     await logActivity(
       "DELETE_BRANCH",
