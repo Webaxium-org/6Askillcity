@@ -53,14 +53,10 @@ const Navbar = () => {
   const handlePartnerClick = () => {
     setIsOpen(false);
     if (window.location.pathname === "/") {
-      const element = document.getElementById("be-a-partner");
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-        window.history.pushState(null, "", "/#be-a-partner");
-        return;
-      }
+      window.dispatchEvent(new CustomEvent("open-partner-modal"));
+      return;
     }
-    navigate("/#be-a-partner");
+    navigate("/", { state: { openPartnerModal: true } });
   };
 
   useEffect(() => {

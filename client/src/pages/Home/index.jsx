@@ -17,6 +17,7 @@ import {
   Eye,
   Handshake,
   ArrowLeft,
+  X,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -356,6 +357,7 @@ const LoadingScreen = ({ onFinished }) => {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useDispatch();
 
@@ -516,10 +518,15 @@ export default function App() {
   ];
 
   useEffect(() => {
-    // Handle hash scrolling when the component mounts or hash changes
+    // Handle hash scrolling/modal opening when the component mounts or hash changes
     const handleHashScroll = () => {
       const { hash } = window.location;
-      if (hash) {
+      if (hash === "#be-a-partner" || location.state?.openPartnerModal) {
+        setIsPartnerModalOpen(true);
+        if (location.state?.openPartnerModal) {
+          navigate(location.pathname, { replace: true, state: {} });
+        }
+      } else if (hash) {
         const id = hash.replace("#", "");
         const element = document.getElementById(id);
         if (element) {
@@ -536,7 +543,13 @@ export default function App() {
       window.addEventListener("hashchange", handleHashScroll);
       return () => window.removeEventListener("hashchange", handleHashScroll);
     }
-  }, [isLoading]);
+  }, [isLoading, location.state]);
+
+  useEffect(() => {
+    const handleOpenModal = () => setIsPartnerModalOpen(true);
+    window.addEventListener("open-partner-modal", handleOpenModal);
+    return () => window.removeEventListener("open-partner-modal", handleOpenModal);
+  }, []);
 
   const handlePartnerInquiry = async (e) => {
     e.preventDefault();
@@ -648,6 +661,13 @@ export default function App() {
     }
   };
 
+  const closePartnerModal = () => {
+    setIsPartnerModalOpen(false);
+    if (window.location.hash === "#be-a-partner") {
+      window.history.pushState(null, "", window.location.pathname);
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-background font-sans selection:bg-[#B82424] selection:text-white overflow-x-hidden">
       <AnimatePresence mode="wait">
@@ -678,10 +698,7 @@ export default function App() {
                   <motion.div
                     variants={fadeInUp}
                     className="cursor-pointer"
-                    onClick={() => {
-                      const el = document.getElementById("be-a-partner");
-                      if (el) el.scrollIntoView({ behavior: "smooth" });
-                    }}
+                    onClick={() => setIsPartnerModalOpen(true)}
                   >
                     <Badge
                       variant="brandRed"
@@ -719,10 +736,7 @@ export default function App() {
                     <Button
                       variant="brandGradient"
                       size="lg"
-                      onClick={() => {
-                        const el = document.getElementById("be-a-partner");
-                        if (el) el.scrollIntoView({ behavior: "smooth" });
-                      }}
+                      onClick={() => setIsPartnerModalOpen(true)}
                       className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-lg font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-6 py-3 h-auto"
                     >
                       Join Education Network{" "}
@@ -2376,6 +2390,190 @@ export default function App() {
 
           {/* FOOTER */}
           <Footer />
+
+          {/* Partner Registration Modal */}
+          <AnimatePresence>
+            {isPartnerModalOpen && (
+              <div
+                onClick={closePartnerModal}
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md cursor-pointer"
+              >
+                <motion.div
+                  onClick={(e) => e.stopPropagation()}
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="relative bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] w-full max-w-xl p-8 md:p-10 rounded-[2rem] border border-white/20 shadow-2xl overflow-y-auto max-h-[90vh] text-white cursor-default"
+                >
+                  {/* Close Button */}
+                  <button
+                    type="button"
+                    onClick={closePartnerModal}
+                    className="absolute top-6 right-6 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 cursor-pointer z-50 animate-none"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <div className="relative z-10 flex items-center gap-4 text-left mb-6 pr-8">
+                    <div className="p-3 bg-white/10 rounded-2xl border border-white/20 shadow-inner shrink-0">
+                      <Handshake size={36} className="text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                        Be a Partner
+                      </h4>
+                      <p className="text-white/70 text-xs md:text-sm leading-relaxed mt-1">
+                        Submit your complete center details and launch your official collaboration.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={async (e) => {
+                      await handlePartnerSubmit(e);
+                      closePartnerModal();
+                    }}
+                    className="relative z-10 space-y-4 text-left"
+                  >
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="modalPartnerFullName"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Full name :
+                      </Label>
+                      <Input
+                        id="modalPartnerFullName"
+                        required
+                        placeholder="Enter your full name"
+                        value={partnerForm.fullName}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            fullName: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11 animate-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="modalPartnerEmailId"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Email id :
+                      </Label>
+                      <Input
+                        id="modalPartnerEmailId"
+                        required
+                        type="email"
+                        placeholder="Enter your email ID"
+                        value={partnerForm.email}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            email: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="modalPartnerMobileNumber"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Mobile number :
+                      </Label>
+                      <Input
+                        id="modalPartnerMobileNumber"
+                        required
+                        placeholder="Enter your mobile number"
+                        value={partnerForm.mobile}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            mobile: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="modalPartnerCourses"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Courses are Looking :
+                      </Label>
+                      <Input
+                        id="modalPartnerCourses"
+                        placeholder="e.g. Masters, Bachelors, Skill Programs"
+                        value={partnerForm.coursesLooking}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            coursesLooking: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl px-4 py-2 text-base h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="modalPartnerComments"
+                        className="text-white text-xs font-semibold uppercase tracking-wider pl-1"
+                      >
+                        Comments :
+                      </Label>
+                      <Textarea
+                        id="modalPartnerComments"
+                        placeholder="Write your comments or center address here"
+                        value={partnerForm.comments}
+                        onChange={(e) =>
+                          setPartnerForm({
+                            ...partnerForm,
+                            comments: e.target.value,
+                          })
+                        }
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 transition-all rounded-xl resize-none min-h-[80px] text-base"
+                      />
+                    </div>
+
+                    <div className="pt-4">
+                      <div className="rounded-full border border-white/20 p-[3px] transition-all duration-300 hover:border-white/40 group/modalBtnWrapper cursor-pointer">
+                        <Button
+                          type="submit"
+                          variant="none"
+                          size="none"
+                          disabled={isSubmittingPartner}
+                          className="w-full py-3 px-6 rounded-full font-bold bg-gradient-to-r from-[#0052cc] to-[#00297a] text-white shadow-2xl shadow-[#0052cc]/25 hover:shadow-[#0052cc]/40 transition-all duration-300 relative overflow-hidden cursor-pointer flex items-center justify-center gap-2 text-base h-auto"
+                        >
+                          <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/modalBtnWrapper:animate-[shine_1.5s_ease-in-out_infinite]" />
+                          <span className="relative z-10 flex items-center justify-center gap-2 text-white">
+                            {isSubmittingPartner ? "Submitting..." : "Submit"}
+                            <MoveRight
+                              size={24}
+                              className="transition-transform duration-300 group-hover/modalBtnWrapper:translate-x-1"
+                            />
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+
+                  <div className="flex items-center justify-start gap-2 text-xs text-white/50 font-bold uppercase tracking-wider mt-6 pl-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    Applications Active
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>
