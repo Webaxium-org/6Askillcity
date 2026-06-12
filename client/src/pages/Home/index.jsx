@@ -310,7 +310,7 @@ function CountUp({ value }) {
 
 const LoadingScreen = ({ onFinished }) => {
   useEffect(() => {
-    const timer = setTimeout(onFinished, 2000);
+    const timer = setTimeout(onFinished, 800);
     return () => clearTimeout(timer);
   }, [onFinished]);
 
@@ -958,6 +958,7 @@ export default function App() {
                               src={GlobalUniversityLogo}
                               alt="Global University"
                               className="w-16 h-16 object-contain"
+                              loading="lazy"
                             />
                           </div>
                           <div>
@@ -1010,6 +1011,7 @@ export default function App() {
                             src={TguImg1}
                             alt="Campus Main View"
                             className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                            loading="lazy"
                           />
                         </div>
                         {/* Bottom Row of 3 Images */}
@@ -1019,6 +1021,7 @@ export default function App() {
                               src={TguImg2}
                               alt="Campus Gate"
                               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                              loading="lazy"
                             />
                           </div>
                           <div className="relative rounded-2xl overflow-hidden group shadow-sm border border-border/50 h-24 md:h-32">
@@ -1026,6 +1029,7 @@ export default function App() {
                               src={TguImg3}
                               alt="Classroom"
                               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                              loading="lazy"
                             />
                           </div>
                           <div className="relative rounded-2xl overflow-hidden group shadow-sm border border-border/50 h-24 md:h-32">
@@ -1033,6 +1037,7 @@ export default function App() {
                               src={TguImg4}
                               alt="Library"
                               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                              loading="lazy"
                             />
                           </div>
                         </div>
@@ -1264,6 +1269,7 @@ export default function App() {
                           <img
                             src={`https://i.pravatar.cc/150?u=${i + 10}`}
                             alt="User"
+                            loading="lazy"
                           />
                         </div>
                       ))}
@@ -1296,6 +1302,7 @@ export default function App() {
                       src={AboutImg}
                       alt="Education Building"
                       className="w-full h-[500px] object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading="lazy"
                     />
 
                     <div className="absolute bottom-8 left-8 right-8 z-20">
@@ -1746,17 +1753,19 @@ export default function App() {
                                           } else {
                                             navigate("/#programs", {
                                               replace: true,
-                                              state: { 
+                                              state: {
                                                 fromCategory: cat.id,
-                                                fromSkillLevel: selectedSkillLevel
+                                                fromSkillLevel:
+                                                  selectedSkillLevel,
                                               },
                                             });
                                             navigate(
                                               `/specialization/skill-programs?programName=${encodeURIComponent(prog.name)}&level=${selectedSkillLevel._id}`,
                                               {
-                                                state: { 
+                                                state: {
                                                   fromCategory: cat.id,
-                                                  fromSkillLevel: selectedSkillLevel
+                                                  fromSkillLevel:
+                                                    selectedSkillLevel,
                                                 },
                                               },
                                             );
@@ -1883,6 +1892,7 @@ export default function App() {
                       src={PartnershipIllustration}
                       alt="Partnership Illustration"
                       className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
+                      loading="lazy"
                     />
                     {/* Overlay gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-end p-6">
@@ -1993,6 +2003,7 @@ export default function App() {
                                 src={item.image}
                                 alt={item.title}
                                 className="h-14 object-contain"
+                                loading="lazy"
                               />
                             </div>
                           </div>
@@ -2044,7 +2055,9 @@ export default function App() {
           </section>
 
           {/* CTA BANNER SECTION */}
-          <section id="be-a-partner" className="relative overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] text-white">
+          <section
+            className="relative overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] text-white"
+          >
             {/* Full-bleed layered backgrounds */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(255,255,255,0.07),transparent_60%)] pointer-events-none" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(184,36,36,0.3),transparent_55%)] pointer-events-none" />
@@ -2202,6 +2215,7 @@ export default function App() {
 
                 {/* Card 1: Be a Partner Form */}
                 <motion.div
+                  id="be-a-partner"
                   whileHover={{ y: -4 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-8 md:p-10 shadow-2xl relative overflow-hidden group w-full max-w-xl"
