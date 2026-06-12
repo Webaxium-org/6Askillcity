@@ -1201,10 +1201,7 @@ export default function App() {
                             "w-full py-3.5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-md hover:-translate-y-0.5 border-transparent text-sm h-auto flex items-center justify-center gap-2",
                             path.buttonClass,
                           )}
-                          onClick={() => {
-                            const el = document.getElementById("be-a-partner");
-                            if (el) el.scrollIntoView({ behavior: "smooth" });
-                          }}
+                          onClick={() => setIsPartnerModalOpen(true)}
                         >
                           <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
                           <span className="relative z-10 flex items-center justify-center gap-2">
