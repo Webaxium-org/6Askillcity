@@ -182,6 +182,14 @@ export default function Footer() {
                   Partner Portal
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/register-admission-point"
+                  className="hover:text-[#17468C] transition-colors"
+                >
+                  Register Admission Point
+                </Link>
+              </li>
             </ul>
           </motion.div>
 

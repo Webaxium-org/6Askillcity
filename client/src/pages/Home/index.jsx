@@ -678,7 +678,10 @@ export default function App() {
                   <motion.div
                     variants={fadeInUp}
                     className="cursor-pointer"
-                    onClick={() => navigate("/register-admission-point")}
+                    onClick={() => {
+                      const el = document.getElementById("be-a-partner");
+                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                    }}
                   >
                     <Badge
                       variant="brandRed"
@@ -716,7 +719,10 @@ export default function App() {
                     <Button
                       variant="brandGradient"
                       size="lg"
-                      onClick={() => navigate("/register-admission-point")}
+                      onClick={() => {
+                        const el = document.getElementById("be-a-partner");
+                        if (el) el.scrollIntoView({ behavior: "smooth" });
+                      }}
                       className="rounded-full shadow-2xl shadow-[#bd0808]/25 text-lg font-bold hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 px-6 py-3 h-auto"
                     >
                       Join Education Network{" "}
@@ -1176,7 +1182,10 @@ export default function App() {
                             "w-full py-3.5 px-8 rounded-full text-white font-bold tracking-wide transition-all duration-300 group/btn relative overflow-hidden cursor-pointer shadow-md hover:-translate-y-0.5 border-transparent text-sm h-auto flex items-center justify-center gap-2",
                             path.buttonClass,
                           )}
-                          onClick={() => navigate("/register-admission-point")}
+                          onClick={() => {
+                            const el = document.getElementById("be-a-partner");
+                            if (el) el.scrollIntoView({ behavior: "smooth" });
+                          }}
                         >
                           <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-[150%] group-hover/btn:animate-[shine_1.5s_ease-in-out_infinite]" />
                           <span className="relative z-10 flex items-center justify-center gap-2">
@@ -2035,7 +2044,7 @@ export default function App() {
           </section>
 
           {/* CTA BANNER SECTION */}
-          <section className="relative overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] text-white">
+          <section id="be-a-partner" className="relative overflow-hidden bg-gradient-to-br from-[#17468C] via-[#0d2244] to-[#B82424] text-white">
             {/* Full-bleed layered backgrounds */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(255,255,255,0.07),transparent_60%)] pointer-events-none" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(184,36,36,0.3),transparent_55%)] pointer-events-none" />

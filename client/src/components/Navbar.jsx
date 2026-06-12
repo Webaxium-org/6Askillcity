@@ -47,9 +47,21 @@ Button.displayName = "Button";
 
 const Navbar = () => {
   const navigate = useNavigate();
-
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  const handlePartnerClick = () => {
+    setIsOpen(false);
+    if (window.location.pathname === "/") {
+      const element = document.getElementById("be-a-partner");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+        window.history.pushState(null, "", "/#be-a-partner");
+        return;
+      }
+    }
+    navigate("/#be-a-partner");
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -137,7 +149,7 @@ const Navbar = () => {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate("/register-admission-point")}
+              onClick={handlePartnerClick}
               className="hidden lg:flex rounded-full shadow-lg shadow-[#17468C]/20 hover:shadow-[#17468C]/40 hover:-translate-y-0.5 transition-all"
             >
               Partner Now
@@ -236,10 +248,7 @@ const Navbar = () => {
                 <Button
                   variant="primary"
                   className="w-full rounded-full py-6 text-base font-bold shadow-lg shadow-[#17468C]/20 hover:shadow-[#17468C]/40 flex justify-center items-center gap-2 cursor-pointer"
-                  onClick={() => {
-                    setIsOpen(false);
-                    navigate("/register-admission-point");
-                  }}
+                  onClick={handlePartnerClick}
                 >
                   Partner Now
                 </Button>
