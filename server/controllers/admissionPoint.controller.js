@@ -41,6 +41,7 @@ const uploadParams = multer({
 }).any(); // Allow any field names for flexibility
 
 import AdmissionPoint from "../models/admissionPoint.js";
+import AuthorisationLetter from "../models/authorisationLetter.js";
 import ActivityLog from "../models/activityLog.js";
 import PartnerPermission from "../models/partnerPermission.js";
 import ProgramFee from "../models/programFee.js";
@@ -696,8 +697,28 @@ export const completePartnerInspection = async (req, res, next) => {
     partner.inspectionStatus = "approved";
     partner.inspectionCompleted = true;
     partner.inspectionCompletedAt = new Date();
-    partner.authorisationLetterIssuedAt = new Date();
+    const issuedAt = new Date();
+    partner.authorisationLetterIssuedAt = issuedAt;
     await partner.save();
+
+    // Deactivate previous authorisation letters for safety
+    await AuthorisationLetter.updateMany({ partnerId: id }, { isActive: false });
+
+    // Create the first AuthorisationLetter document
+    const validUntil = new Date(issuedAt);
+    validUntil.setFullYear(validUntil.getFullYear() + 1);
+    validUntil.setDate(validUntil.getDate() - 1);
+    const count = await AuthorisationLetter.countDocuments({ partnerId: id });
+    const certificateNumber = `6ASC/AP/${partner._id.toString().slice(-4).toUpperCase()}/${issuedAt.getFullYear()}${count > 0 ? `/R${count}` : ""}`;
+
+    const letter = await AuthorisationLetter.create({
+      partnerId: id,
+      certificateNumber,
+      issuedAt,
+      validUntil,
+      isActive: true,
+      renewedBy: req.user.userId,
+    });
 
     await logActivity(
       "PARTNER_INSPECTION_COMPLETED",
@@ -1024,7 +1045,7 @@ export const completePartnerInspection = async (req, res, next) => {
     `;
 
     try {
-      const pdfBuffer = await generateCertificatePDF(partner);
+      const pdfBuffer = await generateCertificatePDF(partner, letter);
       const filename = `Authorisation_Certificate_${partner.centerName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
       await sendEmail({
@@ -1136,11 +1157,17 @@ export const getAdmissionPointById = async (req, res, next) => {
       .populate("performedBy", "fullName email")
       .sort({ createdAt: -1 });
 
+    const authorisationLetter = await AuthorisationLetter.findOne({
+      partnerId: id,
+      isActive: true,
+    });
+
     res.status(200).json({
       success: true,
       data: {
         ...admissionPoint.toObject(),
         activityLogs,
+        authorisationLetter,
       },
     });
   } catch (error) {
@@ -1468,6 +1495,394 @@ export const submitPartnerInquiry = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Inquiry submitted successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const renewPartnerAuthorisation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const partner = await AdmissionPoint.findById(id);
+    if (!partner) {
+      throw createError(404, "Partner not found.");
+    }
+
+    const issuedAt = new Date();
+    partner.authorisationLetterIssuedAt = issuedAt;
+    await partner.save();
+
+    // Mark previous letters as inactive
+    await AuthorisationLetter.updateMany(
+      { partnerId: id },
+      { isActive: false }
+    );
+
+    // Create the new AuthorisationLetter record
+    const validUntil = new Date(issuedAt);
+    validUntil.setFullYear(validUntil.getFullYear() + 1);
+    validUntil.setDate(validUntil.getDate() - 1);
+    const count = await AuthorisationLetter.countDocuments({ partnerId: id });
+    const certificateNumber = `6ASC/AP/${partner._id.toString().slice(-4).toUpperCase()}/${issuedAt.getFullYear()}${count > 0 ? `/R${count}` : ""}`;
+
+    const letter = await AuthorisationLetter.create({
+      partnerId: id,
+      certificateNumber,
+      issuedAt,
+      validUntil,
+      isActive: true,
+      renewedBy: req.user.userId,
+    });
+
+    await logActivity(
+      "PARTNER_AUTHORISATION_RENEWED",
+      `Authorisation Letter renewed for ${partner.centerName}. Valid until: ${validUntil.toLocaleDateString()}`,
+      req.user.userId,
+      "AdmissionPoint",
+      partner._id
+    );
+
+    // Email new certificate
+    const subject = "6A Skillcity - Partnership Authorisation Letter Renewed";
+    
+    const formatDateBackend = (date) => {
+      const d = new Date(date);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    const issuedDate = formatDateBackend(issuedAt);
+    const validUntilStr = formatDateBackend(validUntil);
+
+    const message = `Dear ${partner.licenseeName},\n\nWe are pleased to inform you that your 6A Skillcity Admission Point Partnership Authorisation has been successfully renewed.\n\nAttached to your account is your official renewed Authorisation Letter.\n\nBest regards,\n6A Skillcity Director`;
+
+    // Same beautiful HTML template
+    const html = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f3f4f6; padding: 20px 10px;">
+        <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); font-family: Arial, sans-serif; color: #374151; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
+          <p>Dear <strong>${partner.licenseeName}</strong>,</p>
+          <p>We are pleased to inform you that your <strong>6A Skillcity Admission Point</strong> partnership has been successfully renewed.</p>
+          <p>Your renewed Certificate of Authorisation is attached to this email and is now visible on your dashboard.</p>
+          <p>Best regards,<br/><strong>6A Skillcity Administration</strong></p>
+        </div>
+
+        <table cellpadding="0" cellspacing="0" border="0" width="650" style="margin: 0 auto; background-color: #FCFBF7; border: 3.5px solid #0B2545; border-collapse: separate; text-align: left;">
+          <tr>
+            <td style="padding: 4px; border: 1px solid #C5A880;">
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border: 9px solid #0B2545;">
+                <tr>
+                  <td style="padding: 2px; border: 1px solid #C5A880;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FCFBF7; padding: 25px; font-family: Georgia, serif; color: #1f2937;">
+                      
+                      <!-- Header Navy Block -->
+                      <tr>
+                        <td align="center" style="background-color: #0B2545; padding: 15px 20px; color: #ffffff; text-align: center;">
+                          <h3 style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #faf8f5;">
+                            THE GLOBAL UNIVERSITY, ARUNACHAL PRADESH
+                          </h3>
+                          <p style="margin: 3px 0 0 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 8px; font-weight: bold; letter-spacing: 1px; color: #faf8f5; opacity: 0.85;">
+                            (UGC Approved | NAAC Accredited)
+                          </p>
+                          <div style="width: 150px; height: 1px; background-color: #C5A880; margin: 8px auto;"></div>
+                          <h4 style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 9px; font-weight: 900; letter-spacing: 2.5px; color: #C5A880; text-transform: uppercase;">
+                            NATIONAL ADMISSION PARTNER
+                          </h4>
+                          <h2 style="margin: 4px 0 0 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13.5px; font-weight: 800; color: #ffffff; letter-spacing: 1px; text-transform: uppercase;">
+                            6A SKILL CITY (OPC) PRIVATE LIMITED
+                          </h2>
+                          <p style="margin: 4px 0 0 0; font-family: Georgia, serif; font-size: 8.5px; font-style: italic; color: #cbd5e1; font-weight: 500;">
+                            Grace Tower, First Floor, Ernakulam, Kerala — 682018
+                          </p>
+                          <p style="margin: 2px 0 0 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 8.5px; color: #cbd5e1; letter-spacing: 0.5px;">
+                            operations@6askillcity.com | +91 983 33 31 014
+                          </p>
+                        </td>
+                      </tr>
+
+                      <!-- Logo, Title & Certified Intro -->
+                      <tr>
+                        <td align="center" style="padding-top: 20px; text-align: center;">
+                          <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto; background-color: #ffffff; border: 2px solid #C5A880; border-radius: 50%; width: 60px; height: 60px;">
+                            <tr>
+                              <td align="center" style="vertical-align: middle; padding: 2px;">
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%" height="100%" style="border: 1px solid #0B2545; border-radius: 50%;">
+                                  <tr>
+                                    <td align="center" style="vertical-align: middle; text-align: center;">
+                                      <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 900; color: #0B2545; line-height: 1;">6A</span><br/>
+                                      <span style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 5.5px; font-weight: 900; color: #C5A880; letter-spacing: 0.5px; line-height: 1; text-transform: uppercase;">SKILL CITY</span>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+                          
+                          <p style="margin: 10px 0 0 0; font-family: Georgia, serif; font-size: 11px; font-style: italic; color: #4b5563;">This is to certify that</p>
+                          
+                          <h1 style="margin: 5px 0 0 0; font-family: Georgia, serif; font-size: 20px; font-weight: 900; color: #0B2545; letter-spacing: 1px; text-transform: uppercase;">
+                            CERTIFICATE OF AUTHORISATION
+                          </h1>
+                          
+                          <p style="margin: 2px 0 0 0; font-family: Georgia, serif; font-size: 9.5px; font-style: italic; font-weight: bold; color: #C5A880; letter-spacing: 0.5px;">
+                            Application Point — Counselling & Admission Facilitation
+                          </p>
+                        </td>
+                      </tr>
+
+                      <!-- Partner Name Box -->
+                      <tr>
+                        <td align="center" style="padding: 12px 0;">
+                          <table cellpadding="0" cellspacing="0" border="0" width="90%" style="background-color: #EBF2FA; border: 1px solid #0B2545; border-radius: 6px; text-align: center; margin: 0 auto;">
+                            <tr>
+                              <td style="padding: 10px 15px;">
+                                <h2 style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13.5px; font-weight: 900; color: #0B2545; letter-spacing: 1px; text-transform: uppercase;">
+                                  ${partner.centerName}
+                                </h2>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+
+                      <!-- Authorisation Statement -->
+                      <tr>
+                        <td align="center" style="text-align: center; padding-top: 5px;">
+                          <p style="margin: 0; font-family: Georgia, serif; font-size: 11px; font-style: italic; color: #4b5563;">
+                            is hereby authorised as an official
+                          </p>
+                          <h3 style="margin: 3px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 900; color: #0B2545; letter-spacing: 2px; text-transform: uppercase;">
+                            APPLICATION POINT
+                          </h3>
+                          <p style="margin: 3px 0 0 0; font-family: Georgia, serif; font-size: 9.5px; color: #374151; line-height: 1.6;">
+                            of 6A Skill City (OPC) Private Limited, the National Admission Partner of<br/>
+                            The Global University, Arunachal Pradesh (UGC Approved).
+                          </p>
+                        </td>
+                      </tr>
+
+                      <!-- Scope of Authorisation -->
+                      <tr>
+                        <td style="padding: 12px 0; border-top: 1px solid rgba(197, 168, 128, 0.3); margin-top: 10px;">
+                          <h4 style="margin: 0 0 8px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 9.5px; font-weight: 900; color: #0B2545; letter-spacing: 1.5px; text-transform: uppercase; text-align: center;">
+                            SCOPE OF AUTHORISATION
+                          </h4>
+                          <table cellpadding="0" cellspacing="0" border="0" width="85%" align="center" style="margin: 0 auto; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 9.5px; color: #374151;">
+                            <tr>
+                              <td style="padding-bottom: 4px; line-height: 1.4;">
+                                <span style="color: #C5A880; font-weight: bold; margin-right: 6px;">✓</span> Provide counselling to prospective students for all programs
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding-bottom: 4px; line-height: 1.4;">
+                                <span style="color: #C5A880; font-weight: bold; margin-right: 6px;">✓</span> Assist in application submission and documentation
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding-bottom: 4px; line-height: 1.4;">
+                                <span style="color: #C5A880; font-weight: bold; margin-right: 6px;">✓</span> Facilitate admissions to UG, PG, Diploma & Skill programs
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding-bottom: 4px; line-height: 1.4;">
+                                <span style="color: #C5A880; font-weight: bold; margin-right: 6px;">✓</span> Conduct student awareness and orientation sessions
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding-bottom: 4px; line-height: 1.4;">
+                                <span style="color: #C5A880; font-weight: bold; margin-right: 6px;">✓</span> Collect and forward applications to the National Admission Partner
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+
+                      <!-- Metadata Table Grid -->
+                      <tr>
+                        <td style="padding: 10px 0;">
+                          <table cellpadding="0" cellspacing="0" border="0" width="85%" align="center" style="margin: 0 auto; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 9px; color: #4b5563;">
+                            <tr>
+                              <!-- Column 1 -->
+                              <td width="47%" style="vertical-align: top;">
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                  <tr>
+                                    <td style="padding: 5px 0; border-bottom: 1px solid rgba(197, 168, 128, 0.4);">
+                                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                          <td align="left" style="font-size: 9px;"><strong style="color: #0B2545;">Certificate No.:</strong></td>
+                                          <td align="right" style="font-size: 9px; color: #1f2937; font-weight: bold;">${certificateNumber}</td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="padding: 5px 0; border-bottom: 1px solid rgba(197, 168, 128, 0.4);">
+                                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                          <td align="left" style="font-size: 9px;"><strong style="color: #0B2545;">Partner ID:</strong></td>
+                                          <td align="right" style="font-size: 9px; color: #1f2937; font-weight: bold;">6A-AP-${partner._id.toString().slice(-4).toUpperCase()}</td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="padding: 5px 0; border-bottom: 1px solid rgba(197, 168, 128, 0.4);">
+                                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                          <td align="left" style="font-size: 9px;"><strong style="color: #0B2545;">State / District:</strong></td>
+                                          <td align="right" style="font-size: 9px; color: #1f2937; font-weight: bold;">${partner.location.state} / ${partner.location.city}</td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                              
+                              <!-- Spacer -->
+                              <td width="6%">&nbsp;</td>
+                              
+                              <!-- Column 2 -->
+                              <td width="47%" style="vertical-align: top;">
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                  <tr>
+                                    <td style="padding: 5px 0; border-bottom: 1px solid rgba(197, 168, 128, 0.4);">
+                                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                          <td align="left" style="font-size: 9px;"><strong style="color: #0B2545;">Valid From:</strong></td>
+                                          <td align="right" style="font-size: 9px; color: #1f2937; font-weight: bold;">${issuedDate}</td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="padding: 5px 0; border-bottom: 1px solid rgba(197, 168, 128, 0.4);">
+                                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                          <td align="left" style="font-size: 9px;"><strong style="color: #0B2545;">Valid Until:</strong></td>
+                                          <td align="right" style="font-size: 9px; color: #1f2937; font-weight: bold;">${validUntilStr}</td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="padding: 5px 0; border-bottom: 1px solid rgba(197, 168, 128, 0.4);">
+                                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                          <td align="left" style="font-size: 9px;"><strong style="color: #0B2545;">Issued On:</strong></td>
+                                          <td align="right" style="font-size: 9px; color: #1f2937; font-weight: bold;">${issuedDate}</td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+
+                      <!-- Signatures & Seal Section -->
+                      <tr>
+                        <td style="padding-top: 15px; border-top: 1px solid rgba(197, 168, 128, 0.3); margin-top: 10px;">
+                          <table cellpadding="0" cellspacing="0" border="0" width="85%" align="center" style="margin: 0 auto; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 8.5px; color: #4b5563;">
+                            <tr>
+                              <!-- Left Signature -->
+                              <td width="35%" align="center" style="vertical-align: bottom;">
+                                <div style="width: 100px; border-bottom: 1px solid #9ca3af; margin: 0 auto 5px auto; height: 1px;"></div>
+                                <strong style="color: #0B2545; font-size: 8px;">Authorised Signatory</strong><br/>
+                                <span style="color: #6b7280; font-size: 7.5px;">6A Skill City (OPC) Pvt. Ltd.</span>
+                              </td>
+                              <!-- Center Seal -->
+                              <td width="30%" align="center" style="vertical-align: middle;">
+                                <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto; background-color: #ffffff; border: 2px dashed #C5A880; border-radius: 50%; width: 55px; height: 55px;">
+                                  <tr>
+                                    <td align="center" style="vertical-align: middle; padding: 2px;">
+                                      <table cellpadding="0" cellspacing="0" border="0" width="100%" height="100%" style="border: 1px solid #C5A880; border-radius: 50%; background-color: #FCFBF7;">
+                                        <tr>
+                                          <td align="center" style="vertical-align: middle; text-align: center;">
+                                            <span style="font-size: 5px; font-weight: 900; color: #C5A880; text-transform: uppercase; line-height: 1;">OFFICIAL SEAL</span><br/>
+                                            <span style="font-size: 6px; font-weight: 900; color: #0B2545; line-height: 1.2;">6A SKILL CITY</span><br/>
+                                            <span style="font-size: 3.5px; font-weight: bold; color: #6b7280; text-transform: uppercase; line-height: 1;">APPLICATION POINT</span>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                              <!-- Right Signature -->
+                              <td width="35%" align="center" style="vertical-align: bottom;">
+                                <div style="width: 100px; border-bottom: 1px solid #9ca3af; margin: 0 auto 5px auto; height: 1px;"></div>
+                                <strong style="color: #0B2545; font-size: 8px;">Director / Manager</strong><br/>
+                                <span style="color: #6b7280; font-size: 7.5px;">Authorised Application Point</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+
+                      <!-- Footer Navy Block -->
+                      <tr>
+                        <td style="padding-top: 15px;">
+                          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #0B2545; text-align: center; color: #ffffff;">
+                            <tr>
+                              <td style="padding: 10px 15px; text-align: center;">
+                                <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7.5px; color: #d1d5db; border-bottom: 1px solid rgba(197, 168, 128, 0.3); padding-bottom: 4px; text-transform: uppercase; font-weight: bold;">
+                                  This certificate is valid only with the official seal of 6A Skill City (OPC) Private Limited.
+                                </p>
+                                <p style="margin: 4px 0 0 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7.5px; color: #e5e7eb; font-weight: 500;">
+                                  6askillcity.com | partner@6askillcity.com | +91 983 33 31 014
+                                </p>
+                                <p style="margin: 2px 0 0 0; font-family: Georgia, serif; font-size: 7.5px; color: #cbd5e1;">
+                                  Grace Tower, 1st Floor, Ernakulam North, Kerala — 682018
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    try {
+      const pdfBuffer = await generateCertificatePDF(partner, letter);
+      const filename = `Authorisation_Certificate_${partner.centerName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
+      await sendEmail({
+        email: partner.licenseeEmail,
+        subject,
+        message,
+        html,
+        attachments: [
+          {
+            filename,
+            content: pdfBuffer,
+            contentType: "application/pdf"
+          }
+        ]
+      });
+    } catch (err) {
+      console.error("Failed to send renewed authorisation email:", err);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Partner authorisation letter successfully renewed!",
+      data: {
+        ...partner.toObject(),
+        authorisationLetter: letter,
+      },
     });
   } catch (error) {
     next(error);

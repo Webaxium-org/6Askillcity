@@ -48,7 +48,8 @@ import {
   generateAdminToken,
   completePartnerInspection,
   recordOfflineInspectionFee,
-  rejectPartnerInspection
+  rejectPartnerInspection,
+  renewPartnerAuthorisation
 } from "../../api/partner.api";
 import { getUniversities, getPrograms, getBranches } from "../../api/university.api";
 import { useDispatch } from "react-redux";
@@ -102,6 +103,7 @@ export default function PartnerProfile() {
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectInspectionReason, setRejectInspectionReason] = useState("");
   const [isRejectingInspection, setIsRejectingInspection] = useState(false);
+  const [isRenewConfirmOpen, setIsRenewConfirmOpen] = useState(false);
 
   // Admin Access Token State
   const [generatedToken, setGeneratedToken] = useState("");
@@ -263,6 +265,44 @@ export default function PartnerProfile() {
       handleFormError(error, null, dispatch, navigate);
     } finally {
       setIsRejectingInspection(false);
+    }
+  };
+
+  const [isRenewingLetter, setIsRenewingLetter] = useState(false);
+
+  const getExpirationDetails = () => {
+    let validUntilDate = null;
+    if (partner?.authorisationLetter) {
+      validUntilDate = new Date(partner.authorisationLetter.validUntil);
+    } else {
+      const baseDate = partner?.authorisationLetterIssuedAt || partner?.inspectionCompletedAt || partner?.registrationDate;
+      if (baseDate) {
+        const d = new Date(baseDate);
+        d.setFullYear(d.getFullYear() + 1);
+        d.setDate(d.getDate() - 1);
+        validUntilDate = d;
+      }
+    }
+    const isExpired = validUntilDate ? (validUntilDate < new Date()) : false;
+    return { validUntilDate, isExpired };
+  };
+
+  const handleRenewAuthorisation = async () => {
+    setIsRenewingLetter(true);
+    try {
+      const res = await renewPartnerAuthorisation(id);
+      if (res.success) {
+        setPartner(res.data);
+        dispatch(showAlert({
+          type: "success",
+          message: "Authorisation letter successfully renewed!",
+        }));
+        setIsRenewConfirmOpen(false);
+      }
+    } catch (error) {
+      handleFormError(error, null, dispatch, navigate);
+    } finally {
+      setIsRenewingLetter(false);
     }
   };
 
@@ -595,27 +635,62 @@ export default function PartnerProfile() {
                       </div>
                     )}
 
-                    {partner.onboardingState === "completed" && (
-                      <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                        <div className="flex gap-3 items-start">
-                          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 flex-shrink-0 mt-0.5">
-                            <Check className="w-5 h-5" />
+                    {partner.onboardingState === "completed" && (() => {
+                      const { validUntilDate, isExpired } = getExpirationDetails();
+                      return (
+                        <div className="space-y-4">
+                          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                            <div className="flex gap-3 items-start">
+                              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 flex-shrink-0 mt-0.5">
+                                <Check className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-sm text-emerald-600">Onboarding Completed & Fully Authorized</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  All onboarding steps were verified. The Online/Physical site inspection was completed on <strong>{new Date(partner.inspectionCompletedAt).toLocaleString()}</strong>.
+                                </p>
+                                {validUntilDate && (
+                                  <p className="text-xs font-semibold text-muted-foreground mt-1">
+                                    Valid Until: <span className={isExpired ? "text-red-500 font-bold" : "text-emerald-600 font-bold"}>{validUntilDate.toLocaleDateString()}</span>
+                                    {isExpired && " (EXPIRED)"}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setShowLetterModal(true)}
+                              className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 active:scale-[0.98] transition-all shadow-lg shadow-emerald-600/25 whitespace-nowrap shrink-0"
+                            >
+                              View Issued Authorisation Letter
+                            </button>
                           </div>
-                          <div>
-                            <p className="font-bold text-sm text-emerald-600">Onboarding Completed & Fully Authorized</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              All onboarding steps were verified. The Online/Physical site inspection was completed on <strong>{new Date(partner.inspectionCompletedAt).toLocaleString()}</strong>.
-                            </p>
-                          </div>
+
+                          {isExpired && (
+                            <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                              <div className="flex gap-3 items-start">
+                                <div className="p-2 rounded-xl bg-red-500/10 text-red-600 flex-shrink-0 mt-0.5">
+                                  <Clock className="w-5 h-5 animate-pulse" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm text-red-600">Authorisation Letter Expired</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    The partner's authorization has expired. Please review and renew their authorization status.
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setIsRenewConfirmOpen(true)}
+                                disabled={isRenewingLetter}
+                                className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-xs hover:opacity-95 active:scale-[0.98] transition-all shadow-lg shadow-primary/25 whitespace-nowrap shrink-0 flex items-center gap-2 disabled:opacity-50"
+                              >
+                                {isRenewingLetter && <Loader2 className="w-4.5 h-4.5 animate-spin" />}
+                                Renew Authorisation
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        <button
-                          onClick={() => setShowLetterModal(true)}
-                          className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 active:scale-[0.98] transition-all shadow-lg shadow-emerald-600/25 whitespace-nowrap shrink-0"
-                        >
-                          View Issued Authorisation Letter
-                        </button>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -1235,6 +1310,60 @@ export default function PartnerProfile() {
                 </button>
               </motion.div>
             </div>
+          )}
+        </AnimatePresence>
+
+        {/* Renew Confirmation Modal */}
+        <AnimatePresence>
+          {isRenewConfirmOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+              onClick={() => setIsRenewConfirmOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl border border-border flex flex-col"
+              >
+                <div className="flex items-center space-x-3 text-emerald-500 mb-4">
+                  <ShieldCheck className="w-6 h-6" />
+                  <h3 className="text-xl font-bold text-foreground">
+                    Renew Authorisation
+                  </h3>
+                </div>
+                <p className="text-muted-foreground mb-6 text-sm flex-1">
+                  Are you sure you want to renew the partnership authorisation letter for <strong>{partner.centerName}</strong>? This will generate a new certificate valid for 1 year and email it to the partner.
+                </p>
+                <div className="flex items-center justify-end space-x-3 mt-auto">
+                  <button
+                    onClick={() => setIsRenewConfirmOpen(false)}
+                    disabled={isRenewingLetter}
+                    className="px-4 py-2 rounded-xl border border-border hover:bg-muted text-foreground transition-colors font-medium text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRenewAuthorisation}
+                    disabled={isRenewingLetter}
+                    className="px-4 py-2 rounded-xl text-white bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20 transition-all font-medium text-sm flex items-center space-x-2 shadow-sm animate-none"
+                  >
+                    {isRenewingLetter ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Renew</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
 

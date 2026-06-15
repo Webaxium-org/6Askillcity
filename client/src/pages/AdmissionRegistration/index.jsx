@@ -10,6 +10,7 @@ import {
   Save,
   ArrowLeft,
   ChevronRight,
+  Check,
   CheckCircle2,
   Plus,
   Trash2,
@@ -18,7 +19,10 @@ import { admissionRegistrationSchema } from "./schema";
 import { FormInput } from "@/components/ui/form-input";
 import { FormSelect } from "@/components/ui/form-select";
 import { FormSearchableSelect } from "@/components/ui/form-searchable-select";
-import { FormPhoneInput, COUNTRY_CODES } from "@/components/ui/form-phone-input";
+import {
+  FormPhoneInput,
+  COUNTRY_CODES,
+} from "@/components/ui/form-phone-input";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -251,14 +255,29 @@ export default function AdmissionRegistration() {
           if (data[key] && data[key].length > 0) {
             data[key].forEach((file) => formData.append(key, file));
           }
-        } else if (["contactPersonPhoneCode", "localRefMobile1Code", "localRefMobile2Code"].includes(key)) {
+        } else if (
+          [
+            "contactPersonPhoneCode",
+            "localRefMobile1Code",
+            "localRefMobile2Code",
+          ].includes(key)
+        ) {
           // Skip individual code fields
         } else if (key === "contactPersonPhone") {
-          formData.append(key, (data.contactPersonPhoneCode || "") + data.contactPersonPhone);
+          formData.append(
+            key,
+            (data.contactPersonPhoneCode || "") + data.contactPersonPhone,
+          );
         } else if (key === "localRefMobile1") {
-          formData.append(key, (data.localRefMobile1Code || "") + data.localRefMobile1);
+          formData.append(
+            key,
+            (data.localRefMobile1Code || "") + data.localRefMobile1,
+          );
         } else if (key === "localRefMobile2") {
-          formData.append(key, (data.localRefMobile2Code || "") + data.localRefMobile2);
+          formData.append(
+            key,
+            (data.localRefMobile2Code || "") + data.localRefMobile2,
+          );
         } else {
           formData.append(key, data[key]);
         }
@@ -376,50 +395,14 @@ export default function AdmissionRegistration() {
                     Application Submitted Successfully
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-                    Your application is currently under admin review. Once processed, we will notify you via the licensee email. Thank you!
+                    Your application is currently under admin review. Once
+                    processed, we will notify you via the licensee email. Thank
+                    you!
                   </p>
                 </div>
               </div>
             </motion.div>
           )}
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="max-w-2xl mx-auto p-6 bg-blue-500/5 border border-blue-500/20 rounded-[2rem] text-left mb-4"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 shrink-0">
-                <FileText size={20} />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-[11px] font-black uppercase tracking-widest text-blue-600 mb-2">
-                  Required Documents Checklist
-                </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-4">
-                  Please keep digital copies of these documents ready for the
-                  upload stage:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "Licensee Photo",
-                    "Licensee Aadhar Card",
-                    "Business License",
-                    "Ownership / Rental Agreement",
-                    "Office Photos",
-                  ].map((doc) => (
-                    <span
-                      key={doc}
-                      className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] font-bold text-slate-700 dark:text-slate-300 shadow-sm"
-                    >
-                      {doc}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
 
         <motion.div
@@ -439,13 +422,15 @@ export default function AdmissionRegistration() {
                     <div
                       className={cn(
                         "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 border",
-                        isActive
+                        isLineCompleted
+                          ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+                          : isActive
                           ? "bg-white dark:bg-slate-900 border-primary text-primary shadow-[0_0_20px_rgba(184,36,36,0.15)]"
                           : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-700",
                       )}
                     >
                       {isActive && currentStep > step.id ? (
-                        <CheckCircle2 size={18} />
+                        <Check size={18} />
                       ) : (
                         <step.icon size={18} />
                       )}
@@ -455,6 +440,8 @@ export default function AdmissionRegistration() {
                         "text-xs font-black uppercase tracking-[0.2em] transition-colors duration-500",
                         isCurrent
                           ? "text-slate-900 dark:text-white"
+                          : isLineCompleted
+                          ? "text-emerald-500 dark:text-emerald-400"
                           : "text-slate-400 dark:text-slate-700",
                       )}
                     >
@@ -468,7 +455,7 @@ export default function AdmissionRegistration() {
                         initial={{ width: "0%" }}
                         animate={{ width: isLineCompleted ? "100%" : "0%" }}
                         transition={{ duration: 0.5 }}
-                        className="absolute inset-y-0 left-0 bg-primary shadow-[0_0_10px_rgba(184,36,36,0.5)]"
+                        className="absolute inset-y-0 left-0 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                       />
                     </div>
                   )}
@@ -500,7 +487,9 @@ export default function AdmissionRegistration() {
                     id="contactPersonPhone"
                     placeholder="00000 00000"
                     codeValue={watch("contactPersonPhoneCode")}
-                    onCodeChange={(val) => setValue("contactPersonPhoneCode", val)}
+                    onCodeChange={(val) =>
+                      setValue("contactPersonPhoneCode", val)
+                    }
                     {...register("contactPersonPhone")}
                     error={errors.contactPersonPhone}
                     className="text-slate-700 dark:text-slate-200"

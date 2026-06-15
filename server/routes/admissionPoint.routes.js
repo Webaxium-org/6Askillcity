@@ -21,6 +21,7 @@ import {
   recordOfflineOnboardingFee,
   uploadOfficeVideo,
   rejectPartnerInspection,
+  renewPartnerAuthorisation,
 } from "../controllers/admissionPoint.controller.js";
 import { getPartnerDashboardStats, getPermittedCourses } from "../controllers/partner.controller.js";
 import { isAuthorized, requireAuth } from "../middleware/auth.js";
@@ -52,6 +53,7 @@ router.patch("/:id/status", updateAdmissionPointStatus);
 router.patch("/:id/toggle-active", toggleAdmissionPointActiveStatus);
 router.post("/:id/generate-token", generateAdminAccessToken);
 router.patch("/:id/complete-inspection", completePartnerInspection);
+router.post("/:id/renew-authorisation", renewPartnerAuthorisation);
 
 // Permission routes
 router.get("/:partnerId/permissions", getPartnerPermissions);

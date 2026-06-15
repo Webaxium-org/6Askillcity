@@ -89,3 +89,8 @@ export const rejectPartnerInspection = async (id, reason) => {
   return response.data;
 };
 
+export const renewPartnerAuthorisation = async (id) => {
+  const response = await API.post(`/admission-points/${id}/renew-authorisation`);
+  return response.data;
+};
+

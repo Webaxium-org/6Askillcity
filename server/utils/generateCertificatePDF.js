@@ -20,7 +20,7 @@ const getValidUntilDate = (date) => {
   return `${day}/${month}/${year}`;
 };
 
-export const generateCertificatePDF = (partner) => {
+export const generateCertificatePDF = (partner, letter = null) => {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ size: "A4", layout: "portrait", margin: 0 });
@@ -161,9 +161,10 @@ export const generateCertificatePDF = (partner) => {
       const col2X = A4_WIDTH / 2 + 10;
       const col1X = A4_WIDTH / 2 - colW - 10;
 
-      const issuedDateObj = partner.authorisationLetterIssuedAt || partner.inspectionCompletedAt || new Date();
+      const issuedDateObj = letter ? letter.issuedAt : (partner.authorisationLetterIssuedAt || partner.inspectionCompletedAt || new Date());
       const issuedDate = formatDate(issuedDateObj);
-      const validUntilDate = getValidUntilDate(issuedDateObj);
+      const validUntilDate = letter ? formatDate(letter.validUntil) : getValidUntilDate(issuedDateObj);
+      const certNo = letter ? letter.certificateNumber : `6ASC/AP/${partner._id.toString().slice(-4).toUpperCase()}/${new Date(issuedDateObj).getFullYear()}`;
 
       const drawGridCell = (x, y, label, value) => {
         doc.font("Helvetica-Bold").fontSize(9).fillColor("#0B2545").text(label, x, y);
@@ -172,7 +173,7 @@ export const generateCertificatePDF = (partner) => {
       };
 
       // Row 1
-      drawGridCell(col1X, gridY, "Certificate No.:", `6ASC/AP/${partner._id.toString().slice(-4).toUpperCase()}/2026`);
+      drawGridCell(col1X, gridY, "Certificate No.:", certNo);
       drawGridCell(col2X, gridY, "Valid From:", issuedDate);
 
       // Row 2

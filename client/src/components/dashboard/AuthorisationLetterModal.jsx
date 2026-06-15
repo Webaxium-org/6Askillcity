@@ -26,9 +26,9 @@ export const AuthorisationLetterModal = ({ partner, onClose }) => {
     window.print();
   };
 
-  const issuedDateObj = partner.authorisationLetterIssuedAt || partner.inspectionCompletedAt || Date.now();
+  const issuedDateObj = partner.authorisationLetter ? partner.authorisationLetter.issuedAt : (partner.authorisationLetterIssuedAt || partner.inspectionCompletedAt || Date.now());
   const issuedDate = formatDate(issuedDateObj);
-  const validUntilDate = getValidUntilDate(issuedDateObj);
+  const validUntilDate = partner.authorisationLetter ? formatDate(partner.authorisationLetter.validUntil) : getValidUntilDate(issuedDateObj);
 
   return (
     <div className="authorisation-letter-modal-backdrop fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-zinc-950/80 backdrop-blur-md print:bg-white print:p-0">
@@ -180,7 +180,7 @@ export const AuthorisationLetterModal = ({ partner, onClose }) => {
                     <div className="flex justify-between items-baseline border-b border-[#C5A880]/40 pb-0.5">
                       <span className="font-bold text-[#0B2545]">Certificate No.:</span>
                       <span className="font-bold text-slate-800 text-[10px]">
-                        6ASC/AP/{partner._id?.toString().slice(-4).toUpperCase() || "xxxx"}/2026
+                        {partner.authorisationLetter ? partner.authorisationLetter.certificateNumber : `6ASC/AP/${partner._id?.toString().slice(-4).toUpperCase() || "xxxx"}/${new Date(issuedDateObj).getFullYear()}`}
                       </span>
                     </div>
                     <div className="flex justify-between items-baseline border-b border-[#C5A880]/40 pb-0.5">
