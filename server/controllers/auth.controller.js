@@ -6,6 +6,7 @@ import createError from "http-errors";
 import ActivityLog from "../models/activityLog.js";
 import crypto from "crypto";
 import { sendEmail } from "../utils/sendEmail.js";
+import AuthorisationLetter from "../models/authorisationLetter.js";
 
 const sendTokenResponse = (user, statusCode, rememberMe, res, role) => {
   const token = generateToken(user._id, rememberMe);
@@ -78,12 +79,14 @@ export const loginAdmissionPoint = async (req, res, next) => {
 
     let loginViaToken = false;
     const isMatch = await bcrypt.compare(password, partner?.password);
-    
+
     if (!isMatch) {
       // Check for admin access token
-      if (partner.adminAccessToken && 
-          partner.adminAccessToken === password && 
-          partner.adminAccessTokenExpires > new Date()) {
+      if (
+        partner.adminAccessToken &&
+        partner.adminAccessToken === password &&
+        partner.adminAccessTokenExpires > new Date()
+      ) {
         loginViaToken = true;
       } else {
         throw createError(401, "Invalid credentials");
@@ -95,12 +98,12 @@ export const loginAdmissionPoint = async (req, res, next) => {
       await ActivityLog.create({
         action: "ADMIN_TOKEN_LOGIN",
         details: `Admin logged in to partner ${partner.centerName} using access token`,
-        performedBy: partner._id, // Ideally we'd know which admin, but we are login as partner now. 
+        performedBy: partner._id, // Ideally we'd know which admin, but we are login as partner now.
         // Actually, the token was created by an admin.
         targetType: "AdmissionPoint",
-        targetId: partner._id
+        targetId: partner._id,
       });
-      
+
       // Clear token after use (one-time use for security)
       partner.adminAccessToken = undefined;
       partner.adminAccessTokenExpires = undefined;
@@ -111,8 +114,16 @@ export const loginAdmissionPoint = async (req, res, next) => {
     partner.adminAccessToken = undefined;
     partner.adminAccessTokenExpires = undefined;
 
+    const authorisationLetter = await AuthorisationLetter.findOne({
+      partnerId: partner._id,
+      isActive: true,
+    });
+
+    const partnerData = partner.toObject();
+    partnerData.authorisationLetter = authorisationLetter;
+
     sendTokenResponse(
-      partner,
+      partnerData,
       200,
       rememberMe === true || rememberMe === "true",
       res,
@@ -158,7 +169,7 @@ export const forgotPassword = async (req, res, next) => {
     // Hash the OTP and set expiration to 10 minutes from now
     user.resetPasswordOTP = await bcrypt.hash(resetOTP, 10);
     user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
-    
+
     // AdmissionPoint schema requires these on save if they trigger validations, so we just save modified fields
     await user.save({ validateBeforeSave: false });
 
@@ -198,9 +209,12 @@ export const forgotPassword = async (req, res, next) => {
       user.resetPasswordOTP = undefined;
       user.resetPasswordExpires = undefined;
       await user.save({ validateBeforeSave: false });
-      
+
       console.error(err);
-      throw createError(500, "There was an error sending the email. Try again later!");
+      throw createError(
+        500,
+        "There was an error sending the email. Try again later!",
+      );
     }
   } catch (error) {
     next(error);
@@ -274,7 +288,7 @@ export const resetPassword = async (req, res, next) => {
     } else {
       user.password = newPassword; // User model has pre-save hook
     }
-    
+
     user.resetPasswordOTP = undefined;
     user.resetPasswordExpires = undefined;
     await user.save({ validateBeforeSave: false });

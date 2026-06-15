@@ -8,7 +8,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
 import {
   User,
@@ -587,10 +587,19 @@ export default function AddStudent() {
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        if (error.response?.status === 403) {
+          dispatch(
+            showAlert({
+              type: "error",
+              message: error.response?.data?.message || "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter.",
+            })
+          );
+          navigate("/dashboard");
+        }
       }
     };
     fetchData();
-  }, [studentId]);
+  }, [studentId, navigate, dispatch]);
 
   const [formData, setFormData] = useState({
     name: "",

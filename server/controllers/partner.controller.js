@@ -9,6 +9,7 @@ import Program from "../models/program.js";
 import Branch from "../models/branch.js";
 import ProgramFee from "../models/programFee.js";
 import University from "../models/university.js";
+import AuthorisationLetter from "../models/authorisationLetter.js";
 
 export const getPartnerDashboardStats = async (req, res, next) => {
   try {
@@ -121,6 +122,19 @@ export const getPartnerDashboardStats = async (req, res, next) => {
 export const getPermittedCourses = async (req, res, next) => {
   try {
     const partnerId = req.user.userId;
+
+    // Check if authorisation letter is expired
+    const authorisationLetter = await AuthorisationLetter.findOne({
+      partnerId: partnerId,
+      isActive: true,
+    });
+
+    if (!authorisationLetter || new Date(authorisationLetter.validUntil) < new Date()) {
+      throw createError(
+        403,
+        "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter."
+      );
+    }
 
     // 1. Get all active permissions for this partner
     const permissions = await PartnerPermission.find({

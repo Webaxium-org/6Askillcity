@@ -1354,6 +1354,14 @@ export const getMyPartnerProfile = async (req, res, next) => {
       throw createError(404, "Partner profile not found");
     }
 
+    const authorisationLetter = await AuthorisationLetter.findOne({
+      partnerId,
+      isActive: true,
+    });
+
+    const partnerObj = partner.toObject();
+    partnerObj.authorisationLetter = authorisationLetter;
+
     const rawPermissions = await PartnerPermission.find({
       partnerId,
       status: "active",
@@ -1380,7 +1388,7 @@ export const getMyPartnerProfile = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        partner,
+        partner: partnerObj,
         permissions,
       },
     });

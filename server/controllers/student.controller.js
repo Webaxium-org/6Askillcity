@@ -8,6 +8,7 @@ import Student from "../models/student.js";
 import ProgramFee from "../models/programFee.js";
 import moment from "moment";
 import createError from "http-errors";
+import AuthorisationLetter from "../models/authorisationLetter.js";
 import {
   sendToAdmins,
   sendToRecipient,
@@ -96,6 +97,20 @@ export const getStudentById = async (req, res, next) => {
 export const enrollStudent = async (req, res, next) => {
   try {
     const data = req.body;
+
+    if (req.user?.userType === "partner") {
+      const letter = await AuthorisationLetter.findOne({
+        partnerId: req.user.userId,
+        isActive: true,
+      });
+
+      if (!letter || new Date(letter.validUntil) < new Date()) {
+        throw createError(
+          403,
+          "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter."
+        );
+      }
+    }
 
     if (data.email) {
       const duplicateEmail = await Student.findOne({
@@ -291,6 +306,20 @@ export const updateStudentDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
     const partnerId = req.user?.userId;
+
+    if (req.user?.userType === "partner") {
+      const letter = await AuthorisationLetter.findOne({
+        partnerId: req.user.userId,
+        isActive: true,
+      });
+
+      if (!letter || new Date(letter.validUntil) < new Date()) {
+        throw createError(
+          403,
+          "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter."
+        );
+      }
+    }
 
     const student = await Student.findOne({
       _id: id,
