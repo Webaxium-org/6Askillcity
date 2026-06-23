@@ -444,22 +444,33 @@ export const downloadImportTemplate = async (req, res, next) => {
       headers = ["Branch", "Eligibility", "Duration"];
       data = [
         {
-          "Branch": "Accountancy",
-          "Eligibility": "1. Secondary Education Certificate\n2. Senior Secondary Education Certificate\n3. Under Graduate Degree Grade Card from the previous University for proving Credit Equivalency\n4. Aadhaar Card\n5. Passport size photo",
-          "Duration": "Depends upon Course Credits Equivalency with previous University"
-        }
+          Branch: "Accountancy",
+          Eligibility:
+            "1. Secondary Education Certificate\n2. Senior Secondary Education Certificate\n3. Under Graduate Degree Grade Card from the previous University for proving Credit Equivalency\n4. Aadhaar Card\n5. Passport size photo",
+          Duration:
+            "Depends upon Course Credits Equivalency with previous University",
+        },
       ];
     } else {
-      headers = ["Course", "Branch", "Eligibility", "Mode", "Program Type", "Duration"];
+      headers = [
+        "Course",
+        "Branch",
+        "Eligibility",
+        "Mode",
+        "Program Type",
+        "Duration",
+      ];
       data = [
         {
-          "Course": "Bachelor of Commerce (B.Com.)",
-          "Branch": "Accountancy",
-          "Eligibility": "1. Secondary Education Certificate\n2. Senior Secondary Education Certificate\n3. Under Graduate Degree Grade Card from the previous University for proving Credit Equivalency\n4. Aadhaar Card\n5. Passport size photo",
-          "Mode": "On-Campus",
+          Course: "Bachelor of Commerce (B.Com.)",
+          Branch: "Accountancy",
+          Eligibility:
+            "1. Secondary Education Certificate\n2. Senior Secondary Education Certificate\n3. Under Graduate Degree Grade Card from the previous University for proving Credit Equivalency\n4. Aadhaar Card\n5. Passport size photo",
+          Mode: "On-Campus",
           "Program Type": "Bachelors Degree",
-          "Duration": "Depends upon Course Credits Equivalency with previous University"
-        }
+          Duration:
+            "Depends upon Course Credits Equivalency with previous University",
+        },
       ];
     }
 
@@ -469,8 +480,14 @@ export const downloadImportTemplate = async (req, res, next) => {
 
     const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
 
-    res.setHeader("Content-Disposition", `attachment; filename=template_${type}.xlsx`);
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=template_${type}.xlsx`,
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
     res.send(buffer);
   } catch (error) {
     next(error);
@@ -495,7 +512,10 @@ export const importUniversityData = async (req, res, next) => {
     let targetProgram = null;
     if (importType === "specific") {
       if (!programId) {
-        throw createError(400, "Program ID (Course) is required for specific course import");
+        throw createError(
+          400,
+          "Program ID (Course) is required for specific course import",
+        );
       }
       targetProgram = await Program.findById(programId);
       if (!targetProgram) {
@@ -526,7 +546,12 @@ export const importUniversityData = async (req, res, next) => {
       const t = type.toString().toLowerCase().trim();
       if (t.includes("master")) return "Masters Degree";
       if (t.includes("bachelor")) return "Bachelors Degree";
-      if (t.includes("pg deploma") || t.includes("pg diploma") || t.includes("post graduate diploma")) return "PG Diploma";
+      if (
+        t.includes("pg deploma") ||
+        t.includes("pg diploma") ||
+        t.includes("post graduate diploma")
+      )
+        return "PG Diploma";
       if (t.includes("skill program")) return "Skill Programs";
       if (t.includes("skill test")) return "Skill Test";
       return "Bachelors Degree";
@@ -535,7 +560,12 @@ export const importUniversityData = async (req, res, next) => {
     const normalizeMode = (mode) => {
       if (!mode) return "External";
       const m = mode.toString().toLowerCase().trim();
-      if (m.includes("campus") || m.includes("oncampus") || m.includes("on-campus")) return "On-Campus";
+      if (
+        m.includes("campus") ||
+        m.includes("oncampus") ||
+        m.includes("on-campus")
+      )
+        return "On-Campus";
       if (m.includes("skill")) return "Skill Based";
       if (m.includes("external")) return "External";
       return "External";
@@ -603,7 +633,9 @@ export const importUniversityData = async (req, res, next) => {
         const branch = row["branch"]?.toString().trim();
         const eligibility = row["eligibility"]?.toString().trim();
         const mode = row["mode"]?.toString().trim();
-        const programType = (row["program type"] || row["programtype"])?.toString().trim();
+        const programType = (row["program type"] || row["programtype"])
+          ?.toString()
+          .trim();
         const duration = row["duration"]?.toString().trim();
 
         if (course) currentCourse = course;
