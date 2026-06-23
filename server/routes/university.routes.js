@@ -15,6 +15,7 @@ import {
   deleteBranch,
   deleteProgram,
   importUniversityData,
+  downloadImportTemplate,
 } from "../controllers/university.controller.js";
 import { requireAuth, isAuthorized } from "../middleware/auth.js";
 import multer from "multer";
@@ -32,6 +33,8 @@ router.use(requireAuth);
 
 // GET routes are accessible by both admins and partners
 // POST/PUT routes are restricted to admins
+router.get("/universities/import-template", isAuthorized({ roles: ["admin", "manager"] }), downloadImportTemplate);
+
 router.route("/universities")
   .get(getUniversities)
   .post(isAuthorized({ roles: ["admin", "manager"] }), createUniversity);

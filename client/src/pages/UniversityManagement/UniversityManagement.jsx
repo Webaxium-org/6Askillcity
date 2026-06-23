@@ -45,6 +45,7 @@ import {
   updateProgramFee,
   getActivityLogs,
   importUniversityExcel,
+  getImportTemplate,
 } from "../../api/university.api";
 import { useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -105,8 +106,11 @@ export default function UniversityManagement() {
   const [importUniversityId, setImportUniversityId] = useState("");
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
-  const [importProgramType, setImportProgramType] = useState("");
-  const [importMode, setImportMode] = useState("");
+  const [importType, setImportType] = useState("entire"); // "entire" or "specific"
+  const [importProgramId, setImportProgramId] = useState("");
+  const [importPrograms, setImportPrograms] = useState([]);
+  const [importProgramSearch, setImportProgramSearch] = useState("");
+  const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
 
   // Pagination state
   const PAGE_SIZE = 10;
@@ -120,12 +124,8 @@ export default function UniversityManagement() {
       dispatch(showAlert({ type: "error", message: "Please select a university." }));
       return;
     }
-    if (!importProgramType) {
-      dispatch(showAlert({ type: "error", message: "Please select a Course Type." }));
-      return;
-    }
-    if (!importMode) {
-      dispatch(showAlert({ type: "error", message: "Please select a Mode." }));
+    if (importType === "specific" && !importProgramId) {
+      dispatch(showAlert({ type: "error", message: "Please select a target Course." }));
       return;
     }
     if (!importFile) {
@@ -134,13 +134,17 @@ export default function UniversityManagement() {
     }
     setImporting(true);
     try {
-      const res = await importUniversityExcel(importUniversityId, importFile, importProgramType, importMode);
+      const res = await importUniversityExcel(
+        importUniversityId,
+        importFile,
+        importType,
+        importType === "specific" ? importProgramId : null
+      );
       if (res.success) {
         dispatch(showAlert({ type: "success", message: res.message || "Data imported successfully!" }));
         setIsImportModalOpen(false);
         setImportUniversityId("");
-        setImportProgramType("");
-        setImportMode("");
+        setImportProgramId("");
         setImportFile(null);
         fetchData();
       }
@@ -148,6 +152,24 @@ export default function UniversityManagement() {
       handleFormError(error, null, dispatch, navigate);
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleDownloadTemplate = async (type) => {
+    try {
+      const response = await getImportTemplate(type);
+      const blob = new Blob([response.data], { type: response.headers["content-type"] });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `template_${type}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      dispatch(showAlert({ type: "success", message: "Template downloaded successfully." }));
+    } catch (error) {
+      dispatch(showAlert({ type: "error", message: "Failed to download template." }));
     }
   };
 
@@ -225,6 +247,26 @@ export default function UniversityManagement() {
     setProgPage(1);
     setBranchPage(1);
   }, [activeTab, searchTerm, filterStatus, startDate, endDate]);
+
+  // Fetch programs for specific course import when university changes
+  useEffect(() => {
+    if (importUniversityId) {
+      const fetchImportPrograms = async () => {
+        try {
+          const res = await getPrograms(importUniversityId);
+          if (res.success) {
+            setImportPrograms(res.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch programs for import:", error);
+        }
+      };
+      fetchImportPrograms();
+    } else {
+      // eslint-disable-next-line
+      setImportPrograms([]);
+    }
+  }, [importUniversityId]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -687,8 +729,10 @@ export default function UniversityManagement() {
               onClick={() => {
                 setImportUniversityId("");
                 setImportFile(null);
-                setImportProgramType("");
-                setImportMode("");
+                setImportType("entire");
+                setImportProgramId("");
+                setImportProgramSearch("");
+                setIsCourseDropdownOpen(false);
                 setIsImportModalOpen(true);
               }}
               className="flex items-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-emerald-600"
@@ -2106,7 +2150,12 @@ export default function UniversityManagement() {
                     </label>
                     <select
                       value={importUniversityId}
-                      onChange={(e) => setImportUniversityId(e.target.value)}
+                      onChange={(e) => {
+                        setImportUniversityId(e.target.value);
+                        setImportProgramId("");
+                        setImportProgramSearch("");
+                        setIsCourseDropdownOpen(false);
+                      }}
                       required
                       className="w-full px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-xs font-bold"
                     >
@@ -2121,40 +2170,148 @@ export default function UniversityManagement() {
 
                   <div>
                     <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">
-                      Course Type
+                      Import Type
                     </label>
-                    <select
-                      value={importProgramType}
-                      onChange={(e) => setImportProgramType(e.target.value)}
-                      required
-                      className="w-full px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-xs font-bold"
-                    >
-                      <option value="">Select Course Type</option>
-                      {PROGRAM_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2 p-1 bg-muted/50 rounded-2xl border border-border/50">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImportType("entire");
+                          setImportProgramId("");
+                        }}
+                        className={cn(
+                          "flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                          importType === "entire"
+                            ? "bg-card text-primary shadow-sm border border-border/50"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        Entire Courses Lists
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImportType("specific")}
+                        className={cn(
+                          "flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                          importType === "specific"
+                            ? "bg-card text-primary shadow-sm border border-border/50"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        Directly to a Course
+                      </button>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">
-                      Mode
-                    </label>
-                    <select
-                      value={importMode}
-                      onChange={(e) => setImportMode(e.target.value)}
-                      required
-                      className="w-full px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all text-xs font-bold"
-                    >
-                      <option value="">Select Mode</option>
-                      {PROGRAM_MODES.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
+                  {importType === "specific" && (
+                    <div className="relative space-y-2">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1 block">
+                        Target Course (Program)
+                      </label>
+                      
+                      {/* Trigger Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsCourseDropdownOpen(!isCourseDropdownOpen)}
+                        className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white transition-all text-xs font-bold text-left relative z-10"
+                      >
+                        <span className={importProgramId ? "text-slate-800" : "text-muted-foreground font-medium"}>
+                          {importProgramId 
+                            ? importPrograms.find(p => p._id === importProgramId)?.name || "Select Target Course"
+                            : "Select Target Course"}
+                        </span>
+                        <ChevronRight className={cn("w-4 h-4 text-muted-foreground transition-transform duration-200", isCourseDropdownOpen && "rotate-90")} />
+                      </button>
+
+                      {/* Backdrop for outside click */}
+                      {isCourseDropdownOpen && (
+                        <div 
+                          className="fixed inset-0 z-40 bg-transparent" 
+                          onClick={() => setIsCourseDropdownOpen(false)}
+                        />
+                      )}
+
+                      {/* Dropdown Options Panel */}
+                      <AnimatePresence>
+                        {isCourseDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            className="absolute z-50 w-full mt-1 bg-card border border-border rounded-2xl shadow-xl overflow-hidden max-h-60 flex flex-col"
+                            style={{ top: "100%" }}
+                          >
+                            {/* Search Input Box Inside Dropdown */}
+                            <div className="p-2 border-b border-border/60 bg-muted/20">
+                              <input
+                                type="text"
+                                placeholder="Search course..."
+                                value={importProgramSearch}
+                                onChange={(e) => setImportProgramSearch(e.target.value)}
+                                className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs outline-none focus:border-emerald-500/30 transition-all font-semibold"
+                                onClick={(e) => e.stopPropagation()} // prevent closing when clicking input
+                              />
+                            </div>
+
+                            {/* Dropdown Options */}
+                            <div className="overflow-y-auto flex-1 py-1 max-h-44 scrollbar-thin">
+                              {importPrograms.filter(p => 
+                                p.name.toLowerCase().includes(importProgramSearch.toLowerCase())
+                              ).length === 0 ? (
+                                <div className="px-4 py-3 text-xs text-muted-foreground text-center italic">
+                                  No courses found
+                                </div>
+                              ) : (
+                                importPrograms
+                                  .filter(p => p.name.toLowerCase().includes(importProgramSearch.toLowerCase()))
+                                  .map((p) => (
+                                    <button
+                                      key={p._id}
+                                      type="button"
+                                      onClick={() => {
+                                        setImportProgramId(p._id);
+                                        setIsCourseDropdownOpen(false);
+                                        setImportProgramSearch("");
+                                      }}
+                                      className={cn(
+                                        "w-full text-left px-4 py-2.5 text-xs hover:bg-muted transition-colors flex items-center justify-between",
+                                        importProgramId === p._id ? "bg-emerald-500/5 text-emerald-600 font-bold" : "text-foreground font-medium"
+                                      )}
+                                    >
+                                      <span>{p.name} ({p.programType})</span>
+                                      {importProgramId === p._id && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                      )}
+                                    </button>
+                                  ))
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 space-y-2">
+                    <div className="text-[10px] font-black uppercase text-emerald-600 tracking-wider">
+                      Download Excel Templates
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadTemplate("entire")}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-card hover:bg-muted text-emerald-600 border border-emerald-500/20 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all"
+                      >
+                        Template 1: Entire List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadTemplate("specific")}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-card hover:bg-muted text-emerald-600 border border-emerald-500/20 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all"
+                      >
+                        Template 2: Course Branches
+                      </button>
+                    </div>
                   </div>
 
                   <div>

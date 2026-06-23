@@ -212,10 +212,7 @@ export const deleteProgram = async (req, res, next) => {
 
     // Delete associated partner permissions (both program and branch level)
     await PartnerPermission.deleteMany({
-      $or: [
-        { programId: id },
-        { branchId: { $in: branchIds } },
-      ],
+      $or: [{ programId: id }, { branchId: { $in: branchIds } }],
     });
 
     await logActivity(
@@ -438,17 +435,53 @@ export const getActivityLogs = async (req, res, next) => {
   }
 };
 
+export const downloadImportTemplate = async (req, res, next) => {
+  try {
+    const { type } = req.query; // 'entire' or 'specific'
+
+    let headers, data;
+    if (type === "specific") {
+      headers = ["Branch", "Eligibility", "Duration"];
+      data = [
+        {
+          "Branch": "Accountancy",
+          "Eligibility": "1. Secondary Education Certificate\n2. Senior Secondary Education Certificate\n3. Under Graduate Degree Grade Card from the previous University for proving Credit Equivalency\n4. Aadhaar Card\n5. Passport size photo",
+          "Duration": "Depends upon Course Credits Equivalency with previous University"
+        }
+      ];
+    } else {
+      headers = ["Course", "Branch", "Eligibility", "Mode", "Program Type", "Duration"];
+      data = [
+        {
+          "Course": "Bachelor of Commerce (B.Com.)",
+          "Branch": "Accountancy",
+          "Eligibility": "1. Secondary Education Certificate\n2. Senior Secondary Education Certificate\n3. Under Graduate Degree Grade Card from the previous University for proving Credit Equivalency\n4. Aadhaar Card\n5. Passport size photo",
+          "Mode": "On-Campus",
+          "Program Type": "Bachelors Degree",
+          "Duration": "Depends upon Course Credits Equivalency with previous University"
+        }
+      ];
+    }
+
+    const worksheet = xlsx.utils.json_to_sheet(data, { header: headers });
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Template");
+
+    const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader("Content-Disposition", `attachment; filename=template_${type}.xlsx`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const importUniversityData = async (req, res, next) => {
   try {
-    const { universityId, programType, mode } = req.body;
+    const { universityId, importType, programId } = req.body;
     if (!universityId) {
       throw createError(400, "University ID is required");
-    }
-    if (!programType) {
-      throw createError(400, "Program Type is required");
-    }
-    if (!mode) {
-      throw createError(400, "Mode is required");
     }
     if (!req.file) {
       throw createError(400, "Excel file is required");
@@ -459,152 +492,195 @@ export const importUniversityData = async (req, res, next) => {
       throw createError(404, "University not found");
     }
 
+    let targetProgram = null;
+    if (importType === "specific") {
+      if (!programId) {
+        throw createError(400, "Program ID (Course) is required for specific course import");
+      }
+      targetProgram = await Program.findById(programId);
+      if (!targetProgram) {
+        throw createError(404, "Target Course (Program) not found");
+      }
+    }
+
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+    const rows = xlsx.utils.sheet_to_json(sheet);
 
     if (!rows || rows.length === 0) {
       throw createError(400, "Excel file is empty");
     }
 
-    // Try to find the header row or use defaults
-    let headerRowIdx = -1;
-    let streamColIdx = 1; // Col B default
-    let courseColIdx = 3; // Col D default
-    let durationColIdx = 4; // Col E default
-    let eligibilityColIdx = 5; // Col F default
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row) continue;
-      const rowStr = Array.from(row).map(
-        (cell) => cell?.toString().toLowerCase() || "",
-      );
-      const hasStream = rowStr.some((cell) => cell.includes("stream"));
-      const hasCourse = rowStr.some((cell) => cell.includes("course"));
-      if (hasStream && hasCourse) {
-        headerRowIdx = i;
-        const streamIdx = rowStr.findIndex((cell) => cell.includes("stream"));
-        const courseIdx = rowStr.findIndex(
-          (cell) => cell.includes("course") || cell.includes("branch"),
-        );
-        const durationIdx = rowStr.findIndex((cell) =>
-          cell.includes("duration"),
-        );
-        const eligibilityIdx = rowStr.findIndex((cell) =>
-          cell.includes("eligibility"),
-        );
-
-        if (streamIdx !== -1) streamColIdx = streamIdx;
-        if (courseIdx !== -1) courseColIdx = courseIdx;
-        if (durationIdx !== -1) durationColIdx = durationIdx;
-        if (eligibilityIdx !== -1) eligibilityColIdx = eligibilityIdx;
-        break;
-      }
-    }
-
-    const startRowIdx = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
-    let currentStream = "";
-    let currentDuration = "";
-    let currentEligibility = "";
-    let importCount = 0;
-
     const parseEligibility = (raw) => {
       if (!raw) return [];
       return raw
+        .toString()
         .split(/\r?\n/)
         .map((line) => line.replace(/^\d+[\.\)]\s*/, "").trim())
         .filter((line) => line.length > 0);
     };
 
-    for (let i = startRowIdx; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row) continue;
+    const normalizeProgramType = (type) => {
+      if (!type) return "Bachelors Degree";
+      const t = type.toString().toLowerCase().trim();
+      if (t.includes("master")) return "Masters Degree";
+      if (t.includes("bachelor")) return "Bachelors Degree";
+      if (t.includes("pg deploma") || t.includes("pg diploma") || t.includes("post graduate diploma")) return "PG Diploma";
+      if (t.includes("skill program")) return "Skill Programs";
+      if (t.includes("skill test")) return "Skill Test";
+      return "Bachelors Degree";
+    };
 
-      const stream = row[streamColIdx]?.toString().trim();
-      const course = row[courseColIdx]?.toString().trim();
-      const duration = row[durationColIdx]?.toString().trim();
-      const eligibility = row[eligibilityColIdx]?.toString().trim();
+    const normalizeMode = (mode) => {
+      if (!mode) return "External";
+      const m = mode.toString().toLowerCase().trim();
+      if (m.includes("campus") || m.includes("oncampus") || m.includes("on-campus")) return "On-Campus";
+      if (m.includes("skill")) return "Skill Based";
+      if (m.includes("external")) return "External";
+      return "External";
+    };
 
-      if (stream) currentStream = stream;
-      if (duration) currentDuration = duration;
-      if (eligibility) currentEligibility = eligibility;
-
-      // Skip row if there is no branch course name, or if it matches a header name or index serials
-      if (
-        !course ||
-        course.toLowerCase() === "course" ||
-        course.toLowerCase() === "stream" ||
-        course.toLowerCase() === "branch" ||
-        course.match(/^\d+$/)
-      ) {
-        continue;
+    const normalizedRows = rows.map((row) => {
+      const newRow = {};
+      for (const key of Object.keys(row)) {
+        newRow[key.trim().toLowerCase()] = row[key];
       }
+      return newRow;
+    });
 
-      if (!currentStream) continue;
+    let importCount = 0;
 
-      const checklist = parseEligibility(currentEligibility);
+    if (importType === "specific") {
+      for (const row of normalizedRows) {
+        const branchVal = row["branch"]?.toString().trim();
+        const eligibilityVal = row["eligibility"]?.toString().trim();
+        const durationVal = row["duration"]?.toString().trim() || "N/A";
 
-      // Find or create Program
-      let program = await Program.findOne({
-        university: universityId,
-        name: currentStream,
-      });
+        if (!branchVal) continue;
 
-      if (!program) {
-        program = new Program({
-          name: currentStream,
+        const checklist = parseEligibility(eligibilityVal);
+
+        // Update target Program's checklist if present
+        if (checklist.length > 0) {
+          const existingSet = new Set(targetProgram.eligibilityChecklist || []);
+          checklist.forEach((item) => existingSet.add(item));
+          targetProgram.eligibilityChecklist = Array.from(existingSet);
+          await targetProgram.save();
+        }
+
+        // Find or create Branch under targetProgram
+        let branch = await Branch.findOne({
+          program: targetProgram._id,
+          name: branchVal,
+        });
+
+        if (!branch) {
+          branch = new Branch({
+            name: branchVal,
+            program: targetProgram._id,
+            duration: durationVal,
+            isActive: true,
+          });
+          await branch.save();
+        } else {
+          branch.duration = durationVal || branch.duration;
+          await branch.save();
+        }
+
+        importCount++;
+      }
+    } else {
+      // Entire Courses Lists mode
+      let currentCourse = "";
+      let currentMode = "";
+      let currentProgramType = "";
+      let currentEligibility = "";
+      let currentDuration = "";
+
+      for (const row of normalizedRows) {
+        const course = row["course"]?.toString().trim();
+        const branch = row["branch"]?.toString().trim();
+        const eligibility = row["eligibility"]?.toString().trim();
+        const mode = row["mode"]?.toString().trim();
+        const programType = (row["program type"] || row["programtype"])?.toString().trim();
+        const duration = row["duration"]?.toString().trim();
+
+        if (course) currentCourse = course;
+        if (eligibility) currentEligibility = eligibility;
+        if (mode) currentMode = mode;
+        if (programType) currentProgramType = programType;
+        if (duration) currentDuration = duration;
+
+        if (!branch) continue;
+        if (!currentCourse) continue;
+
+        const finalMode = normalizeMode(currentMode);
+        const finalProgramType = normalizeProgramType(currentProgramType);
+        const finalDuration = currentDuration || "N/A";
+        const checklist = parseEligibility(currentEligibility);
+
+        // Find or create Program under the university
+        let program = await Program.findOne({
           university: universityId,
-          programType: programType,
-          mode: mode,
-          eligibilityChecklist: checklist,
-          isActive: true,
+          name: currentCourse,
         });
-        await program.save();
-      } else {
-        program.eligibilityChecklist = checklist;
-        program.programType = programType;
-        program.mode = mode;
-        await program.save();
-      }
 
-      // Find or create Branch
-      let branch = await Branch.findOne({
-        program: program._id,
-        name: course,
-      });
+        if (!program) {
+          program = new Program({
+            name: currentCourse,
+            university: universityId,
+            programType: finalProgramType,
+            mode: finalMode,
+            eligibilityChecklist: checklist,
+            isActive: true,
+          });
+          await program.save();
+        } else {
+          program.programType = finalProgramType;
+          program.mode = finalMode;
+          // Merge checklist
+          const existingSet = new Set(program.eligibilityChecklist || []);
+          checklist.forEach((item) => existingSet.add(item));
+          program.eligibilityChecklist = Array.from(existingSet);
+          await program.save();
+        }
 
-      if (!branch) {
-        branch = new Branch({
-          name: course,
+        // Find or create Branch
+        let branchDoc = await Branch.findOne({
           program: program._id,
-          duration: currentDuration || "N/A",
-          isActive: true,
+          name: branch,
         });
-        await branch.save();
-      } else {
-        branch.duration = currentDuration || branch.duration;
-        await branch.save();
-      }
 
-      importCount++;
+        if (!branchDoc) {
+          branchDoc = new Branch({
+            name: branch,
+            program: program._id,
+            duration: finalDuration,
+            isActive: true,
+          });
+          await branchDoc.save();
+        } else {
+          branchDoc.duration = finalDuration || branchDoc.duration;
+          await branchDoc.save();
+        }
+
+        importCount++;
+      }
     }
 
     await logActivity(
       "IMPORT_UNIVERSITY_DATA",
-      `Imported ${importCount} branches/courses for university: ${university.name}`,
+      `Imported ${importCount} branches/courses for university: ${university.name} (type: ${importType || "entire"})`,
       req.user.userId,
       "University",
       university._id,
     );
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: `Successfully imported ${importCount} courses/branches.`,
-      });
+    res.status(200).json({
+      success: true,
+      message: `Successfully imported ${importCount} courses/branches.`,
+    });
   } catch (error) {
     next(error);
   }
