@@ -322,7 +322,9 @@ const SpecializationDetails = () => {
                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-100 px-3 py-1 rounded-full">
                           <GraduationCap size={14} className="text-slate-400" />
                           <span>
-                            Eligibility: {selectedSubProgram.eligibility}
+                            Eligibility: {programInfo?.eligibilityChecklist && programInfo.eligibilityChecklist.length > 0 
+                              ? programInfo.eligibilityChecklist.join(", ") 
+                              : selectedSubProgram.eligibility}
                           </span>
                         </span>
                       </div>
@@ -399,7 +401,9 @@ const SpecializationDetails = () => {
                                   className="text-slate-400 shrink-0 mt-0.5"
                                 />
                                 <span className="leading-relaxed">
-                                  Eligibility: {selectedSubProgram.eligibility}
+                                  Eligibility: {((branch.program?.eligibilityChecklist && branch.program.eligibilityChecklist.length > 0) || (programInfo?.eligibilityChecklist && programInfo.eligibilityChecklist.length > 0)) 
+                                    ? (branch.program?.eligibilityChecklist || programInfo?.eligibilityChecklist).join(", ") 
+                                    : selectedSubProgram.eligibility}
                                 </span>
                               </div>
                             </div>
