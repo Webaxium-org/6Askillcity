@@ -100,7 +100,7 @@ const Navbar = () => {
           </motion.div>
 
           <div className="hidden lg:flex items-center space-x-2">
-            {["About", "Mission & Vision", "Universities", "Partnership", "Contact"].map((item, idx) => {
+            {["Home", "About", "Mission & Vision", "Universities", "Partnership", "Contact"].map((item, idx) => {
               const targetId = item.toLowerCase() === "mission & vision" ? "mission-vision" : item.toLowerCase();
               return (
                 <motion.a
@@ -199,7 +199,7 @@ const Navbar = () => {
 
                 {/* Vertical Links */}
                 <nav className="flex flex-col space-y-1">
-                  {["About", "Mission & Vision", "Universities", "Partnership", "Contact"].map((item, idx) => {
+                  {["Home", "About", "Mission & Vision", "Universities", "Partnership", "Contact"].map((item, idx) => {
                     const targetId = item.toLowerCase() === "mission & vision" ? "mission-vision" : item.toLowerCase();
                     return (
                       <motion.a

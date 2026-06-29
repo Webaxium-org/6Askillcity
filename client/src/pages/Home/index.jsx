@@ -679,7 +679,7 @@ export default function App() {
           <Navbar />
 
           {/* HERO SECTION */}
-          <section className="relative pt-32 pb-24 lg:pt-48 lg:pb-36 overflow-hidden bg-background">
+          <section id="home" className="relative pt-32 pb-24 lg:pt-48 lg:pb-36 overflow-hidden bg-background">
             <div className="absolute inset-0 -z-10 h-full w-full bg-background [background:radial-gradient(125%_125%_at_50%_10%,var(--background)_40%,#17468c08_100%)]" />
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
