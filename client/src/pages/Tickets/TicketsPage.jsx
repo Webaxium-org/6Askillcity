@@ -39,14 +39,14 @@ export default function TicketsPage() {
   const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
   const [filterCategory, setFilterCategory] = useState("All");
   const [metrics, setMetrics] = useState({ total: 0, open: 0, inProgress: 0, postponed: 0, closed: 0 });
-  const [showFilters, setShowFilters] = useState(false);
-  const [filterPartner, setFilterPartner] = useState(searchParams.get("partner") || "All");
+  const location = useLocation();
+  const [showFilters, setShowFilters] = useState(!!location.state?.partnerId);
+  const [filterPartner, setFilterPartner] = useState(location.state?.partnerId || searchParams.get("partner") || "All");
   const [partners, setPartners] = useState([]);
   const limit = 10;
   const { user } = useSelector((s) => s.user);
   const dispatch = useDispatch();
   const { socket } = useSocket();
-  const location = useLocation();
 
   useEffect(() => {
     if (user?.type === "admin") {

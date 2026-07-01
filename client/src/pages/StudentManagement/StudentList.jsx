@@ -41,12 +41,14 @@ export default function StudentList() {
   const [statusTab, setStatusTab] = useState("On Progress"); // On Progress, Enrolled, Cancelled
 
   // Advanced Filters
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(!!location.state?.partnerId);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedUni, setSelectedUni] = useState("all");
   const [selectedProg, setSelectedProg] = useState("all");
-  const [selectedPartner, setSelectedPartner] = useState("all");
+  const [selectedPartner, setSelectedPartner] = useState(
+    location.state?.partnerId || "all",
+  );
   const [selectedBatch, setSelectedBatch] = useState("all");
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("all"); // all, Unpaid, Partially Paid, Paid
   const [partners, setPartners] = useState([]);

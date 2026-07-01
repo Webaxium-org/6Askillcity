@@ -48,6 +48,8 @@ import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
 import Branch from "../models/branch.js";
 import Program from "../models/program.js";
+import Student from "../models/student.js";
+import Ticket from "../models/ticket.js";
 import { sendToAdmins } from "../services/notification.service.js";
 
 // Helper to log activity
@@ -1140,27 +1142,46 @@ export const getAllAdmissionPoints = async (req, res, next) => {
 export const getAdmissionPointById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const admissionPoint = await AdmissionPoint.findById(id).populate({
-      path: "history.actionBy",
-      select: "fullName email",
-    });
+
+    const [
+      admissionPoint,
+      activityLogs,
+      authorisationLetter,
+      totalDrafts,
+      totalEnrolled,
+      totalTickets,
+    ] = await Promise.all([
+      AdmissionPoint.findById(id).populate({
+        path: "history.actionBy",
+        select: "fullName email",
+      }),
+      ActivityLog.find({
+        targetId: id,
+        targetType: "AdmissionPoint",
+      })
+        .populate("performedBy", "fullName email")
+        .sort({ createdAt: -1 }),
+      AuthorisationLetter.findOne({
+        partnerId: id,
+        isActive: true,
+      }),
+      Student.countDocuments({
+        registeredBy: id,
+        applicationStatus: { $in: ["Draft", "Identity", "Family", "Academic"] },
+      }),
+      Student.countDocuments({
+        registeredBy: id,
+        applicationStatus: "Eligible",
+      }),
+      Ticket.countDocuments({
+        creatorId: new mongoose.Types.ObjectId(id),
+        creatorModel: "AdmissionPoint",
+      }),
+    ]);
 
     if (!admissionPoint) {
       throw createError(404, "Admission point not found");
     }
-
-    // Get activity logs for this partner
-    const activityLogs = await ActivityLog.find({
-      targetId: id,
-      targetType: "AdmissionPoint",
-    })
-      .populate("performedBy", "fullName email")
-      .sort({ createdAt: -1 });
-
-    const authorisationLetter = await AuthorisationLetter.findOne({
-      partnerId: id,
-      isActive: true,
-    });
 
     res.status(200).json({
       success: true,
@@ -1168,6 +1189,11 @@ export const getAdmissionPointById = async (req, res, next) => {
         ...admissionPoint.toObject(),
         activityLogs,
         authorisationLetter,
+        stats: {
+          totalDrafts,
+          totalEnrolled,
+          totalTickets,
+        },
       },
     });
   } catch (error) {

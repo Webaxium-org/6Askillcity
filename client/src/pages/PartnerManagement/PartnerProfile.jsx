@@ -20,6 +20,7 @@ import {
   FileText,
   ExternalLink,
   Info,
+  MessageSquare,
   Lock,
   Key,
   Copy,
@@ -514,6 +515,7 @@ export default function PartnerProfile() {
   const tabs = [
     { id: "info", label: "Basic Information", icon: FileText },
     { id: "documents", label: "Documents", icon: FileText },
+    { id: "overview", label: "Overview", icon: Info },
     { id: "permissions", label: "Permissions", icon: isAuthorized ? ShieldCheck : Lock, disabled: !isAuthorized },
     { id: "history", label: "Activity History", icon: History },
   ];
@@ -1162,6 +1164,79 @@ export default function PartnerProfile() {
                   </div>
                 )}
               </>
+            )}
+
+            {activeTab === "overview" && (
+              <div className="space-y-6">
+                <div className="bg-card border border-border p-6 rounded-3xl shadow-sm">
+                  <h3 className="text-xl font-bold mb-1">Partner Overview</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Performance metrics, active students, and inquiries for {partner.centerName}.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Total Drafts Card */}
+                  <div className="bg-card border border-border rounded-3xl p-6 flex items-center gap-5 shadow-sm relative overflow-hidden group hover:border-blue-500/30 transition-all">
+                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                      <FileText className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
+                        Application Drafts
+                      </p>
+                      <h4 className="text-3xl font-black tracking-tight text-foreground">
+                        {partner.stats?.totalDrafts ?? 0}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Awaiting submission
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Total Enrolled Card */}
+                  <div
+                    onClick={() => navigate("/dashboard/student-management", { state: { partnerId: partner._id } })}
+                    className="bg-card border border-border rounded-3xl p-6 flex items-center gap-5 shadow-sm relative overflow-hidden group hover:border-purple-500/30 transition-all cursor-pointer"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                      <Users className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
+                        Students Enrolled
+                      </p>
+                      <h4 className="text-3xl font-black tracking-tight text-foreground">
+                        {partner.stats?.totalEnrolled ?? 0}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Active eligible students
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Total Tickets Card */}
+                  <div
+                    onClick={() => navigate("/dashboard/tickets", { state: { partnerId: partner._id } })}
+                    className="bg-card border border-border rounded-3xl p-6 flex items-center gap-5 shadow-sm relative overflow-hidden group hover:border-rose-500/30 transition-all cursor-pointer"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                      <MessageSquare className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
+                        Tickets Raised
+                      </p>
+                      <h4 className="text-3xl font-black tracking-tight text-foreground">
+                        {partner.stats?.totalTickets ?? 0}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Total support requests
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeTab === "permissions" && (
