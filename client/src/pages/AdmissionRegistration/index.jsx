@@ -24,7 +24,7 @@ import {
   COUNTRY_CODES,
 } from "@/components/ui/form-phone-input";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleFormError } from "../../utils/handleFormError";
 import { showAlert } from "../../redux/alertSlice";
@@ -367,50 +367,58 @@ export default function AdmissionRegistration() {
           Back to Dashboard
         </motion.button>
 
-        <div className="text-center mb-10">
-          <motion.h1
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-4 uppercase italic"
+        {showSuccessMessage ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-slate-800/50 shadow-2xl rounded-[40px] p-8 md:p-14 overflow-hidden text-center max-w-2xl mx-auto"
           >
-            Admission Point <span className="text-primary">Registration</span>
-          </motion.h1>
-          <p className="text-slate-500 text-sm font-medium max-w-lg mx-auto mb-8">
-            Partner with 6A Skillcity. Complete the form below to register your
-            center.
-          </p>
-
-          {showSuccessMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-2xl mx-auto p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] text-left mb-4"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
-                  <CheckCircle2 size={20} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-emerald-600 mb-2">
-                    Application Submitted Successfully
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-                    Your application is currently under admin review. Once
-                    processed, we will notify you via the licensee email. Thank
-                    you!
-                  </p>
-                </div>
+            <div className="flex flex-col items-center justify-center gap-6">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+                <CheckCircle2 size={32} />
               </div>
-            </motion.div>
-          )}
-        </div>
+              <div className="space-y-3">
+                <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">
+                  Application <span className="text-emerald-500">Submitted</span>
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed max-w-md mx-auto">
+                  Your application is currently under admin review. Once processed, we will notify you via the licensee email. Thank you!
+                </p>
+              </div>
 
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-slate-800/50 shadow-2xl rounded-[40px] p-8 md:p-14 overflow-hidden"
-        >
+              <div className="w-full h-[1px] bg-slate-200 dark:bg-slate-800/50 my-4" />
+
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <ArrowLeft size={16} />
+                Go back to 6askillcity.com
+              </Link>
+            </div>
+          </motion.div>
+        ) : (
+          <>
+            <div className="text-center mb-10">
+              <motion.h1
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-4 uppercase italic"
+              >
+                Admission Point <span className="text-primary">Registration</span>
+              </motion.h1>
+              <p className="text-slate-500 text-sm font-medium max-w-lg mx-auto mb-8">
+                Partner with 6A Skillcity. Complete the form below to register your
+                center.
+              </p>
+            </div>
+
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={containerVariants}
+              className="bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-slate-800/50 shadow-2xl rounded-[40px] p-8 md:p-14 overflow-hidden"
+            >
           <div className="flex items-start mb-20 max-w-xl mx-auto px-4 relative">
             {steps.map((step, index) => {
               const isActive = currentStep >= step.id;
@@ -785,6 +793,8 @@ export default function AdmissionRegistration() {
             </div>
           </form>
         </motion.div>
+      </>
+    )}
 
         <p className="text-center text-slate-400 dark:text-slate-700 text-[9px] font-black uppercase tracking-[0.3em] mt-16">
           © 2024 6A Skillcity Security Protocol • Tier-1 Encryption

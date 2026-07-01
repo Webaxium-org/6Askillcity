@@ -44,7 +44,7 @@ export default function PartnerList() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
   const [universityFilter, setUniversityFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("authorisation");
   const [universities, setUniversities] = useState([]);
 
   // Advanced Filters
@@ -296,13 +296,13 @@ export default function PartnerList() {
   const onboardingCount = partners.filter(p => p.status === "approved" && p.onboardingState !== "completed").length;
 
   const tabs = [
-    { id: "overview", label: "Network Overview", icon: Users },
     { id: "authorisation", label: "Authorisation Review", icon: ShieldCheck, count: authCount },
     { id: "onboarding", label: "Onboarding & Fees", icon: Clock, count: onboardingCount },
+    { id: "overview", label: "Network Overview", icon: Users },
   ];
 
   return (
-    <DashboardLayout title="Partner Management">
+    <DashboardLayout title="Partner Network">
       <div className="space-y-6">
         {/* Header / Search Area */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">

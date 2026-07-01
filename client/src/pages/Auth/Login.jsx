@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
@@ -667,6 +667,23 @@ export default function Login() {
               )}
             </AnimatePresence>
           </div>
+
+          {!showForgotPassword && (
+            <div className="mt-6 pt-6 border-t border-border/30 text-center">
+              <Link
+                to="/"
+                className={cn(
+                  "inline-flex items-center gap-1 text-sm font-medium transition-all duration-300 hover:-translate-y-0.5",
+                  activeTab === "partner"
+                    ? "text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                    : "text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300"
+                )}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Go back to 6askillcity.com
+              </Link>
+            </div>
+          )}
         </div>
       </motion.div>
 

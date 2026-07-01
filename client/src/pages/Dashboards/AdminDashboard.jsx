@@ -240,7 +240,7 @@ export default function AdminDashboard() {
         {/* Real Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="New Applications"
+            title="New Admission Requests"
             value={loadingApps ? "..." : pendingApplications.length}
             icon={FileText}
             subtext="Eligibility review queue"
