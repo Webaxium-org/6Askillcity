@@ -273,201 +273,6 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Rich Analytics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Revenue Area Chart */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-2 bg-card border border-border rounded-[2.5rem] p-4 sm:p-8 shadow-sm flex flex-col min-h-[400px]"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-              <div>
-                <h3 className="text-xl font-black">
-                  {isManager ? "Applications Activity" : "Revenue Performance"}
-                </h3>
-                <p className="text-sm text-muted-foreground font-medium">
-                  {isManager
-                    ? "Monthly submission trends"
-                    : "Monthly collection trends"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-muted transition-colors"
-                >
-                  {[0, 1, 2, 3].map((i) => {
-                    const y = new Date().getFullYear() - i;
-                    return (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    );
-                  })}
-                </select>
-                <select
-                  value={selectedHalf}
-                  onChange={(e) => setSelectedHalf(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-muted transition-colors"
-                >
-                  <option value="H1">Jan to June</option>
-                  <option value="H2">July to Dec</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex-1 w-full min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={isManager ? applicationData : revenueData}>
-                  <defs>
-                    <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor={isManager ? "#3b82f6" : "var(--primary)"}
-                        stopOpacity={0.1}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor={isManager ? "#3b82f6" : "var(--primary)"}
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="var(--border)"
-                    opacity={0.5}
-                  />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{
-                      fill: "var(--muted-foreground)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                    dy={10}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{
-                      fill: "var(--muted-foreground)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                    tickFormatter={(val) =>
-                      isManager ? val : `₹${val / 1000}k`
-                    }
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      borderRadius: "1rem",
-                      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                    }}
-                    labelStyle={{ fontWeight: 800, marginBottom: "0.25rem" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey={isManager ? "apps" : "revenue"}
-                    stroke={isManager ? "#3b82f6" : "var(--primary)"}
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#colorMain)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-
-          {/* Enrollment Status Chart */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-card border border-border rounded-[2.5rem] p-4 sm:p-8 shadow-sm flex flex-col min-h-[400px]"
-          >
-            <div className="mb-8">
-              <h3 className="text-xl font-black">Enrollment Activity</h3>
-              <p className="text-sm text-muted-foreground font-medium">
-                New eligible students
-              </p>
-            </div>
-            <div className="flex-1 w-full min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={enrollmentData}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="var(--border)"
-                    opacity={0.5}
-                  />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{
-                      fill: "var(--muted-foreground)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                    dy={10}
-                  />
-                  <YAxis hide />
-                  <Tooltip
-                    cursor={{ fill: "var(--primary)", opacity: 0.05 }}
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      borderRadius: "1rem",
-                    }}
-                  />
-                  <Bar dataKey="students" radius={[6, 6, 0, 0]} barSize={30}>
-                    {enrollmentData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill="var(--primary)"
-                        fillOpacity={0.4 + index * 0.12}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-6 pt-6 border-t border-border">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                <span>Enrollment Goal ({ENROLLMENT_GOAL})</span>
-                <span>
-                  {stats
-                    ? summary.totalStudents === 0
-                      ? "0%"
-                      : (summary.totalStudents / ENROLLMENT_GOAL) * 100 < 1
-                        ? (
-                            (summary.totalStudents / ENROLLMENT_GOAL) *
-                            100
-                          ).toFixed(1) + "%"
-                        : Math.round(
-                            (summary.totalStudents / ENROLLMENT_GOAL) * 100,
-                          ) + "%"
-                    : "0%"}
-                </span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full"
-                  style={{
-                    width: `${stats ? Math.min((summary.totalStudents / ENROLLMENT_GOAL) * 100, 100) : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
         {/* Complex Data Section */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Pending Admission Points Table */}
@@ -686,6 +491,201 @@ export default function AdminDashboard() {
                 {pendingApplications.length !== 1 ? "s" : ""} pending
               </div>
             )}
+          </motion.div>
+        </div>
+
+        {/* Rich Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Revenue Area Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-2 bg-card border border-border rounded-[2.5rem] p-4 sm:p-8 shadow-sm flex flex-col min-h-[400px]"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+              <div>
+                <h3 className="text-xl font-black">
+                  {isManager ? "Applications Activity" : "Revenue Performance"}
+                </h3>
+                <p className="text-sm text-muted-foreground font-medium">
+                  {isManager
+                    ? "Monthly submission trends"
+                    : "Monthly collection trends"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-muted transition-colors"
+                >
+                  {[0, 1, 2, 3].map((i) => {
+                    const y = new Date().getFullYear() - i;
+                    return (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    );
+                  })}
+                </select>
+                <select
+                  value={selectedHalf}
+                  onChange={(e) => setSelectedHalf(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl bg-muted/50 border border-border text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-muted transition-colors"
+                >
+                  <option value="H1">Jan to June</option>
+                  <option value="H2">July to Dec</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex-1 w-full min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={isManager ? applicationData : revenueData}>
+                  <defs>
+                    <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor={isManager ? "#3b82f6" : "var(--primary)"}
+                        stopOpacity={0.1}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={isManager ? "#3b82f6" : "var(--primary)"}
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="var(--border)"
+                    opacity={0.5}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "var(--muted-foreground)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                    dy={10}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "var(--muted-foreground)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                    tickFormatter={(val) =>
+                      isManager ? val : `₹${val / 1000}k`
+                    }
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      borderColor: "var(--border)",
+                      borderRadius: "1rem",
+                      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                    }}
+                    labelStyle={{ fontWeight: 800, marginBottom: "0.25rem" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey={isManager ? "apps" : "revenue"}
+                    stroke={isManager ? "#3b82f6" : "var(--primary)"}
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorMain)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          {/* Enrollment Status Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-card border border-border rounded-[2.5rem] p-4 sm:p-8 shadow-sm flex flex-col min-h-[400px]"
+          >
+            <div className="mb-8">
+              <h3 className="text-xl font-black">Enrollment Activity</h3>
+              <p className="text-sm text-muted-foreground font-medium">
+                New eligible students
+              </p>
+            </div>
+            <div className="flex-1 w-full min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={enrollmentData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="var(--border)"
+                    opacity={0.5}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "var(--muted-foreground)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                    dy={10}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    cursor={{ fill: "var(--primary)", opacity: 0.05 }}
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      borderColor: "var(--border)",
+                      borderRadius: "1rem",
+                    }}
+                  />
+                  <Bar dataKey="students" radius={[6, 6, 0, 0]} barSize={30}>
+                    {enrollmentData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill="var(--primary)"
+                        fillOpacity={0.4 + index * 0.12}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-6 pt-6 border-t border-border">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                <span>Enrollment Goal ({ENROLLMENT_GOAL})</span>
+                <span>
+                  {stats
+                    ? summary.totalStudents === 0
+                      ? "0%"
+                      : (summary.totalStudents / ENROLLMENT_GOAL) * 100 < 1
+                        ? (
+                            (summary.totalStudents / ENROLLMENT_GOAL) *
+                            100
+                          ).toFixed(1) + "%"
+                        : Math.round(
+                            (summary.totalStudents / ENROLLMENT_GOAL) * 100,
+                          ) + "%"
+                    : "0%"}
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{
+                    width: `${stats ? Math.min((summary.totalStudents / ENROLLMENT_GOAL) * 100, 100) : 0}%`,
+                  }}
+                />
+              </div>
+            </div>
           </motion.div>
         </div>
       </div>

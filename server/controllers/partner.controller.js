@@ -26,7 +26,10 @@ export const getPartnerDashboardStats = async (req, res, next) => {
           registeredBy: partnerId,
           applicationStatus: "Eligible",
         }),
-        Student.countDocuments({ registeredBy: partnerId }),
+        Student.countDocuments({
+          registeredBy: partnerId,
+          applicationStatus: { $ne: "Eligible" },
+        }),
         Ticket.countDocuments({
           $or: [
             { creatorId: partnerObjectId, creatorModel: "AdmissionPoint" },
