@@ -132,10 +132,13 @@ export const getPermittedCourses = async (req, res, next) => {
       isActive: true,
     });
 
-    if (!authorisationLetter || new Date(authorisationLetter.validUntil) < new Date()) {
+    if (
+      !authorisationLetter ||
+      new Date(authorisationLetter.validUntil) < new Date()
+    ) {
       throw createError(
         403,
-        "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter."
+        "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter.",
       );
     }
 

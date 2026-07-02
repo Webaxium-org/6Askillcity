@@ -676,7 +676,7 @@ export default function Login() {
                   "inline-flex items-center gap-1 text-sm font-medium transition-all duration-300 hover:-translate-y-0.5",
                   activeTab === "partner"
                     ? "text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
-                    : "text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300"
+                    : "text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300",
                 )}
               >
                 <ChevronLeft className="w-4 h-4" />

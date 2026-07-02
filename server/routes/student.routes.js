@@ -31,14 +31,14 @@ router.post(
   isAuthorized({ types: ["partner"] }),
   prepareStudentId,
   uploadStudentDocs,
-  enrollStudent
+  enrollStudent,
 );
 
 // Partner: List own applications
 router.get(
   "/my-applications",
   isAuthorized({ types: ["partner"] }),
-  getMyStudents
+  getMyStudents,
 );
 
 // ── Admin Routes ───────────────────────────────
@@ -46,8 +46,8 @@ router.get(
 // NOTE: Must be declared BEFORE /:id to avoid route shadowing
 router.get(
   "/pending-eligibility",
-  isAuthorized({ roles: ["admin", "manager", "partner"] }),
-  getPendingEligibility
+  isAuthorized({ roles: ["admin", "manager"] }),
+  getPendingEligibility,
 );
 
 // ── Shared Route ───────────────────────────────
@@ -55,7 +55,7 @@ router.get(
 router.get(
   "/:id",
   isAuthorized({ types: ["partner", "admin"] }),
-  getStudentById
+  getStudentById,
 );
 
 // Partner: Edit a draft or rejected application
@@ -64,28 +64,28 @@ router.put(
   isAuthorized({ types: ["partner"] }),
   prepareStudentId,
   uploadStudentDocs,
-  updateStudentDetails
+  updateStudentDetails,
 );
 
 // Partner: Submit (or re-submit) for eligibility
 router.post(
   "/:id/submit",
   isAuthorized({ types: ["partner"] }),
-  submitForEligibility
+  submitForEligibility,
 );
 
 // Admin: Approve or Reject an application
 router.patch(
   "/:id/review",
   isAuthorized({ roles: ["admin", "manager"] }),
-  updateApplicationStatus
+  updateApplicationStatus,
 );
 
 // SHARED: Update student lifecycle status
 router.patch(
   "/:id/status",
   isAuthorized({ types: ["partner", "admin"] }),
-  updateStudentStatus
+  updateStudentStatus,
 );
 
 export default router;

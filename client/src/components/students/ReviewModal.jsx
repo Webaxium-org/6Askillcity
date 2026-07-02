@@ -81,13 +81,13 @@ export const ReviewModal = ({
     try {
       // Use the backend proxy to bypass CORS and force attachment headers
       const proxyUrl = `${baseUrl}/api/students/download-proxy?url=${encodeURIComponent(url)}`;
-      
-      // Creating a temporary link and clicking it is the most reliable way to trigger 
+
+      // Creating a temporary link and clicking it is the most reliable way to trigger
       // the download using the server-side Content-Disposition header.
       const link = document.createElement("a");
       link.href = proxyUrl;
       // The server will provide the filename, but we can hint it here as well
-      link.setAttribute("download", ""); 
+      link.setAttribute("download", "");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -114,22 +114,6 @@ export const ReviewModal = ({
           </div>
           <div>
             <p className="text-sm font-bold">{label}</p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-black">
-                Asset
-              </span>
-              <span
-                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                  status === "Verified"
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : status === "Rejected"
-                      ? "bg-rose-500/10 text-rose-600"
-                      : "bg-amber-500/10 text-amber-600"
-                }`}
-              >
-                {status.toUpperCase()}
-              </span>
-            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -338,9 +322,15 @@ export const ReviewModal = ({
                             <tbody className="divide-y divide-border text-sm">
                               {app.tenth && (
                                 <tr>
-                                  <td className="px-5 py-3 font-bold">10th Std</td>
-                                  <td className="px-5 py-3">{app.tenth.board}</td>
-                                  <td className="px-5 py-3">{app.tenth.completionYear}</td>
+                                  <td className="px-5 py-3 font-bold">
+                                    10th Std
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    {app.tenth.board}
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    {app.tenth.completionYear}
+                                  </td>
                                   <td className="px-5 py-3 font-black text-emerald-600">
                                     {app.tenth.percentage}%
                                   </td>
@@ -348,9 +338,15 @@ export const ReviewModal = ({
                               )}
                               {app.plusTwo && (
                                 <tr>
-                                  <td className="px-5 py-3 font-bold">Plus Two (+2)</td>
-                                  <td className="px-5 py-3">{app.plusTwo.board}</td>
-                                  <td className="px-5 py-3">{app.plusTwo.completionYear}</td>
+                                  <td className="px-5 py-3 font-bold">
+                                    Plus Two (+2)
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    {app.plusTwo.board}
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    {app.plusTwo.completionYear}
+                                  </td>
                                   <td className="px-5 py-3 font-black text-emerald-600">
                                     {app.plusTwo.percentage}%
                                   </td>
@@ -362,7 +358,8 @@ export const ReviewModal = ({
                       </div>
 
                       {/* Higher Education */}
-                      {(app.bachelors?.university || app.masters?.university) && (
+                      {(app.bachelors?.university ||
+                        app.masters?.university) && (
                         <div className="space-y-2">
                           <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                             Higher Education
@@ -381,32 +378,54 @@ export const ReviewModal = ({
                               <tbody className="divide-y divide-border text-sm">
                                 {app.bachelors && app.bachelors.university && (
                                   <tr>
-                                    <td className="px-5 py-3 font-bold">Bachelors</td>
-                                    <td className="px-5 py-3">{app.bachelors.university}</td>
-                                    <td className="px-5 py-3">
-                                      <div className="font-bold">{app.bachelors.course}</div>
-                                      <div className="text-[10px] text-muted-foreground uppercase">{app.bachelors.branch}</div>
+                                    <td className="px-5 py-3 font-bold">
+                                      Bachelors
                                     </td>
-                                    <td className="px-5 py-3">{app.bachelors.completionYear || "—"}</td>
+                                    <td className="px-5 py-3">
+                                      {app.bachelors.university}
+                                    </td>
+                                    <td className="px-5 py-3">
+                                      <div className="font-bold">
+                                        {app.bachelors.course}
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground uppercase">
+                                        {app.bachelors.branch}
+                                      </div>
+                                    </td>
+                                    <td className="px-5 py-3">
+                                      {app.bachelors.completionYear || "—"}
+                                    </td>
                                     <td className="px-5 py-3">
                                       <div className="text-[10px] font-black">
-                                        P: {app.bachelors.papersPassed || 0} / E: {app.bachelors.papersEqualised || 0}
+                                        P: {app.bachelors.papersPassed || 0} /
+                                        E: {app.bachelors.papersEqualised || 0}
                                       </div>
                                     </td>
                                   </tr>
                                 )}
                                 {app.masters && app.masters.university && (
                                   <tr>
-                                    <td className="px-5 py-3 font-bold">Masters</td>
-                                    <td className="px-5 py-3">{app.masters.university}</td>
-                                    <td className="px-5 py-3">
-                                      <div className="font-bold">{app.masters.course}</div>
-                                      <div className="text-[10px] text-muted-foreground uppercase">{app.masters.branch}</div>
+                                    <td className="px-5 py-3 font-bold">
+                                      Masters
                                     </td>
-                                    <td className="px-5 py-3">{app.masters.completionYear || "—"}</td>
+                                    <td className="px-5 py-3">
+                                      {app.masters.university}
+                                    </td>
+                                    <td className="px-5 py-3">
+                                      <div className="font-bold">
+                                        {app.masters.course}
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground uppercase">
+                                        {app.masters.branch}
+                                      </div>
+                                    </td>
+                                    <td className="px-5 py-3">
+                                      {app.masters.completionYear || "—"}
+                                    </td>
                                     <td className="px-5 py-3">
                                       <div className="text-[10px] font-black">
-                                        P: {app.masters.papersPassed || 0} / E: {app.masters.papersEqualised || 0}
+                                        P: {app.masters.papersPassed || 0} / E:{" "}
+                                        {app.masters.papersEqualised || 0}
                                       </div>
                                     </td>
                                   </tr>
@@ -596,7 +615,10 @@ export const ReviewModal = ({
               <div className="px-8 py-6 border-t border-border bg-muted/30 flex flex-col gap-4 shrink-0">
                 {/* Credit Transfer Toggle */}
                 <div className="space-y-1.5 text-left w-full md:max-w-xs">
-                  <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">Is this a credit transfer student? <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">
+                    Is this a credit transfer student?{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={isCreditTransfer}
                     onChange={(e) => {
@@ -619,7 +641,9 @@ export const ReviewModal = ({
                 {isCreditTransfer === "true" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
                     <div className="space-y-1.5 text-left">
-                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">Course Category <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">
+                        Course Category <span className="text-red-500">*</span>
+                      </label>
                       <select
                         value={selectedCategory}
                         onChange={(e) => {
@@ -637,7 +661,9 @@ export const ReviewModal = ({
                     </div>
 
                     <div className="space-y-1.5 text-left">
-                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">Semester entry <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">
+                        Semester entry <span className="text-red-500">*</span>
+                      </label>
                       <select
                         value={selectedSemester}
                         onChange={(e) => setSelectedSemester(e.target.value)}
@@ -663,15 +689,18 @@ export const ReviewModal = ({
                     <XCircle className="w-5 h-5" /> Reject
                   </button>
                   <button
-                    onClick={() => onApprove(app._id, {
-                      isCreditTransfer: isCreditTransfer === "true",
-                      courseCategory: selectedCategory,
-                      semester: selectedSemester
-                    })}
+                    onClick={() =>
+                      onApprove(app._id, {
+                        isCreditTransfer: isCreditTransfer === "true",
+                        courseCategory: selectedCategory,
+                        semester: selectedSemester,
+                      })
+                    }
                     disabled={
                       isApproving ||
                       isCreditTransfer === "" ||
-                      (isCreditTransfer === "true" && (!selectedCategory || !selectedSemester))
+                      (isCreditTransfer === "true" &&
+                        (!selectedCategory || !selectedSemester))
                     }
                     className="flex-[2] py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
                   >

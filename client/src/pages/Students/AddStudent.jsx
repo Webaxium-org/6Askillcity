@@ -82,6 +82,8 @@ const FileUploadBox = ({
   value,
   multiple = false,
   onChange,
+  onRemove,
+  onRemoveAt,
   error,
   required,
 }) => {
@@ -115,6 +117,17 @@ const FileUploadBox = ({
           onChange={(e) => onChange(e, field)}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
         />
+        {/* Single-file remove button — sits above the file input overlay */}
+        {!multiple && hasValue && onRemove && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onRemove(field); }}
+            className="absolute top-1.5 right-1.5 z-20 p-0.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
+            title="Remove file"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
         <div className="flex flex-col items-center justify-center text-center py-1">
           {hasValue ? (
             <div
@@ -129,7 +142,7 @@ const FileUploadBox = ({
                 <CheckCircle2 className="w-3 h-3" />
               )}
               {multiple
-                ? `${value.length} Files`
+                ? `${value.length} File${value.length !== 1 ? "s" : ""}`
                 : error
                   ? "ERROR"
                   : "Attached"}
@@ -153,17 +166,27 @@ const FileUploadBox = ({
         <div className="flex flex-col gap-1 px-1 pt-1">
           {multiple ? (
             value.map((v, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <FileText className="w-3 h-3 text-primary/60" />
-                <p className="text-[10px] font-bold text-muted-foreground truncate max-w-[200px]">
+              <div key={i} className="flex items-center gap-1.5 group/file">
+                <FileText className="w-3 h-3 text-primary/60 shrink-0" />
+                <p className="text-[10px] font-bold text-muted-foreground truncate flex-1 min-w-0">
                   {v instanceof File ? v.name : v.split("/").pop()}
                 </p>
+                {onRemoveAt && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onRemoveAt(field, i); }}
+                    className="shrink-0 p-0.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
+                    title="Remove"
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                  </button>
+                )}
               </div>
             ))
           ) : (
             <div className="flex items-center gap-1.5">
-              <FileText className="w-3 h-3 text-primary/60" />
-              <p className="text-[10px] font-bold text-muted-foreground truncate max-w-[200px]">
+              <FileText className="w-3 h-3 text-primary/60 shrink-0" />
+              <p className="text-[10px] font-bold text-muted-foreground truncate flex-1 min-w-0">
                 {value instanceof File
                   ? value.name
                   : typeof value === "string"
@@ -385,7 +408,7 @@ const ALL_REQUIRED_FIELDS = [
   { key: "tenthCompletionYear", label: "10th Completion Year" },
   { key: "tenthBoard", label: "10th Board" },
   { key: "tenthTotalMarks", label: "10th Total Marks" },
-  { key: "tenthObtainedMarks", label: "10th Obtained Marks" },
+  { key: "tenthObtainedMarks", label: "Total Obtainable Marks" },
   { key: "plusTwoCompletionYear", label: "Plus Two Completion Year" },
   { key: "plusTwoBoard", label: "Plus Two Board" },
   { key: "plusTwoPercentage", label: "Plus Two Percentage" },
@@ -591,8 +614,10 @@ export default function AddStudent() {
           dispatch(
             showAlert({
               type: "error",
-              message: error.response?.data?.message || "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter.",
-            })
+              message:
+                error.response?.data?.message ||
+                "Your partnership authorisation letter has expired. Please contact the administrator to renew your authorisation letter.",
+            }),
           );
           navigate("/dashboard");
         }
@@ -706,7 +731,7 @@ export default function AddStudent() {
       const isProgValid = permittedHierarchy.programs.some(
         (p) =>
           (p.university?._id?.toString() || p.university?.toString()) ===
-          formData.university && p._id.toString() === formData.program,
+            formData.university && p._id.toString() === formData.program,
       );
 
       if (!isProgValid && formData.program) {
@@ -717,7 +742,7 @@ export default function AddStudent() {
         const isBranchValid = permittedHierarchy.branches.some(
           (b) =>
             (b.program?._id?.toString() || b.program?.toString()) ===
-            formData.program && b._id.toString() === formData.branch,
+              formData.program && b._id.toString() === formData.branch,
         );
         if (!isBranchValid && formData.branch) {
           setFormData((prev) => ({ ...prev, branch: "" }));
@@ -774,6 +799,19 @@ export default function AddStudent() {
     setFiles((p) => ({
       ...p,
       [field]: [...p[field], ...newFiles].slice(0, 5),
+    }));
+  };
+
+  // Remove a single-file field
+  const handleRemoveFile = (field) => {
+    setFiles((p) => ({ ...p, [field]: null }));
+  };
+
+  // Remove one item from a multi-file field by index
+  const handleRemoveMultiFile = (field, index) => {
+    setFiles((p) => ({
+      ...p,
+      [field]: p[field].filter((_, i) => i !== index),
     }));
   };
 
@@ -943,10 +981,7 @@ export default function AddStudent() {
       console.error("Draft Save Error:", error);
       const errMsg = error.response?.data?.message || "Failed to save draft.";
       setSubmitError(errMsg);
-      if (!quiet)
-        dispatch(
-          showAlert({ type: "error", message: errMsg }),
-        );
+      if (!quiet) dispatch(showAlert({ type: "error", message: errMsg }));
     } finally {
       setLoading(false);
     }
@@ -1372,8 +1407,8 @@ export default function AddStudent() {
                         style={
                           scanning
                             ? {
-                              clipPath: `inset(${100 - scanProgress}% 0 0 0)`,
-                            }
+                                clipPath: `inset(${100 - scanProgress}% 0 0 0)`,
+                              }
                             : {}
                         }
                       />
@@ -1602,7 +1637,7 @@ export default function AddStudent() {
                       error={errors.tenthTotalMarks}
                     />
                     <InputField
-                      label="Obtained Marks"
+                      label="Total Obtainable Marks"
                       name="tenthObtainedMarks"
                       value={formData.tenthObtainedMarks}
                       onChange={handleChange}
@@ -1622,6 +1657,7 @@ export default function AddStudent() {
                       field="tenthCertificate"
                       value={files.tenthCertificate}
                       onChange={handleFileChange}
+                      onRemove={handleRemoveFile}
                       error={errors.tenthCertificate}
                     />
                   </div>
@@ -1655,7 +1691,7 @@ export default function AddStudent() {
                       error={errors.plusTwoTotalMarks}
                     />
                     <InputField
-                      label="Obtained Marks"
+                      label="Total Obtainable Marks"
                       name="plusTwoObtainedMarks"
                       value={formData.plusTwoObtainedMarks}
                       onChange={handleChange}
@@ -1675,6 +1711,7 @@ export default function AddStudent() {
                       field="plusTwoCertificate"
                       value={files.plusTwoCertificate}
                       onChange={handleFileChange}
+                      onRemove={handleRemoveFile}
                       error={errors.plusTwoCertificate}
                     />
                   </div>
@@ -1698,60 +1735,61 @@ export default function AddStudent() {
 
                 {(formData.highestQualification === "Bachelors" ||
                   formData.highestQualification === "Masters") && (
-                    <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-6">
-                      <h3 className="text-md font-black flex items-center gap-3 text-indigo-500">
-                        <Building2 className="w-5 h-5" /> Bachelors
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <InputField
-                          label="University"
-                          name="bachelorsUniversity"
-                          value={formData.bachelorsUniversity}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          label="Course"
-                          name="bachelorsCourse"
-                          value={formData.bachelorsCourse}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          label="Branch"
-                          name="bachelorsBranch"
-                          value={formData.bachelorsBranch}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          label="Completion Year"
-                          name="bachelorsCompletionYear"
-                          value={formData.bachelorsCompletionYear}
-                          onChange={handleChange}
-                          type="number"
-                        />
-                        <InputField
-                          label="Passed Papers"
-                          name="bachelorsPapersPassed"
-                          value={formData.bachelorsPapersPassed}
-                          onChange={handleChange}
-                          type="number"
-                        />
-                        <InputField
-                          label="Equalised"
-                          name="bachelorsPapersEqualised"
-                          value={formData.bachelorsPapersEqualised}
-                          onChange={handleChange}
-                          type="number"
-                        />
-                        <FileUploadBox
-                          label="Certs (Max 5)"
-                          field="bachelorsCertificates"
-                          value={files.bachelorsCertificates}
-                          multiple
-                          onChange={handleMultiFileChange}
-                        />
-                      </div>
+                  <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-6">
+                    <h3 className="text-md font-black flex items-center gap-3 text-indigo-500">
+                      <Building2 className="w-5 h-5" /> Bachelors
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <InputField
+                        label="University"
+                        name="bachelorsUniversity"
+                        value={formData.bachelorsUniversity}
+                        onChange={handleChange}
+                      />
+                      <InputField
+                        label="Course"
+                        name="bachelorsCourse"
+                        value={formData.bachelorsCourse}
+                        onChange={handleChange}
+                      />
+                      <InputField
+                        label="Branch"
+                        name="bachelorsBranch"
+                        value={formData.bachelorsBranch}
+                        onChange={handleChange}
+                      />
+                      <InputField
+                        label="Completion Year"
+                        name="bachelorsCompletionYear"
+                        value={formData.bachelorsCompletionYear}
+                        onChange={handleChange}
+                        type="number"
+                      />
+                      <InputField
+                        label="Passed Papers"
+                        name="bachelorsPapersPassed"
+                        value={formData.bachelorsPapersPassed}
+                        onChange={handleChange}
+                        type="number"
+                      />
+                      <InputField
+                        label="Equalised"
+                        name="bachelorsPapersEqualised"
+                        value={formData.bachelorsPapersEqualised}
+                        onChange={handleChange}
+                        type="number"
+                      />
+                      <FileUploadBox
+                        label="Certs (Max 5)"
+                        field="bachelorsCertificates"
+                        value={files.bachelorsCertificates}
+                        multiple
+                        onChange={handleMultiFileChange}
+                        onRemoveAt={handleRemoveMultiFile}
+                      />
                     </div>
-                  )}
+                  </div>
+                )}
 
                 {formData.highestQualification === "Masters" && (
                   <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-6">
@@ -1804,6 +1842,7 @@ export default function AddStudent() {
                         value={files.mastersCertificates}
                         multiple
                         onChange={handleMultiFileChange}
+                        onRemoveAt={handleRemoveMultiFile}
                       />
                     </div>
                   </div>
@@ -1955,13 +1994,18 @@ export default function AddStudent() {
                         />
                       </>
                     )}
-                    {(formData.employmentStatus === "Self-Employed" || formData.employmentStatus === "Student") && (
+                    {(formData.employmentStatus === "Self-Employed" ||
+                      formData.employmentStatus === "Student") && (
                       <InputField
                         label="Description"
                         name="employmentDescription"
                         value={formData.employmentDescription}
                         onChange={handleChange}
-                        placeholder={formData.employmentStatus === "Student" ? "Current course/institution" : "Business description"}
+                        placeholder={
+                          formData.employmentStatus === "Student"
+                            ? "Current course/institution"
+                            : "Business description"
+                        }
                       />
                     )}
                     <FileUploadBox

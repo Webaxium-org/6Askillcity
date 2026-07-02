@@ -13,12 +13,19 @@ export const axiosInstance = axios.create({
 // ─── Global response interceptor ─────────────────────────────────────────────
 // If the server returns 401 (not authenticated) or 403 (forbidden / insufficient
 // role or type), wipe the user session and redirect to /login.
+// NOTE: Login endpoints are excluded — a 401 from a login request means
+// "wrong credentials" and should be shown to the user in the form, not
+// trigger a redirect loop.
 axiosInstance.interceptors.response.use(
   (response) => response, // pass-through for successful responses
   async (error) => {
     const status = error?.response?.status;
+    const requestUrl = error?.config?.url || "";
 
-    if (status === 401 || status === 403) {
+    // Skip the logout/redirect for login endpoints so the form can show the error
+    const isLoginRequest = requestUrl.includes("/auth/login");
+
+    if (status === 401 && !isLoginRequest) {
       // 1. Clear Redux state
       store.dispatch(logOut());
 
@@ -30,5 +37,5 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );

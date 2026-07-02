@@ -56,7 +56,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Clear the authentication cookie if it's an auth error
-  if (statusCode === 401 || statusCode === 403) {
+  if (statusCode === 401) {
     res.clearCookie("access__", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
