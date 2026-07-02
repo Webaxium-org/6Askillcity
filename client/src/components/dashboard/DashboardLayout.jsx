@@ -43,6 +43,7 @@ import {
 } from "../../redux/notificationSlice";
 import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
+import { triggerOsNotification } from "../../utils/pushNotification";
 // Text-to-speech helper — speaks the notification title aloud in a female voice
 const speakNotification = (title) => {
   if (!window.speechSynthesis) return;
@@ -584,6 +585,9 @@ export const DashboardLayout = ({ children, title }) => {
           message: `${data.title}: ${data.message}`,
         }),
       );
+
+      // Trigger mobile/desktop OS notification bar alert via PWA service worker
+      triggerOsNotification(data);
     };
 
     socket.on("notification", handleNotification);

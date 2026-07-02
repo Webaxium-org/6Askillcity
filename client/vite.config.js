@@ -13,8 +13,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.js",
       registerType: "autoUpdate",
-      injectRegister: false,
+      injectRegister: "auto",
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
@@ -24,17 +27,11 @@ export default defineConfig({
 
       devOptions: {
         enabled: true,
+        type: "module",
       },
 
-      workbox: {
-        // Force new SW to activate immediately without waiting
-        skipWaiting: true,
-        clientsClaim: true,
-        // Unique cacheId per build ensures sw.js content ALWAYS changes between deployments
-        cacheId: `6askillcity-${Date.now()}`,
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/api/],
-        cleanupOutdatedCaches: true,
       },
 
       manifest: {

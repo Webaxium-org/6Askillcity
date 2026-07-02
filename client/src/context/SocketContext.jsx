@@ -3,6 +3,8 @@ import { io } from "socket.io-client";
 import { useSelector, useDispatch } from "react-redux";
 import { showAlert } from "../redux/alertSlice";
 
+import { requestNotificationPermission } from "../utils/pushNotification";
+
 const SocketContext = createContext(null);
 
 export const useSocket = () => useContext(SocketContext);
@@ -35,6 +37,7 @@ export const SocketProvider = ({ children }) => {
     newSocket.on("connect", () => {
       console.log("Socket connected:", newSocket.id);
       newSocket.emit("identify", { userId, userType });
+      requestNotificationPermission();
     });
 
     // Global listener for generic notifications was moved to DashboardLayout
