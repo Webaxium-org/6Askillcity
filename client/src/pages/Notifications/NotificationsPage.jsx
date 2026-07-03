@@ -521,7 +521,7 @@ export default function NotificationsPage() {
         </div>
 
         {/* ── Category Tabs ──────────────────────── */}
-        <div className="flex items-center bg-card">
+        <div className="flex flex-nowrap items-center bg-card overflow-x-auto scrollbar-hide shrink-0 border-b border-border/40 w-full">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -530,7 +530,7 @@ export default function NotificationsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-3 px-6 py-4 min-w-[180px] text-sm font-bold transition-all relative group",
+                  "flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-4 sm:px-6 py-3.5 sm:py-4 min-w-[100px] sm:min-w-[180px] flex-1 sm:flex-none text-sm font-bold transition-all relative group shrink-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none",
                   isActive
                     ? tab.activeColor
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
