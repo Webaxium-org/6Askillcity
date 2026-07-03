@@ -1019,7 +1019,7 @@ export default function AdminDashboard() {
                           </div>
                           Verification Documents
                         </h4>
-                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap">
                           {
                             Object.values(viewDetailsPoint.documents)
                               .flat()

@@ -697,7 +697,7 @@ export default function PartnerList() {
                     </div>
                     
                     <div className={cn(
-                      "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0",
+                      "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0 whitespace-nowrap",
                       partner.status === 'approved' ? "bg-emerald-50 text-emerald-600" :
                       partner.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
                     )}>
@@ -1309,7 +1309,7 @@ export default function PartnerList() {
                           </div>
                           Verification Documents
                         </h4>
-                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap">
                           {
                             Object.entries(viewDetailsPoint.documents)
                               .filter(([key]) => key !== 'officeVideo' && key !== 'officePhotos')

@@ -683,7 +683,7 @@ export default function UniversityManagement() {
             />
           </div>
 
-          <div className="flex items-center gap-3 self-end lg:self-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
             <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/50">
               <button
                 onClick={() => setViewMode("grid")}
@@ -712,7 +712,7 @@ export default function UniversityManagement() {
             <button
               onClick={() => setShowFilters(true)}
               className={cn(
-                "flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border",
+                "flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border whitespace-nowrap",
                 showFilters || filterStatus !== "all" || startDate || endDate
                   ? "bg-primary text-white border-primary"
                   : "bg-card border-border hover:bg-muted",
@@ -735,7 +735,7 @@ export default function UniversityManagement() {
                 setIsCourseDropdownOpen(false);
                 setIsImportModalOpen(true);
               }}
-              className="flex items-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-emerald-600"
+              className="flex items-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-emerald-600 whitespace-nowrap"
             >
               <Upload className="w-4 h-4" /> Import Excel
             </button>
@@ -747,7 +747,7 @@ export default function UniversityManagement() {
                   setEditingUniversity(null);
                   setIsUniversityModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" /> Add University
               </button>
@@ -759,7 +759,7 @@ export default function UniversityManagement() {
                   setSelectedChecklists([]);
                   setIsProgramModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" /> Add Program
               </button>
@@ -770,7 +770,7 @@ export default function UniversityManagement() {
                   setEditingBranch(null);
                   setIsBranchModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/10 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" /> Add Branch
               </button>
@@ -1008,39 +1008,39 @@ export default function UniversityManagement() {
                             </td>
                             <td className="px-6 py-4 text-sm font-medium">
                               {prog.programType === "Masters Degree" ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 whitespace-nowrap">
                                   Masters Degree
                                 </span>
                               ) : prog.programType === "Skill Programs" ||
                                 prog.programType === "skill" ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 border border-purple-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 border border-purple-500/20 whitespace-nowrap">
                                   Skill Programs
                                 </span>
                               ) : prog.programType === "Skill Test" ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20 whitespace-nowrap">
                                   Skill Test
                                 </span>
                               ) : prog.programType === "PG Deploma" || prog.programType === "PG Diploma" ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-500/10 text-pink-600 border border-pink-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-500/10 text-pink-600 border border-pink-500/20 whitespace-nowrap">
                                   {prog.programType}
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20 whitespace-nowrap">
                                   Bachelors Degree
                                 </span>
                               )}
                             </td>
                             <td className="px-6 py-4 text-sm font-medium">
                               {prog.mode === "On-Campus" ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 whitespace-nowrap">
                                   On-Campus
                                 </span>
                               ) : prog.mode === "Skill Based" ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 whitespace-nowrap">
                                   Skill Based
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-500/10 text-slate-600 border border-slate-500/20">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-500/10 text-slate-600 border border-slate-500/20 whitespace-nowrap">
                                   External
                                 </span>
                               )}
@@ -1928,11 +1928,11 @@ export default function UniversityManagement() {
                           className={`p-4 rounded-2xl border transition-all ${fee.isCurrent ? "bg-card border-emerald-500/30 shadow-md ring-1 ring-emerald-500/10" : "bg-card/50 border-border opacity-70"}`}
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-muted">
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-muted whitespace-nowrap">
                               v{feeHistory.length - idx}
                             </span>
                             {fee.isCurrent && (
-                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-widest whitespace-nowrap">
                                 ACTIVE
                               </span>
                             )}

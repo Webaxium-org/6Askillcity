@@ -741,7 +741,7 @@ export default function StudentPaymentDetail() {
                 </h1>
                 <div className="flex flex-wrap gap-2">
                   <span
-                    className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${student.paymentStatus === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}
+                    className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${student.paymentStatus === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"} whitespace-nowrap`}
                   >
                     {student.paymentStatus}
                   </span>
@@ -754,14 +754,14 @@ export default function StudentPaymentDetail() {
                         : student.status === "Cancelled"
                           ? "bg-red-500/10 text-red-600 border-red-500/20"
                           : "bg-blue-500/10 text-blue-600 border-blue-500/20"
-                    }`}
+                    } whitespace-nowrap`}
                   >
                     <Activity className="w-3 h-3" />
                     {student.status || "On Progress"}
                   </div>
 
                   {!isPartner && !isAdmin && !isManager && (
-                    <span className="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground border border-border">
+                    <span className="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground border border-border whitespace-nowrap">
                       Read-Only Mode
                     </span>
                   )}
@@ -984,7 +984,7 @@ export default function StudentPaymentDetail() {
                                   >
                                     <div className="flex justify-between items-start mb-6">
                                       <div
-                                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${item.status === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}
+                                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${item.status === "Paid" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"} whitespace-nowrap`}
                                       >
                                         {item.status}
                                       </div>
@@ -1078,7 +1078,7 @@ export default function StudentPaymentDetail() {
                                                     "rejected"
                                                   ? "bg-red-500/10 text-red-600 border-red-500/20"
                                                   : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                                            }`}
+                                            } whitespace-nowrap`}
                                           >
                                             {payment.approvalStatus ||
                                               "pending"}
@@ -1358,7 +1358,7 @@ export default function StudentPaymentDetail() {
                             <h4 className="font-black text-base">
                               Bachelor's Degree
                             </h4>
-                            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-widest">
+                            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                               Higher Ed
                             </span>
                           </div>
@@ -1400,7 +1400,7 @@ export default function StudentPaymentDetail() {
                             <h4 className="font-black text-base">
                               Master's Degree
                             </h4>
-                            <span className="px-3 py-1 bg-purple-500/10 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                            <span className="px-3 py-1 bg-purple-500/10 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                               Higher Ed
                             </span>
                           </div>
@@ -1858,12 +1858,12 @@ export default function StudentPaymentDetail() {
                               </svg>
                             </button>
                           )}
-                          <span className={cn("px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1", statusColor)}>
+                          <span className={cn("px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 whitespace-nowrap", statusColor)}>
                             {statusIcon}
                             {statusLabel}
                           </span>
                           {app && app.paymentStatus !== "Paid" && appPendingAmount > 0 && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20 shadow-sm">
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20 shadow-sm whitespace-nowrap">
                               <Clock size={10} />
                               Pending (₹{appPendingAmount})
                             </span>
@@ -1949,7 +1949,7 @@ export default function StudentPaymentDetail() {
                   {/* Pipeline Header */}
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card border border-border p-8 rounded-[2.5rem] shadow-sm">
                     <div className="space-y-1">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-wider mb-2">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-wider mb-2 whitespace-nowrap">
                         <Activity size={12} />
                         <span>Fulfillment Workspace</span>
                       </div>
@@ -2057,7 +2057,7 @@ export default function StudentPaymentDetail() {
                           <h4 className="text-lg font-black tracking-tight text-slate-800">Optional Documents</h4>
                         </div>
                         {!isMandatoryAppliedAll && (
-                          <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-rose-500 bg-rose-50 border border-rose-100 px-3 py-1 rounded-full">
+                          <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-rose-500 bg-rose-50 border border-rose-100 px-3 py-1 rounded-full whitespace-nowrap">
                             <Lock size={12} />
                             Locked
                           </span>
@@ -2350,7 +2350,7 @@ export default function StudentPaymentDetail() {
                                         : item.status === "Cancelled"
                                           ? "bg-red-500/10 text-red-600"
                                           : "bg-blue-500/10 text-blue-600"
-                                    }`}
+                                    } whitespace-nowrap`}
                                   >
                                     {item.status || "On Progress"}
                                   </span>

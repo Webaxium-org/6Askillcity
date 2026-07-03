@@ -88,7 +88,7 @@ export default function MyProfile() {
                   <h1 className="text-3xl font-black tracking-tight">
                     {isPartner ? profile.centerName : profile.fullName}
                   </h1>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 whitespace-nowrap">
                     {isPartner ? "Active Partner" : `${profile.role} Account`}
                   </span>
                 </div>

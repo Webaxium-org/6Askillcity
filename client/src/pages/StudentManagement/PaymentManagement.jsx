@@ -565,7 +565,7 @@ export default function PaymentManagement() {
                             <span className="md:hidden text-[10px] font-black uppercase text-muted-foreground tracking-widest">Type</span>
                             <span
                               className={cn(
-                                "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                                "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap",
                                 item.type === "Course Fee"
                                   ? "bg-blue-500/10 text-blue-500"
                                   : "bg-emerald-500/10 text-emerald-500",

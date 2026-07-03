@@ -125,20 +125,20 @@ const PartnerCourses = () => {
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                       {course.program?.programType === "Masters Degree" ? (
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase tracking-wider border border-emerald-500/15">
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase tracking-wider border border-emerald-500/15 whitespace-nowrap">
                           Masters Degree
                         </span>
                       ) : course.program?.programType === "Skill Programs" ||
                         course.program?.programType === "skill" ? (
-                        <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-[9px] font-black uppercase tracking-wider border border-purple-500/15">
+                        <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-[9px] font-black uppercase tracking-wider border border-purple-500/15 whitespace-nowrap">
                           Skill Programs
                         </span>
                       ) : course.program?.programType === "Skill Test" ? (
-                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[9px] font-black uppercase tracking-wider border border-amber-500/15">
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[9px] font-black uppercase tracking-wider border border-amber-500/15 whitespace-nowrap">
                           Skill Test
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[9px] font-black uppercase tracking-wider border border-blue-500/15">
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[9px] font-black uppercase tracking-wider border border-blue-500/15 whitespace-nowrap">
                           Bachelors Degree
                         </span>
                       )}
@@ -148,7 +148,7 @@ const PartnerCourses = () => {
                           : course.program?.mode === "Skill Based"
                             ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/15"
                             : "bg-slate-500/10 text-slate-600 border-slate-500/15"
-                      }`}>
+                      } whitespace-nowrap`}>
                         {course.program?.mode || "External"}
                       </span>
                     </div>
@@ -257,7 +257,7 @@ const PartnerCourses = () => {
               >
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 whitespace-nowrap">
                       Course Overview
                     </span>
                     <h3 className="text-2xl font-bold text-foreground mt-2">

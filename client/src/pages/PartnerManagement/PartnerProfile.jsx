@@ -615,7 +615,7 @@ export default function PartnerProfile() {
                       partner.isActive
                         ? "bg-emerald-500/10 text-emerald-600"
                         : "bg-red-500/10 text-red-600"
-                    }`}
+                    } whitespace-nowrap`}
                   >
                     {partner.isActive ? "Active" : "Inactive"}
                   </span>

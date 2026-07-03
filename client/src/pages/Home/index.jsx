@@ -2100,7 +2100,7 @@ export default function App() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6 }}
                 >
-                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-amber-400/30 bg-amber-400/10 text-amber-300 backdrop-blur-sm">
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-amber-400/30 bg-amber-400/10 text-amber-300 backdrop-blur-sm whitespace-nowrap">
                     <Sparkles size={12} className="animate-pulse" />
                     Exclusive Partner Invitation {new Date().getFullYear()}
                   </span>

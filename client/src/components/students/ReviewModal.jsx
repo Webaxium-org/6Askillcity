@@ -159,7 +159,7 @@ export const ReviewModal = ({
                     {app.name}
                   </h2>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                       Eligibility Review
                     </span>
                     <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">

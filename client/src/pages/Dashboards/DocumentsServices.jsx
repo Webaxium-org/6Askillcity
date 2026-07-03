@@ -339,7 +339,7 @@ export default function DocumentsServices() {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-card border border-border p-8 rounded-[2.5rem] shadow-sm">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2 whitespace-nowrap">
               <Layers size={14} />
               <span>Service Fulfillment Pipeline</span>
             </div>
@@ -805,7 +805,7 @@ export default function DocumentsServices() {
                           </td>
                           <td className="px-8 py-6">
                             <div className={cn(
-                              "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest",
+                              "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap",
                               app.status === "Waiting for Payment" ? "bg-rose-500/10 text-rose-600 border-rose-500/20" :
                                app.status === "Pending Applications" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
                               app.status === "Application On Progress" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :

@@ -86,6 +86,7 @@ const FileUploadBox = ({
   onRemoveAt,
   error,
   required,
+  accept = ".pdf,.doc,.docx,.jpg,.jpeg,.png",
 }) => {
   const hasValue = multiple
     ? Array.isArray(value) && value.length > 0
@@ -113,6 +114,7 @@ const FileUploadBox = ({
       >
         <input
           type="file"
+          accept={accept}
           multiple={multiple}
           onChange={(e) => onChange(e, field)}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -1541,7 +1543,7 @@ export default function AddStudent() {
                       onChange={handleFileChange}
                       error={errors.idProof}
                       required
-                    />
+                     onRemove={handleRemoveFile} />
                   </div>
                 </div>
               </motion.div>
@@ -1964,6 +1966,8 @@ export default function AddStudent() {
                         field="videoKycFile"
                         value={files.videoKycFile}
                         onChange={handleFileChange}
+                        onRemove={handleRemoveFile}
+                        accept="video/*"
                       />
                     )}
                     <InputField
@@ -2013,19 +2017,19 @@ export default function AddStudent() {
                       field="affidavit"
                       value={files.affidavit}
                       onChange={handleFileChange}
-                    />
+                     onRemove={handleRemoveFile} />
                     <FileUploadBox
                       label="Migration"
                       field="migrationCertificate"
                       value={files.migrationCertificate}
                       onChange={handleFileChange}
-                    />
+                     onRemove={handleRemoveFile} />
                     <FileUploadBox
                       label="Project"
                       field="projectSubmission"
                       value={files.projectSubmission}
                       onChange={handleFileChange}
-                    />
+                     onRemove={handleRemoveFile} />
                   </div>
                 </div>
               </motion.div>

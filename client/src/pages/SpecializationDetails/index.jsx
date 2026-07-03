@@ -261,7 +261,7 @@ const SpecializationDetails = () => {
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#B82424]/20 rounded-full blur-3xl pointer-events-none group-hover:scale-110 transition-transform duration-1000" />
 
                 <div className="relative z-10 space-y-4">
-                  <span className="inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 text-blue-300 border border-white/10">
+                  <span className="inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 text-blue-300 border border-white/10 whitespace-nowrap">
                     {isPostGraduateCertificate
                       ? "Skilled"
                       : programInfo?.programType || "Specialization"}
@@ -306,7 +306,7 @@ const SpecializationDetails = () => {
 
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest">
+                        <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                           Skill Level Info
                         </span>
                       </div>
@@ -368,7 +368,7 @@ const SpecializationDetails = () => {
                       >
                         <div className="space-y-4 flex-grow">
                           <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
+                            <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full whitespace-nowrap">
                               {isPostGraduateCertificate
                                 ? "Skilled"
                                 : getProgramLabel(
@@ -464,7 +464,7 @@ const SpecializationDetails = () => {
                             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
                               Admission Status
                             </p>
-                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 whitespace-nowrap">
                               Admissions Open
                             </span>
                           </div>

@@ -692,7 +692,7 @@ export default function StudentList() {
                           <>
                             <td className="px-8 py-6">
                               <span
-                                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getStatusStyle(student.paymentStatus)}`}
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getStatusStyle(student.paymentStatus)} whitespace-nowrap`}
                               >
                                 {student.paymentStatus}
                               </span>
@@ -718,7 +718,7 @@ export default function StudentList() {
                         )}
                         <td className="px-8 py-6">
                           <span
-                            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getLifecycleStatusStyle(student.status)}`}
+                            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getLifecycleStatusStyle(student.status)} whitespace-nowrap`}
                           >
                             {student.status || "On Progress"}
                           </span>
@@ -797,7 +797,7 @@ export default function StudentList() {
                           Payment
                         </p>
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusStyle(student.paymentStatus)}`}
+                          className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusStyle(student.paymentStatus)} whitespace-nowrap`}
                         >
                           {student.paymentStatus}
                         </span>
@@ -807,7 +807,7 @@ export default function StudentList() {
                           Lifecycle
                         </p>
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getLifecycleStatusStyle(student.status)}`}
+                          className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getLifecycleStatusStyle(student.status)} whitespace-nowrap`}
                         >
                           {student.status || "On Progress"}
                         </span>

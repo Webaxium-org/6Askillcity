@@ -258,11 +258,11 @@ export default function ReportDetail() {
                           doc.status === 'Verified' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 
                           doc.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' : 
                           'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                        }`}>
+                        } whitespace-nowrap`}>
                           {doc.status}
                         </span>
                       ) : (
-                        <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-slate-100 text-slate-400">
+                        <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-slate-100 text-slate-400 whitespace-nowrap">
                           Not Uploaded
                         </span>
                       )}

@@ -1217,7 +1217,7 @@ export default function PartnerDashboard() {
                       <td className="px-6 py-4">
                         <span
                           className={cn(
-                            "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                            "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap",
                             app.applicationStatus === "Eligible"
                               ? "bg-emerald-500/10 text-emerald-500"
                               : app.applicationStatus === "Rejected"
@@ -1314,7 +1314,7 @@ export default function PartnerDashboard() {
                       <td className="px-6 py-4">
                         <span
                           className={cn(
-                            "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                            "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap",
                             stu.paymentStatus === "Paid"
                               ? "bg-emerald-500/10 text-emerald-500"
                               : stu.paymentStatus === "Partially Paid"

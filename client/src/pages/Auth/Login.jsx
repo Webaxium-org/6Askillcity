@@ -547,7 +547,7 @@ const ForgotPasswordForm = ({ userType, onBack }) => {
 
 export default function Login() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("user"); // 'user' or 'partner'
+  const [activeTab, setActiveTab] = useState("partner"); // 'user' or 'partner'
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -609,17 +609,6 @@ export default function Login() {
           {/* Toggle Switch */}
           <div className="bg-muted/50 p-1 rounded-xl mb-8 flex relative border border-border">
             <button
-              onClick={() => setActiveTab("user")}
-              className={cn(
-                "flex-1 py-1.5 text-sm font-medium z-10 transition-colors flex items-center justify-center gap-2",
-                activeTab === "user"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground/70",
-              )}
-            >
-              <User className="w-4 h-4" /> Administration
-            </button>
-            <button
               onClick={() => setActiveTab("partner")}
               className={cn(
                 "flex-1 py-1.5 text-sm font-medium z-10 transition-colors flex items-center justify-center gap-2",
@@ -630,6 +619,17 @@ export default function Login() {
             >
               <Briefcase className="w-4 h-4" /> Partner
             </button>
+            <button
+              onClick={() => setActiveTab("user")}
+              className={cn(
+                "flex-1 py-1.5 text-sm font-medium z-10 transition-colors flex items-center justify-center gap-2",
+                activeTab === "user"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground/70",
+              )}
+            >
+              <User className="w-4 h-4" /> Administration
+            </button>
 
             {/* Active Tab Background Indicator */}
             <div className="absolute inset-1 pointer-events-none flex">
@@ -638,7 +638,7 @@ export default function Login() {
                 className="w-1/2 h-full bg-card rounded-lg shadow-sm border border-border"
                 initial={false}
                 animate={{
-                  x: activeTab === "user" ? 0 : "100%",
+                  x: activeTab === "partner" ? 0 : "100%",
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
