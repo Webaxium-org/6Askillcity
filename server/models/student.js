@@ -333,7 +333,7 @@ const StudentSchema = new mongoose.Schema(
     },
     courseCategory: {
       type: String,
-      enum: ["Degree", "Pg", "Btech", "Pg diploma"],
+      enum: ["Degree", "Pg", "Btech"],
     },
     semester: {
       type: Number,

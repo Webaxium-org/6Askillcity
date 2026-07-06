@@ -59,8 +59,6 @@ export const ReviewModal = ({
         return [1, 2, 3, 4];
       case "Btech":
         return [1, 2, 3, 4, 5, 6, 7, 8];
-      case "Pg diploma":
-        return [1, 2];
       default:
         return [];
     }
@@ -656,7 +654,6 @@ export const ReviewModal = ({
                         <option value="Degree">Degree</option>
                         <option value="Pg">Pg</option>
                         <option value="Btech">Btech</option>
-                        <option value="Pg diploma">Pg diploma</option>
                       </select>
                     </div>
 

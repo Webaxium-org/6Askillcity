@@ -810,20 +810,28 @@ export default function StudentPaymentDetail() {
         {/* Tab Navigation */}
         <div className="mt-20 mb-8 overflow-x-auto pb-2 scrollbar-hide">
           <div className="flex items-center gap-2 p-1.5 bg-card border border-border rounded-[2rem] shadow-sm w-fit">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all ${
-                  activeTab === tab.id
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
+            {tabs.map((tab) => {
+              const isTabDisabled = tab.id === "services" && student?.paymentStatus !== "Paid";
+              const Icon = isTabDisabled ? Lock : tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  disabled={isTabDisabled}
+                  onClick={() => !isTabDisabled && setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all ${
+                    isTabDisabled
+                      ? "opacity-50 cursor-not-allowed text-muted-foreground"
+                      : activeTab === tab.id
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                        : "text-muted-foreground hover:bg-muted"
+                  }`}
+                  title={isTabDisabled ? "Services are locked until the course fee is completed." : ""}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
