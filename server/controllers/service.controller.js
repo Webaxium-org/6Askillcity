@@ -4,6 +4,7 @@ import ServiceApplication from "../models/serviceApplication.js";
 import Student from "../models/student.js";
 import AdmissionPoint from "../models/admissionPoint.js";
 import Payment from "../models/payment.js";
+import PaymentIntent from "../models/paymentIntent.js";
 import createError from "http-errors";
 import { v4 as uuidv4 } from "uuid";
 import { Cashfree, CFEnvironment } from "cashfree-pg";
@@ -551,24 +552,23 @@ export const createServiceCashfreeOrder = async (req, res, next) => {
       );
     }
 
-    const payment = new Payment({
+    const orderId = `cfsvc_${uuidv4()}`;
+    const intent = new PaymentIntent({
+      provider: "cashfree",
+      orderId,
       student: application.student._id,
       partner: partnerId,
       amount: Number(amount),
-      method: "Online",
       remarks: remarks || `Payment for ${application.subCategory || "Service"}`,
-      type: "Documents & Services",
+      scope: "Service Fee",
       serviceApplication: application._id,
-      transactionId: `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
-      invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-      approvalStatus: "pending",
     });
-    await payment.save();
+    await intent.save();
 
     const request = {
       order_amount: amount,
       order_currency: "INR",
-      order_id: payment._id.toString(),
+      order_id: orderId,
       customer_details: {
         customer_id: application.student._id.toString(),
         customer_phone: application.student.phone || "9999999999",
@@ -593,6 +593,10 @@ export const createServiceCashfreeOrder = async (req, res, next) => {
           data: error.response?.data,
           message: error.message,
         });
+        PaymentIntent.updateOne(
+          { provider: "cashfree", orderId },
+          { $set: { status: "failed", gatewayData: error.response?.data || error.message } },
+        ).catch(() => {});
         next(
           createError(
             500,
@@ -619,32 +623,54 @@ export const verifyServiceCashfreePayment = async (req, res, next) => {
           (p) => p.payment_status === "SUCCESS",
         );
 
-        const paymentRecord =
-          await Payment.findById(orderId).populate("student");
-        if (!paymentRecord) throw createError(404, "Payment record not found.");
+        const intent = await PaymentIntent.findOne({
+          provider: "cashfree",
+          orderId,
+        }).populate("student");
+        if (!intent) throw createError(404, "Payment session not found.");
 
-        if (paymentRecord.approvalStatus === "approved") {
+        if (intent.status === "completed") {
           return res
             .status(200)
             .json({ success: true, message: "Already approved" });
         }
 
         if (successfulPayment) {
-          paymentRecord.approvalStatus = "approved";
-          paymentRecord.approvedBy = req.user.userId;
-          paymentRecord.approvalDate = new Date();
-          paymentRecord.gatewayData = successfulPayment;
-
-          // Update transaction info from gateway if available
-          if (successfulPayment.cf_payment_id) {
-            paymentRecord.transactionId =
-              successfulPayment.cf_payment_id.toString();
-          }
-          if (successfulPayment.payment_group) {
-            paymentRecord.method = `Online - ${successfulPayment.payment_group.toUpperCase()}`;
+          const gatewayTransactionId = successfulPayment.cf_payment_id?.toString();
+          if (gatewayTransactionId) {
+            const existingPayment = await Payment.findOne({ transactionId: gatewayTransactionId });
+            if (existingPayment) {
+              intent.status = "completed";
+              intent.payment = existingPayment._id;
+              intent.gatewayData = successfulPayment;
+              await intent.save();
+              return res.status(200).json({ success: true, message: "Already approved" });
+            }
           }
 
+          const paymentRecord = new Payment({
+            student: intent.student._id,
+            partner: intent.partner,
+            amount: Number(successfulPayment.payment_amount || intent.amount),
+            method: successfulPayment.payment_group
+              ? `Online - ${successfulPayment.payment_group.toUpperCase()}`
+              : "Online",
+            remarks: intent.remarks || "Cashfree Service Payment",
+            type: "Documents & Services",
+            serviceApplication: intent.serviceApplication,
+            transactionId: gatewayTransactionId || `CF-${orderId}`,
+            invoiceId: `INV-${Date.now().toString().slice(-6)}`,
+            approvalStatus: "approved",
+            approvedBy: req.user.userId,
+            approvalDate: new Date(),
+            gatewayData: successfulPayment,
+          });
           await paymentRecord.save();
+
+          intent.status = "completed";
+          intent.payment = paymentRecord._id;
+          intent.gatewayData = successfulPayment;
+          await intent.save();
 
           // Update Service Application
           const application = await ServiceApplication.findById(
@@ -679,7 +705,7 @@ export const verifyServiceCashfreePayment = async (req, res, next) => {
           const { sendToAdmins } = await import("../services/notification.service.js");
           await sendToAdmins({
             title: "Online Service Payment Successful",
-            message: `A payment of ₹${paymentRecord.amount.toLocaleString()} for ${application?.subCategory || "Service"} (Student: ${paymentRecord.student.name}) was completed via Cashfree.`,
+            message: `A payment of ₹${paymentRecord.amount.toLocaleString()} for ${application?.subCategory || "Service"} (Student: ${intent.student.name}) was completed via Cashfree.`,
             type: "payment_completed",
             relatedId: paymentRecord._id,
             link: "/dashboard/payment-management",
@@ -689,9 +715,9 @@ export const verifyServiceCashfreePayment = async (req, res, next) => {
             .status(200)
             .json({ success: true, message: "Payment successful" });
         } else {
-          paymentRecord.approvalStatus = "rejected";
-          paymentRecord.rejectionReason = "Payment failed at gateway";
-          await paymentRecord.save();
+          intent.status = "failed";
+          intent.gatewayData = response.data;
+          await intent.save();
           res
             .status(400)
             .json({ success: false, message: "Payment not successful" });
@@ -752,24 +778,23 @@ export const createBulkServiceCashfreeOrder = async (req, res, next) => {
       totalAmount += remaining;
     }
 
-    const payment = new Payment({
+    const orderId = `cfsvcb_${uuidv4()}`;
+    const intent = new PaymentIntent({
+      provider: "cashfree",
+      orderId,
       student: studentId,
       partner: partnerId,
       amount: totalAmount,
-      method: "Online",
       remarks: remarks || `Bulk payment for ${applications.length} services`,
-      type: "Documents & Services",
+      scope: "Bulk Service Fee",
       serviceApplications: applicationIds,
-      transactionId: `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
-      invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-      approvalStatus: "pending",
     });
-    await payment.save();
+    await intent.save();
 
     const request = {
       order_amount: totalAmount,
       order_currency: "INR",
-      order_id: payment._id.toString(),
+      order_id: orderId,
       customer_details: {
         customer_id: studentId.toString(),
         customer_phone: applications[0].student.phone || "9999999999",
@@ -793,6 +818,10 @@ export const createBulkServiceCashfreeOrder = async (req, res, next) => {
           status: error.response?.status,
           data: error.response?.data,
         });
+        PaymentIntent.updateOne(
+          { provider: "cashfree", orderId },
+          { $set: { status: "failed", gatewayData: error.response?.data || error.message } },
+        ).catch(() => {});
         next(createError(500, error.response?.data?.message || "Failed to create Cashfree order"));
       });
   } catch (error) {
@@ -814,27 +843,52 @@ export const verifyBulkServiceCashfreePayment = async (req, res, next) => {
           (p) => p.payment_status === "SUCCESS",
         );
 
-        const paymentRecord = await Payment.findById(orderId).populate("student");
-        if (!paymentRecord) throw createError(404, "Payment record not found.");
+        const intent = await PaymentIntent.findOne({
+          provider: "cashfree",
+          orderId,
+        }).populate("student");
+        if (!intent) throw createError(404, "Payment session not found.");
 
-        if (paymentRecord.approvalStatus === "approved") {
+        if (intent.status === "completed") {
           return res.status(200).json({ success: true, message: "Already approved" });
         }
 
         if (successfulPayment) {
-          paymentRecord.approvalStatus = "approved";
-          paymentRecord.approvedBy = req.user.userId;
-          paymentRecord.approvalDate = new Date();
-          paymentRecord.gatewayData = successfulPayment;
-
-          if (successfulPayment.cf_payment_id) {
-            paymentRecord.transactionId = successfulPayment.cf_payment_id.toString();
+          const gatewayTransactionId = successfulPayment.cf_payment_id?.toString();
+          if (gatewayTransactionId) {
+            const existingPayment = await Payment.findOne({ transactionId: gatewayTransactionId });
+            if (existingPayment) {
+              intent.status = "completed";
+              intent.payment = existingPayment._id;
+              intent.gatewayData = successfulPayment;
+              await intent.save();
+              return res.status(200).json({ success: true, message: "Already approved" });
+            }
           }
-          if (successfulPayment.payment_group) {
-            paymentRecord.method = `Online - ${successfulPayment.payment_group.toUpperCase()}`;
-          }
 
+          const paymentRecord = new Payment({
+            student: intent.student._id,
+            partner: intent.partner,
+            amount: Number(successfulPayment.payment_amount || intent.amount),
+            method: successfulPayment.payment_group
+              ? `Online - ${successfulPayment.payment_group.toUpperCase()}`
+              : "Online",
+            remarks: intent.remarks || "Bulk Cashfree Service Payment",
+            type: "Documents & Services",
+            serviceApplications: intent.serviceApplications,
+            transactionId: gatewayTransactionId || `CF-${orderId}`,
+            invoiceId: `INV-${Date.now().toString().slice(-6)}`,
+            approvalStatus: "approved",
+            approvedBy: req.user.userId,
+            approvalDate: new Date(),
+            gatewayData: successfulPayment,
+          });
           await paymentRecord.save();
+
+          intent.status = "completed";
+          intent.payment = paymentRecord._id;
+          intent.gatewayData = successfulPayment;
+          await intent.save();
 
           // Update Service Applications
           if (paymentRecord.serviceApplications && paymentRecord.serviceApplications.length > 0) {
@@ -866,7 +920,7 @@ export const verifyBulkServiceCashfreePayment = async (req, res, next) => {
           const { sendToAdmins } = await import("../services/notification.service.js");
           await sendToAdmins({
             title: "Bulk Online Service Payment Successful",
-            message: `A bulk payment of ₹${paymentRecord.amount.toLocaleString()} for ${paymentRecord.serviceApplications.length} services (Student: ${paymentRecord.student.name}) was completed via Cashfree.`,
+            message: `A bulk payment of ₹${paymentRecord.amount.toLocaleString()} for ${paymentRecord.serviceApplications.length} services (Student: ${intent.student.name}) was completed via Cashfree.`,
             type: "payment_completed",
             relatedId: paymentRecord._id,
             link: "/dashboard/payment-management",
@@ -874,9 +928,9 @@ export const verifyBulkServiceCashfreePayment = async (req, res, next) => {
 
           res.status(200).json({ success: true, message: "Payment successful" });
         } else {
-          paymentRecord.approvalStatus = "rejected";
-          paymentRecord.rejectionReason = "Payment failed at gateway";
-          await paymentRecord.save();
+          intent.status = "failed";
+          intent.gatewayData = response.data;
+          await intent.save();
           res.status(400).json({ success: false, message: "Payment not successful" });
         }
       })
