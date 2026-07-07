@@ -28,7 +28,7 @@ export const initSocket = (server) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       // The JWT currently sets id, not necessarily role in payload depending on auth.controller.js implementation. 
       // Let's attach userId to socket for easy room assignment.
       socket.userId = decoded.id;
