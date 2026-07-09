@@ -280,62 +280,7 @@ export default function PaymentManagement() {
     <DashboardLayout title="Payment Management">
       <div className="max-w-7xl mx-auto space-y-8 pb-10">
         {/* Top Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="sm:col-span-2 bg-gradient-to-br from-slate-900 via-primary to-blue-700 rounded-[2.5rem] p-10 text-primary-foreground shadow-2xl shadow-primary/30 relative overflow-hidden group min-h-[240px] flex flex-col justify-between">
-            <div className="relative z-10 flex justify-between items-start">
-              <div className="w-14 h-11 bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 rounded-lg relative overflow-hidden shadow-inner">
-                <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px opacity-30">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="border border-black/20" />
-                  ))}
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">
-                  Global Ledger
-                </p>
-                <div className="flex justify-end gap-1 mt-1">
-                  <div className="w-6 h-6 rounded-full bg-rose-500/80 mix-blend-screen" />
-                  <div className="w-6 h-6 rounded-full bg-amber-500/80 -ml-3 mix-blend-screen" />
-                </div>
-              </div>
-            </div>
-
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-50 mb-2">
-                Total Revenue Balance
-              </p>
-              <h2 className="text-5xl font-black tracking-tighter flex items-baseline gap-2">
-                <span className="text-2xl font-medium opacity-70 italic">
-                  ₹
-                </span>
-                {data.recentPayments
-                  .reduce((acc, p) => acc + p.amount, 0)
-                  .toLocaleString()}
-              </h2>
-            </div>
-
-            <div className="relative z-10 flex justify-between items-end">
-              <div>
-                <p className="text-[9px] font-bold tracking-[0.2em] opacity-40 uppercase mb-1">
-                  Card Holder
-                </p>
-                <p className="text-xs font-black uppercase tracking-widest">
-                  6A SkillCity
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[9px] font-bold tracking-[0.2em] opacity-40 uppercase mb-1">
-                  Network ID
-                </p>
-                <p className="text-xs font-black tracking-widest font-mono">
-                  **** **** **** 2026
-                </p>
-              </div>
-            </div>
-            <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
-            <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-white/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-white/10 transition-colors duration-700" />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
           <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-4">
