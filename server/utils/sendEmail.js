@@ -1,25 +1,50 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const normalizeRecipients = (email) => {
+  if (Array.isArray(email)) {
+    return email;
+  }
+
+  return String(email)
+    .split(",")
+    .map((recipient) => recipient.trim())
+    .filter(Boolean);
+};
+
+const normalizeAttachments = (attachments = []) =>
+  attachments.map((attachment) => ({
+    filename: attachment.filename,
+    content:
+      Buffer.isBuffer(attachment.content)
+        ? attachment.content.toString("base64")
+        : attachment.content,
+    contentType: attachment.contentType || attachment.content_type,
+  }));
 
 export const sendEmail = async (options) => {
-  // 1) Create a transporter
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASSWORD,
-    },
-  });
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
 
-  // 2) Define the email options
-  const mailOptions = {
-    from: `"6A Skillcity" <${process.env.GMAIL_USER}>`,
-    to: options.email,
+  const email = {
+    from: process.env.RESEND_FROM_EMAIL || "6A Skillcity <noreply@6askillcity.com>",
+    to: normalizeRecipients(options.email),
     subject: options.subject,
     text: options.message,
     html: options.html,
-    attachments: options.attachments,
   };
 
-  // 3) Actually send the email
-  await transporter.sendMail(mailOptions);
+  if (options.attachments?.length) {
+    email.attachments = normalizeAttachments(options.attachments);
+  }
+
+  const { data, error } = await resend.emails.send(email);
+
+  if (error) {
+    throw new Error(`Resend email failed: ${error.message || JSON.stringify(error)}`);
+  }
+
+  return data;
 };
