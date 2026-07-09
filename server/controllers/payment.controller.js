@@ -44,10 +44,7 @@ export const getManagementStudents = async (req, res, next) => {
 
     if (search && search.trim().length >= 3) {
       const searchRegex = { $regex: search.trim(), $options: "i" };
-      match.$or = [
-        { name: searchRegex },
-        { email: searchRegex }
-      ];
+      match.$or = [{ name: searchRegex }, { email: searchRegex }];
     }
 
     const students = await Student.aggregate([
@@ -127,6 +124,7 @@ export const recordPayment = async (req, res, next) => {
     const totalFee = student.programFee?.totalFee || 0;
     const allPayments = await Payment.find({
       student: studentId,
+      type: "Course Fee",
       approvalStatus: { $ne: "rejected" },
     });
     const totalRecorded = allPayments.reduce((acc, p) => acc + p.amount, 0);
@@ -261,7 +259,12 @@ export const createCashfreeOrder = async (req, res, next) => {
         });
         PaymentIntent.updateOne(
           { provider: "cashfree", orderId },
-          { $set: { status: "failed", gatewayData: error.response?.data || error.message } },
+          {
+            $set: {
+              status: "failed",
+              gatewayData: error.response?.data || error.message,
+            },
+          },
         ).catch(() => {});
         next(
           createError(
@@ -302,15 +305,20 @@ export const verifyCashfreePayment = async (req, res, next) => {
         }
 
         if (successfulPayment) {
-          const gatewayTransactionId = successfulPayment.cf_payment_id?.toString();
+          const gatewayTransactionId =
+            successfulPayment.cf_payment_id?.toString();
           if (gatewayTransactionId) {
-            const existingPayment = await Payment.findOne({ transactionId: gatewayTransactionId });
+            const existingPayment = await Payment.findOne({
+              transactionId: gatewayTransactionId,
+            });
             if (existingPayment) {
               intent.status = "completed";
               intent.payment = existingPayment._id;
               intent.gatewayData = successfulPayment;
               await intent.save();
-              return res.status(200).json({ success: true, message: "Already approved" });
+              return res
+                .status(200)
+                .json({ success: true, message: "Already approved" });
             }
           }
 
@@ -438,7 +446,8 @@ export const approvePayment = async (req, res, next) => {
       });
     } else if (
       payment.type === "Documents & Services" &&
-      (payment.serviceApplication || (payment.serviceApplications && payment.serviceApplications.length > 0))
+      (payment.serviceApplication ||
+        (payment.serviceApplications && payment.serviceApplications.length > 0))
     ) {
       if (payment.serviceApplication) {
         // Update Single Service Application
@@ -472,11 +481,17 @@ export const approvePayment = async (req, res, next) => {
         }
       }
 
-      if (payment.serviceApplications && payment.serviceApplications.length > 0) {
+      if (
+        payment.serviceApplications &&
+        payment.serviceApplications.length > 0
+      ) {
         // Update Multiple Service Applications (Bulk Payment)
-        const applications = await ServiceApplication.find({ _id: { $in: payment.serviceApplications } });
+        const applications = await ServiceApplication.find({
+          _id: { $in: payment.serviceApplications },
+        });
         for (const application of applications) {
-          const remaining = application.feeAmount - (application.paidAmount || 0);
+          const remaining =
+            application.feeAmount - (application.paidAmount || 0);
           application.paidAmount += remaining; // Assume bulk covers the full remaining
 
           application.paymentStatus = "Paid";
@@ -635,77 +650,81 @@ export const getGlobalPaymentStats = async (req, res, next) => {
     const filter = {};
     if (req.user.userType === "partner") filter.partner = req.user.userId;
 
-    const [recentPayments, upcomingSchedules, pendingPayments, rejectedPayments] =
-      await Promise.all([
-        Payment.find({ ...filter, approvalStatus: "approved" })
-          .populate({
-            path: "student",
-            select: "name email university admissionPoint program",
-            populate: [
-              { path: "university", select: "name" },
-              { path: "program", select: "name" }
-            ],
-          })
-          .populate("partner", "name")
-          .populate({
-            path: "serviceApplication",
-            populate: { path: "service", select: "title" }
-          })
-          .populate({
-            path: "serviceApplications",
-            populate: { path: "service", select: "title" }
-          })
-          .sort({ date: -1 })
-          .limit(100),
-        PaymentSchedule.find({ ...filter, status: "Pending" })
-          .populate({
-            path: "student",
-            select: "name email university admissionPoint",
-            populate: { path: "university", select: "name" },
-          })
-          .populate("partner", "name")
-          .sort({ dueDate: 1 })
-          .limit(100),
-        Payment.find({ ...filter, approvalStatus: "pending" })
-          .populate({
-            path: "student",
-            select: "name email university admissionPoint program",
-            populate: [
-              { path: "university", select: "name" },
-              { path: "program", select: "name" }
-            ],
-          })
-          .populate("partner", "name centerName centerId")
-          .populate({
-            path: "serviceApplication",
-            populate: { path: "service", select: "title" }
-          })
-          .populate({
-            path: "serviceApplications",
-            populate: { path: "service", select: "title" }
-          })
-          .sort({ createdAt: -1 }),
-        Payment.find({ ...filter, approvalStatus: "rejected" })
-          .populate({
-            path: "student",
-            select: "name email university admissionPoint program",
-            populate: [
-              { path: "university", select: "name" },
-              { path: "program", select: "name" }
-            ],
-          })
-          .populate("partner", "name centerName centerId")
-          .populate({
-            path: "serviceApplication",
-            populate: { path: "service", select: "title" }
-          })
-          .populate({
-            path: "serviceApplications",
-            populate: { path: "service", select: "title" }
-          })
-          .sort({ updatedAt: -1 })
-          .limit(100),
-      ]);
+    const [
+      recentPayments,
+      upcomingSchedules,
+      pendingPayments,
+      rejectedPayments,
+    ] = await Promise.all([
+      Payment.find({ ...filter, approvalStatus: "approved" })
+        .populate({
+          path: "student",
+          select: "name email university admissionPoint program",
+          populate: [
+            { path: "university", select: "name" },
+            { path: "program", select: "name" },
+          ],
+        })
+        .populate("partner", "name")
+        .populate({
+          path: "serviceApplication",
+          populate: { path: "service", select: "title" },
+        })
+        .populate({
+          path: "serviceApplications",
+          populate: { path: "service", select: "title" },
+        })
+        .sort({ date: -1 })
+        .limit(100),
+      PaymentSchedule.find({ ...filter, status: "Pending" })
+        .populate({
+          path: "student",
+          select: "name email university admissionPoint",
+          populate: { path: "university", select: "name" },
+        })
+        .populate("partner", "name")
+        .sort({ dueDate: 1 })
+        .limit(100),
+      Payment.find({ ...filter, approvalStatus: "pending" })
+        .populate({
+          path: "student",
+          select: "name email university admissionPoint program",
+          populate: [
+            { path: "university", select: "name" },
+            { path: "program", select: "name" },
+          ],
+        })
+        .populate("partner", "name centerName centerId")
+        .populate({
+          path: "serviceApplication",
+          populate: { path: "service", select: "title" },
+        })
+        .populate({
+          path: "serviceApplications",
+          populate: { path: "service", select: "title" },
+        })
+        .sort({ createdAt: -1 }),
+      Payment.find({ ...filter, approvalStatus: "rejected" })
+        .populate({
+          path: "student",
+          select: "name email university admissionPoint program",
+          populate: [
+            { path: "university", select: "name" },
+            { path: "program", select: "name" },
+          ],
+        })
+        .populate("partner", "name centerName centerId")
+        .populate({
+          path: "serviceApplication",
+          populate: { path: "service", select: "title" },
+        })
+        .populate({
+          path: "serviceApplications",
+          populate: { path: "service", select: "title" },
+        })
+        .sort({ updatedAt: -1 })
+        .limit(100),
+    ]);
 
     res.status(200).json({
       success: true,
