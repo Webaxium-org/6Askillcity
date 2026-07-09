@@ -243,6 +243,10 @@ export const enrollStudent = async (req, res, next) => {
       highestQualification: data.highestQualification,
       batch: data.batch,
       registeredBy: req.user?.userId,
+
+      isCreditTransfer: data.isCreditTransfer === "true" || data.isCreditTransfer === true,
+      courseCategory: (data.isCreditTransfer === "true" || data.isCreditTransfer === true) ? data.courseCategory : undefined,
+      semester: (data.isCreditTransfer === "true" || data.isCreditTransfer === true) && data.semester ? Number(data.semester) : undefined,
     });
 
     if (data.branch) {
@@ -432,6 +436,17 @@ export const updateStudentDetails = async (req, res, next) => {
       student.masters.papersPassed = req.body.mastersPapersPassed;
     if (req.body.mastersPapersEqualised)
       student.masters.papersEqualised = req.body.mastersPapersEqualised;
+
+    if (req.body.isCreditTransfer !== undefined) {
+      student.isCreditTransfer = req.body.isCreditTransfer === "true" || req.body.isCreditTransfer === true;
+      if (student.isCreditTransfer) {
+        student.courseCategory = req.body.courseCategory || undefined;
+        student.semester = req.body.semester ? Number(req.body.semester) : undefined;
+      } else {
+        student.courseCategory = undefined;
+        student.semester = undefined;
+      }
+    }
 
     if (req.body.branch) {
       const currentFee = await ProgramFee.findOne({
@@ -691,13 +706,15 @@ export const updateApplicationStatus = async (req, res, next) => {
       student.eligibilityApprovalDate = new Date();
       student.eligibilityApprovedBy = req.user?.userId;
 
-      student.isCreditTransfer = isCreditTransfer === true || isCreditTransfer === "true";
-      if (student.isCreditTransfer) {
-        if (courseCategory) student.courseCategory = courseCategory;
-        if (semester) student.semester = Number(semester);
-      } else {
-        student.courseCategory = undefined;
-        student.semester = undefined;
+      if (isCreditTransfer !== undefined) {
+        student.isCreditTransfer = isCreditTransfer === true || isCreditTransfer === "true";
+        if (student.isCreditTransfer) {
+          if (courseCategory) student.courseCategory = courseCategory;
+          if (semester) student.semester = Number(semester);
+        } else {
+          student.courseCategory = undefined;
+          student.semester = undefined;
+        }
       }
 
       // Verify all uploaded documents

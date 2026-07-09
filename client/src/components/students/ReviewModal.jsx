@@ -285,6 +285,16 @@ export const ReviewModal = ({
                           <Building2 className="w-3 h-3" />{" "}
                           {app.university?.name || "N/A"}
                         </p>
+                        {app.isCreditTransfer && (
+                          <div className="mt-3 pt-3 border-t border-border flex flex-col gap-1">
+                            <span className="px-2 py-0.5 w-max rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-black uppercase tracking-wider">
+                              Credit Transfer
+                            </span>
+                            <div className="text-[10px] font-black text-muted-foreground">
+                              Category: <span className="text-foreground">{app.courseCategory}</span> | Entry: <span className="text-foreground">Semester {app.semester}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="p-5 rounded-3xl bg-muted/30 border border-border">
                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1">
@@ -473,6 +483,81 @@ export const ReviewModal = ({
                     </div>
                   </section>
 
+                  {/* Compliance & Verification */}
+                  <section className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                      <ShieldAlert className="w-3 h-3" /> Compliance & Verification
+                    </h4>
+                    <div className={app.isCreditTransfer ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 gap-4"}>
+                      {/* Video KYC */}
+                      <div className="p-5 rounded-3xl bg-muted/30 border border-border flex justify-between items-center">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                            Video KYC Status
+                          </p>
+                          <p className="text-sm font-bold flex items-center gap-2 mt-1">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              app.videoKycStatus === "Completed"
+                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                : app.videoKycStatus === "Rejected"
+                                  ? "bg-red-500/10 text-red-500 border border-red-500/20"
+                                  : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                            }`}>
+                              {app.videoKycStatus || "Pending"}
+                            </span>
+                          </p>
+                        </div>
+                        {(() => {
+                          const path = typeof app.videoKycFile === "string" ? app.videoKycFile : app.videoKycFile?.path;
+                          if (!path) return null;
+                          const url = getFileUrl(path);
+                          return (
+                            <div className="flex gap-2">
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-2 rounded-lg bg-background border border-border hover:bg-primary hover:text-white transition-all text-muted-foreground"
+                                title="Play Video"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => handleDownload(url, "Video KYC")}
+                                className="p-2 rounded-lg bg-background border border-border hover:bg-primary hover:text-white transition-all text-muted-foreground"
+                                title="Download Video"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+ 
+                      {/* Employment */}
+                      {app.isCreditTransfer && (
+                        <div className="p-5 rounded-3xl bg-muted/30 border border-border">
+                          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                            Employment Status
+                          </p>
+                          <p className="text-sm font-black mt-1">
+                            {app.employmentStatus || "Unemployed"}
+                          </p>
+                          {app.employmentStatus === "Employed" && (
+                            <div className="text-[11px] font-bold text-muted-foreground mt-1">
+                              {app.designation} at {app.company}
+                            </div>
+                          )}
+                          {(app.employmentStatus === "Self-Employed" || app.employmentStatus === "Student") && app.employmentDescription && (
+                            <div className="text-[11px] font-bold text-muted-foreground mt-1">
+                              {app.employmentDescription}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
                   {/* Application Lifecycle History */}
                   {app.applicationHistory?.length > 0 && (
                     <section className="space-y-4">
@@ -551,6 +636,16 @@ export const ReviewModal = ({
                         label="Project Submission"
                         doc={app.projectSubmission}
                       />
+                      {(() => {
+                        const path = typeof app.videoKycFile === "string" ? app.videoKycFile : app.videoKycFile?.path;
+                        if (!path) return null;
+                        return (
+                          <DocumentLink
+                            label="Video KYC File"
+                            doc={app.videoKycFile}
+                          />
+                        );
+                      })()}
 
                       {/* Bachelors Multi-Certificates */}
                       {app.bachelors?.certificates?.map((cert, idx) => (
@@ -610,107 +705,27 @@ export const ReviewModal = ({
 
             {/* Footer Actions */}
             {!isPartner && (
-              <div className="px-8 py-6 border-t border-border bg-muted/30 flex flex-col gap-4 shrink-0">
-                {/* Credit Transfer Toggle */}
-                <div className="space-y-1.5 text-left w-full md:max-w-xs">
-                  <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">
-                    Is this a credit transfer student?{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={isCreditTransfer}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setIsCreditTransfer(val);
-                      if (val !== "true") {
-                        setSelectedCategory("");
-                        setSelectedSemester("");
-                      }
-                    }}
-                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-primary outline-none text-sm transition-all font-semibold"
-                  >
-                    <option value="">Select Option</option>
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                </div>
-
-                {/* Categorization Form Fields - Shown ONLY if Credit Transfer is YES */}
-                {isCreditTransfer === "true" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
-                    <div className="space-y-1.5 text-left">
-                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">
-                        Course Category <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={selectedCategory}
-                        onChange={(e) => {
-                          setSelectedCategory(e.target.value);
-                          setSelectedSemester("");
-                        }}
-                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-primary outline-none text-sm transition-all font-semibold"
-                      >
-                        <option value="">Select Category</option>
-                        <option value="Degree">Degree</option>
-                        <option value="Pg">Pg</option>
-                        <option value="Btech">Btech</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5 text-left">
-                      <label className="text-xs font-black uppercase tracking-wider text-muted-foreground pl-1">
-                        Semester entry <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={selectedSemester}
-                        onChange={(e) => setSelectedSemester(e.target.value)}
-                        disabled={!selectedCategory}
-                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-primary outline-none text-sm transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="">Select Semester</option>
-                        {getSemesterOptions(selectedCategory).map((sem) => (
-                          <option key={sem} value={sem}>
-                            Semester {sem}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => onReject(app)}
-                    className="flex-1 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
-                  >
-                    <XCircle className="w-5 h-5" /> Reject
-                  </button>
-                  <button
-                    onClick={() =>
-                      onApprove(app._id, {
-                        isCreditTransfer: isCreditTransfer === "true",
-                        courseCategory: selectedCategory,
-                        semester: selectedSemester,
-                      })
-                    }
-                    disabled={
-                      isApproving ||
-                      isCreditTransfer === "" ||
-                      (isCreditTransfer === "true" &&
-                        (!selectedCategory || !selectedSemester))
-                    }
-                    className="flex-[2] py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
-                  >
-                    {isApproving ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <CheckCircle className="w-5 h-5" />
-                        Approve
-                      </>
-                    )}
-                  </button>
-                </div>
+              <div className="px-8 py-6 border-t border-border bg-muted/30 flex gap-4 shrink-0">
+                <button
+                  onClick={() => onReject(app)}
+                  className="flex-1 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-5 h-5" /> Reject
+                </button>
+                <button
+                  onClick={() => onApprove(app._id)}
+                  disabled={isApproving}
+                  className="flex-[2] py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                >
+                  {isApproving ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Approve
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </motion.div>

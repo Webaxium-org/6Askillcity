@@ -76,6 +76,19 @@ const COUNTRIES = [
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
+const getSemesterOptions = (category) => {
+  switch (category) {
+    case "Degree":
+      return [1, 2, 3, 4, 5, 6];
+    case "Pg":
+      return [1, 2, 3, 4];
+    case "Btech":
+      return [1, 2, 3, 4, 5, 6, 7, 8];
+    default:
+      return [];
+  }
+};
+
 const FileUploadBox = ({
   label,
   field,
@@ -576,6 +589,9 @@ export default function AddStudent() {
             batch: s.batch || "",
             applicationStatus: s.applicationStatus || "Draft",
             enrollmentStatus: s.enrollmentStatus || "Identity",
+            isCreditTransfer: s.isCreditTransfer ? "true" : "false",
+            courseCategory: s.courseCategory || "",
+            semester: s.semester !== undefined && s.semester !== null ? s.semester.toString() : "",
           });
 
           // Determine current step from enrollmentStatus
@@ -684,6 +700,9 @@ export default function AddStudent() {
     batch: "",
     applicationStatus: "Draft",
     enrollmentStatus: "Identity",
+    isCreditTransfer: "false",
+    courseCategory: "",
+    semester: "",
   });
 
   const [files, setFiles] = useState({
@@ -1075,6 +1094,13 @@ export default function AddStudent() {
         { key: "batch", label: "Batch" },
       ];
 
+      if (formData.isCreditTransfer === "true") {
+        requiredFields.push(
+          { key: "courseCategory", label: "Course Category" },
+          { key: "semester", label: "Semester Entry" }
+        );
+      }
+
       const newErrors = {};
       let firstErrorField = "";
 
@@ -1175,6 +1201,13 @@ export default function AddStudent() {
         { key: "completionYear", label: "Completion Year" },
         { key: "batch", label: "Batch" },
       ];
+
+      if (formData.isCreditTransfer === "true") {
+        requiredFields.push(
+          { key: "courseCategory", label: "Course Category" },
+          { key: "semester", label: "Semester Entry" }
+        );
+      }
 
       const newErrors = {};
       let firstErrorField = "";
@@ -1767,28 +1800,6 @@ export default function AddStudent() {
                         onChange={handleChange}
                         type="number"
                       />
-                      <InputField
-                        label="Passed Papers"
-                        name="bachelorsPapersPassed"
-                        value={formData.bachelorsPapersPassed}
-                        onChange={handleChange}
-                        type="number"
-                      />
-                      <InputField
-                        label="Equalised"
-                        name="bachelorsPapersEqualised"
-                        value={formData.bachelorsPapersEqualised}
-                        onChange={handleChange}
-                        type="number"
-                      />
-                      <FileUploadBox
-                        label="Certs (Max 5)"
-                        field="bachelorsCertificates"
-                        value={files.bachelorsCertificates}
-                        multiple
-                        onChange={handleMultiFileChange}
-                        onRemoveAt={handleRemoveMultiFile}
-                      />
                     </div>
                   </div>
                 )}
@@ -1823,28 +1834,6 @@ export default function AddStudent() {
                         value={formData.mastersCompletionYear}
                         onChange={handleChange}
                         type="number"
-                      />
-                      <InputField
-                        label="Passed Papers"
-                        name="mastersPapersPassed"
-                        value={formData.mastersPapersPassed}
-                        onChange={handleChange}
-                        type="number"
-                      />
-                      <InputField
-                        label="Equalised"
-                        name="mastersPapersEqualised"
-                        value={formData.mastersPapersEqualised}
-                        onChange={handleChange}
-                        type="number"
-                      />
-                      <FileUploadBox
-                        label="Certs (Max 5)"
-                        field="mastersCertificates"
-                        value={files.mastersCertificates}
-                        multiple
-                        onChange={handleMultiFileChange}
-                        onRemoveAt={handleRemoveMultiFile}
                       />
                     </div>
                   </div>
@@ -1970,68 +1959,129 @@ export default function AddStudent() {
                         accept="video/*"
                       />
                     )}
-                    <InputField
-                      label="Employment"
-                      name="employmentStatus"
-                      value={formData.employmentStatus}
-                      onChange={handleChange}
-                      options={[
-                        "Employed",
-                        "Unemployed",
-                        "Self-Employed",
-                        "Student",
-                      ]}
-                    />
-                    {formData.employmentStatus === "Employed" && (
-                      <>
-                        <InputField
-                          label="Company"
-                          name="company"
-                          value={formData.company}
-                          onChange={handleChange}
-                        />
-                        <InputField
-                          label="Designation"
-                          name="designation"
-                          value={formData.designation}
-                          onChange={handleChange}
-                        />
-                      </>
-                    )}
-                    {(formData.employmentStatus === "Self-Employed" ||
-                      formData.employmentStatus === "Student") && (
-                      <InputField
-                        label="Description"
-                        name="employmentDescription"
-                        value={formData.employmentDescription}
-                        onChange={handleChange}
-                        placeholder={
-                          formData.employmentStatus === "Student"
-                            ? "Current course/institution"
-                            : "Business description"
-                        }
-                      />
-                    )}
                     <FileUploadBox
                       label="Affidavit"
                       field="affidavit"
                       value={files.affidavit}
                       onChange={handleFileChange}
-                     onRemove={handleRemoveFile} />
-                    <FileUploadBox
-                      label="Migration"
-                      field="migrationCertificate"
-                      value={files.migrationCertificate}
-                      onChange={handleFileChange}
-                     onRemove={handleRemoveFile} />
-                    <FileUploadBox
-                      label="Project"
-                      field="projectSubmission"
-                      value={files.projectSubmission}
-                      onChange={handleFileChange}
-                     onRemove={handleRemoveFile} />
+                      onRemove={handleRemoveFile}
+                    />
+                    <InputField
+                      label="Is this a credit transfer student?"
+                      name="isCreditTransfer"
+                      value={formData.isCreditTransfer}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData((prev) => ({
+                          ...prev,
+                          isCreditTransfer: val,
+                          ...(val !== "true" ? { courseCategory: "", semester: "" } : {}),
+                        }));
+                      }}
+                      options={[
+                        { label: "No", value: "false" },
+                        { label: "Yes", value: "true" },
+                      ]}
+                      required
+                    />
+                    {formData.isCreditTransfer === "true" && (
+                      <>
+                        <InputField
+                          label="Course Category"
+                          name="courseCategory"
+                          value={formData.courseCategory}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData((prev) => ({
+                              ...prev,
+                              courseCategory: val,
+                              semester: "",
+                            }));
+                          }}
+                          options={["Degree", "Pg", "Btech"]}
+                          required
+                        />
+                        <InputField
+                          label="Semester entry"
+                          name="semester"
+                          value={formData.semester}
+                          onChange={handleChange}
+                          options={getSemesterOptions(formData.courseCategory).map((sem) => ({
+                            label: `Semester ${sem}`,
+                            value: sem.toString(),
+                          }))}
+                          required
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
+
+                {formData.isCreditTransfer === "true" && (
+                  <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-8">
+                    <h3 className="text-lg font-black flex items-center gap-3">
+                      <Cpu className="text-emerald-500 w-5 h-5" /> Credit Transfer Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      <InputField
+                        label="Employment"
+                        name="employmentStatus"
+                        value={formData.employmentStatus}
+                        onChange={handleChange}
+                        options={[
+                          "Employed",
+                          "Unemployed",
+                          "Self-Employed",
+                          "Student",
+                        ]}
+                      />
+                      {formData.employmentStatus === "Employed" && (
+                        <>
+                          <InputField
+                            label="Company"
+                            name="company"
+                            value={formData.company}
+                            onChange={handleChange}
+                          />
+                          <InputField
+                            label="Designation"
+                            name="designation"
+                            value={formData.designation}
+                            onChange={handleChange}
+                          />
+                        </>
+                      )}
+                      {(formData.employmentStatus === "Self-Employed" ||
+                        formData.employmentStatus === "Student") && (
+                        <InputField
+                          label="Description"
+                          name="employmentDescription"
+                          value={formData.employmentDescription}
+                          onChange={handleChange}
+                          placeholder={
+                            formData.employmentStatus === "Student"
+                              ? "Current course/institution"
+                              : "Business description"
+                          }
+                        />
+                      )}
+                      <FileUploadBox
+                        label="Migration"
+                        field="migrationCertificate"
+                        value={files.migrationCertificate}
+                        onChange={handleFileChange}
+                        onRemove={handleRemoveFile}
+                      />
+                      <FileUploadBox
+                        label="Project"
+                        field="projectSubmission"
+                        value={files.projectSubmission}
+                        onChange={handleFileChange}
+                        onRemove={handleRemoveFile}
+                      />
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
