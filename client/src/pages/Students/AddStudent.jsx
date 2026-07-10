@@ -136,7 +136,10 @@ const FileUploadBox = ({
         {!multiple && hasValue && onRemove && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onRemove(field); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(field);
+            }}
             className="absolute top-1.5 right-1.5 z-20 p-0.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
             title="Remove file"
           >
@@ -189,7 +192,10 @@ const FileUploadBox = ({
                 {onRemoveAt && (
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); onRemoveAt(field, i); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveAt(field, i);
+                    }}
                     className="shrink-0 p-0.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
                     title="Remove"
                   >
@@ -422,8 +428,8 @@ const ALL_REQUIRED_FIELDS = [
   { key: "motherPhone", label: "Mother's Phone" },
   { key: "tenthCompletionYear", label: "10th Completion Year" },
   { key: "tenthBoard", label: "10th Board" },
-  { key: "tenthTotalMarks", label: "10th Total Marks" },
-  { key: "tenthObtainedMarks", label: "Total Obtainable Marks" },
+  { key: "tenthTotalMarks", label: "Max Obtainable Marks" },
+  { key: "tenthObtainedMarks", label: "Obtained Marks" },
   { key: "plusTwoCompletionYear", label: "Plus Two Completion Year" },
   { key: "plusTwoBoard", label: "Plus Two Board" },
   { key: "plusTwoPercentage", label: "Plus Two Percentage" },
@@ -591,7 +597,10 @@ export default function AddStudent() {
             enrollmentStatus: s.enrollmentStatus || "Identity",
             isCreditTransfer: s.isCreditTransfer ? "true" : "false",
             courseCategory: s.courseCategory || "",
-            semester: s.semester !== undefined && s.semester !== null ? s.semester.toString() : "",
+            semester:
+              s.semester !== undefined && s.semester !== null
+                ? s.semester.toString()
+                : "",
           });
 
           // Determine current step from enrollmentStatus
@@ -1097,7 +1106,7 @@ export default function AddStudent() {
       if (formData.isCreditTransfer === "true") {
         requiredFields.push(
           { key: "courseCategory", label: "Course Category" },
-          { key: "semester", label: "Semester Entry" }
+          { key: "semester", label: "Semester Entry" },
         );
       }
 
@@ -1205,7 +1214,7 @@ export default function AddStudent() {
       if (formData.isCreditTransfer === "true") {
         requiredFields.push(
           { key: "courseCategory", label: "Course Category" },
-          { key: "semester", label: "Semester Entry" }
+          { key: "semester", label: "Semester Entry" },
         );
       }
 
@@ -1576,7 +1585,8 @@ export default function AddStudent() {
                       onChange={handleFileChange}
                       error={errors.idProof}
                       required
-                     onRemove={handleRemoveFile} />
+                      onRemove={handleRemoveFile}
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -1664,7 +1674,7 @@ export default function AddStudent() {
                       error={errors.tenthBoard}
                     />
                     <InputField
-                      label="Total Marks"
+                      label="Max Obtainable Marks"
                       name="tenthTotalMarks"
                       value={formData.tenthTotalMarks}
                       onChange={handleChange}
@@ -1672,7 +1682,7 @@ export default function AddStudent() {
                       error={errors.tenthTotalMarks}
                     />
                     <InputField
-                      label="Total Obtainable Marks"
+                      label="Obtained Marks"
                       name="tenthObtainedMarks"
                       value={formData.tenthObtainedMarks}
                       onChange={handleChange}
@@ -1718,7 +1728,7 @@ export default function AddStudent() {
                       error={errors.plusTwoBoard}
                     />
                     <InputField
-                      label="Total Marks"
+                      label="Max Obtainable Marks"
                       name="plusTwoTotalMarks"
                       value={formData.plusTwoTotalMarks}
                       onChange={handleChange}
@@ -1726,7 +1736,7 @@ export default function AddStudent() {
                       error={errors.plusTwoTotalMarks}
                     />
                     <InputField
-                      label="Total Obtainable Marks"
+                      label="Obtained Marks"
                       name="plusTwoObtainedMarks"
                       value={formData.plusTwoObtainedMarks}
                       onChange={handleChange}
@@ -1975,7 +1985,9 @@ export default function AddStudent() {
                         setFormData((prev) => ({
                           ...prev,
                           isCreditTransfer: val,
-                          ...(val !== "true" ? { courseCategory: "", semester: "" } : {}),
+                          ...(val !== "true"
+                            ? { courseCategory: "", semester: "" }
+                            : {}),
                         }));
                       }}
                       options={[
@@ -2006,7 +2018,9 @@ export default function AddStudent() {
                           name="semester"
                           value={formData.semester}
                           onChange={handleChange}
-                          options={getSemesterOptions(formData.courseCategory).map((sem) => ({
+                          options={getSemesterOptions(
+                            formData.courseCategory,
+                          ).map((sem) => ({
                             label: `Semester ${sem}`,
                             value: sem.toString(),
                           }))}
@@ -2020,7 +2034,8 @@ export default function AddStudent() {
                 {formData.isCreditTransfer === "true" && (
                   <div className="bg-card border border-border rounded-[2rem] p-10 shadow-sm space-y-8">
                     <h3 className="text-lg font-black flex items-center gap-3">
-                      <Cpu className="text-emerald-500 w-5 h-5" /> Credit Transfer Details
+                      <Cpu className="text-emerald-500 w-5 h-5" /> Credit
+                      Transfer Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                       <InputField
