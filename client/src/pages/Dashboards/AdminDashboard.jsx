@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { StatCard, cn } from "../../components/dashboard/StatCard";
 import {
@@ -23,6 +24,8 @@ import {
   TrendingUp,
   CreditCard,
   AlertCircle,
+  Bell,
+  X,
 } from "lucide-react";
 import {
   AreaChart,
@@ -51,6 +54,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { showAlert } from "../../redux/alertSlice";
 import { ReviewModal } from "../../components/students/ReviewModal";
+import { getGlobalPaymentStats } from "../../api/payment.api";
 
 const COURSE_LABELS = {
   uiux: "Advanced UI/UX Design",
@@ -69,6 +73,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [pendingPoints, setPendingPoints] = useState([]);
   const [pendingApplications, setPendingApplications] = useState([]);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingApps, setLoadingApps] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -94,15 +99,17 @@ export default function AdminDashboard() {
   const fetchAllData = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, partnersRes, appsRes] = await Promise.all([
+      const [statsRes, partnersRes, appsRes, paymentsRes] = await Promise.all([
         getAdminDashboardStats(selectedYear, selectedHalf),
         getPendingAdmissionPoints(),
         getPendingEligibility(),
+        getGlobalPaymentStats(),
       ]);
 
       if (statsRes.success) setStats(statsRes.data);
       if (partnersRes.success) setPendingPoints(partnersRes.data);
       if (appsRes.success) setPendingApplications(appsRes.data);
+      if (paymentsRes.success) setPendingPaymentCount(paymentsRes.data?.pendingPayments?.length || 0);
     } catch (error) {
       console.error("Dashboard fetch error:", error);
     } finally {
@@ -215,6 +222,8 @@ export default function AdminDashboard() {
   } = stats || {};
 
   const isManager = user?.role === "manager";
+  const pendingReviewTotal = (pendingPaymentCount || 0) + pendingPoints.length + pendingApplications.length;
+  const [showReviewNotifications, setShowReviewNotifications] = useState(false);
 
   return (
     <DashboardLayout title="Admin Dashboard">
@@ -236,6 +245,68 @@ export default function AdminDashboard() {
             </div>
           </div> */}
         </div>
+
+        {/* Floating admin review notifications */}
+        {pendingReviewTotal > 0 && createPortal(
+          <div className="fixed bottom-6 right-6 z-40">
+            {!showReviewNotifications && <button
+              type="button"
+              onClick={() => setShowReviewNotifications((visible) => !visible)}
+              aria-label="Toggle pending review notifications"
+              className="relative flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-card text-primary shadow-xl shadow-primary/10 transition-all hover:scale-105 hover:border-primary/40 hover:bg-primary/5 hover:shadow-primary/20 active:scale-95"
+            >
+              <Bell className="h-6 w-6" />
+              <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-card bg-rose-500 px-1 text-[10px] font-black text-white shadow-sm shadow-rose-500/30">
+                {pendingReviewTotal}
+              </span>
+            </button>}
+
+            <AnimatePresence>
+            {showReviewNotifications && (
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                className="absolute bottom-full right-0 mb-3 w-[min(23rem,calc(100vw-3rem))] overflow-hidden rounded-3xl border border-border bg-card shadow-2xl shadow-slate-900/20"
+              >
+                <div className="flex items-center justify-between border-b border-border bg-muted/20 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-black text-foreground">Review Center</p>
+                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Items requiring attention</p>
+                  </div>
+                  <button type="button" onClick={() => setShowReviewNotifications(false)} className="rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Close notifications">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="space-y-2 p-3">
+          {[
+            { label: "Eligibility Review", count: pendingApplications.length, path: "/dashboard/eligibility-queue", tone: "bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10", iconTone: "bg-amber-500/10 text-amber-600", countTone: "text-amber-600", icon: Clock },
+            { label: "Authorisation Review", count: pendingPoints.length, path: "/dashboard/partner-management", tone: "bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10", iconTone: "bg-purple-500/10 text-purple-600", countTone: "text-purple-600", icon: UserPlus },
+            { label: "Payment Verification", count: pendingPaymentCount, path: "/dashboard/payment-management", tone: "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10", iconTone: "bg-blue-500/10 text-blue-600", countTone: "text-blue-600", icon: CreditCard },
+          ].filter(({ count }) => count !== null && count > 0).map(({ label, count, path, tone, iconTone, countTone, icon: Icon }) => (
+            <button
+              key={label}
+              onClick={() => { setShowReviewNotifications(false); navigate(path); }}
+              className={`w-full flex items-center justify-between gap-4 p-3.5 rounded-2xl border transition-all text-left hover:-translate-y-0.5 hover:shadow-md ${tone}`}
+            >
+              <span className="flex items-center gap-3 min-w-0">
+                <span className={`p-2 rounded-xl shrink-0 ${iconTone}`}><Icon className="w-4 h-4" /></span>
+                <span className="min-w-0">
+                  <span className="block text-[9px] font-black uppercase tracking-widest text-muted-foreground">Pending Review</span>
+                  <span className="block mt-1 text-sm font-black text-foreground truncate">{label}</span>
+                </span>
+              </span>
+              <span className={`flex h-8 min-w-8 px-2 items-center justify-center rounded-full bg-background text-sm font-black ${countTone}`}>{count}</span>
+            </button>
+          ))}
+                </div>
+                <div className="border-t border-border px-5 py-3 text-center text-[10px] font-bold text-muted-foreground">Select an item to open its review queue</div>
+              </motion.div>
+            )}
+            </AnimatePresence>
+          </div>,
+          document.body,
+        )}
 
         {/* Real Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -361,10 +432,11 @@ export default function AdminDashboard() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setViewDetailsPoint(point)}
-                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
-                              title="View Details"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200 text-[10px] font-black uppercase tracking-widest"
+                              title="Review Partnership"
                             >
                               <Eye className="w-4 h-4" />
+                              Review
                             </button>
                           </div>
                         </td>
@@ -472,10 +544,11 @@ export default function AdminDashboard() {
                                 setSelectedApp(app);
                                 setIsReviewModalOpen(true);
                               }}
-                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
-                              title="View Details"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200 text-[10px] font-black uppercase tracking-widest"
+                              title="Review Application"
                             >
                               <Eye className="w-4 h-4" />
+                              Review
                             </button>
                           </div>
                         </td>

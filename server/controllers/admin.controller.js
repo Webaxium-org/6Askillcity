@@ -68,7 +68,7 @@ export const getAdminStats = async (req, res, next) => {
         },
         pending: {
           $sum: {
-            $cond: [{ $eq: ["$status", "Pending Applications"] }, 1, 0],
+            $cond: [{ $eq: ["$status", "Application Submitted"] }, 1, 0],
           },
         },
         progress: {
@@ -119,7 +119,7 @@ export const getAdminStats = async (req, res, next) => {
           },
           pending: {
             $sum: {
-              $cond: [{ $eq: ["$status", "Pending Applications"] }, 1, 0],
+              $cond: [{ $eq: ["$status", "Application Submitted"] }, 1, 0],
             },
           },
           progress: {

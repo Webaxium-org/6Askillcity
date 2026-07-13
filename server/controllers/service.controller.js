@@ -189,7 +189,7 @@ export const applyForService = async (req, res, next) => {
       createdBy: req.user.userId,
       createdByType: req.user.userType === "partner" ? "AdmissionPoint" : "User",
       history: [{
-        status: "Pending Applications",
+        status: "Application Submitted",
         updatedBy: req.user.userId,
         remarks: "Application initialized"
       }]
@@ -276,7 +276,7 @@ export const updateApplicationStatus = async (req, res, next) => {
     // Enforce status order
     const statusOrder = [
       "Waiting for Payment",
-      "Pending Applications",
+      "Application Submitted",
       "Application On Progress",
       "Documents Received",
       "Documents Sent Courier"
@@ -285,12 +285,16 @@ export const updateApplicationStatus = async (req, res, next) => {
     const currentIndex = statusOrder.indexOf(application.status);
     const newIndex = statusOrder.indexOf(status);
 
-    if (newIndex <= currentIndex) {
-      return next(createError(400, "Cannot revert to a previous status or set the same status"));
+    if (currentIndex === -1 || newIndex === -1) {
+      return next(createError(400, "Invalid application status"));
+    }
+
+    if (newIndex !== currentIndex + 1) {
+      return next(createError(400, `Status must advance one stage at a time. The next status is ${statusOrder[currentIndex + 1] || "not available"}`));
     }
 
     // Set corresponding date
-    if (status === "Pending Applications") application.pendingDate = new Date();
+    if (status === "Application Submitted") application.pendingDate = new Date();
     if (status === "Application On Progress") application.processingDate = new Date();
     if (status === "Documents Received") application.receivedDate = new Date();
     if (status === "Documents Sent Courier") application.sentDate = new Date();
@@ -494,7 +498,7 @@ export const getServiceDashboardStats = async (req, res, next) => {
 
     const [totalApps, pendingApps, inProgressApps, totalRevenue] = await Promise.all([
       ServiceApplication.countDocuments(query),
-      ServiceApplication.countDocuments({ ...query, status: "Pending Applications" }),
+      ServiceApplication.countDocuments({ ...query, status: "Application Submitted" }),
       ServiceApplication.countDocuments({ ...query, status: "Application On Progress" }),
       Payment.aggregate([
         { $match: paymentMatch },
@@ -683,10 +687,10 @@ export const verifyServiceCashfreePayment = async (req, res, next) => {
               application.paymentStatus = "Paid";
               // Only advance status if full payment is done
               if (application.status === "Waiting for Payment") {
-                application.status = "Pending Applications";
+                application.status = "Application Submitted";
                 application.pendingDate = new Date();
                 application.history.push({
-                  status: "Pending Applications",
+                  status: "Application Submitted",
                   updatedBy: req.user.userId,
                   remarks: "Full payment confirmed via online gateway.",
                 });
@@ -899,10 +903,10 @@ export const verifyBulkServiceCashfreePayment = async (req, res, next) => {
 
               application.paymentStatus = "Paid";
               if (application.status === "Waiting for Payment") {
-                application.status = "Pending Applications";
+                application.status = "Application Submitted";
                 application.pendingDate = new Date();
                 application.history.push({
-                  status: "Pending Applications",
+                  status: "Application Submitted",
                   updatedBy: req.user.userId,
                   remarks: "Full payment confirmed via bulk online gateway.",
                 });

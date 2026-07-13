@@ -1547,11 +1547,11 @@ export default function App() {
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: idx * 0.1, duration: 0.5 }}
-                        className={cn(
+                          className={cn(
                           "w-full flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 text-left cursor-pointer group relative overflow-hidden",
                           isActive
-                            ? "bg-white shadow-xl shadow-foreground/5 border-border scale-[1.02]"
-                            : "bg-white/40 backdrop-blur-sm border-border/60 hover:bg-white/80 hover:border-border hover:shadow-md",
+                            ? "bg-white dark:bg-card shadow-xl shadow-foreground/5 border-border scale-[1.02]"
+                            : "bg-white/40 dark:bg-white/[0.04] backdrop-blur-sm border-border/60 hover:bg-white/80 dark:hover:bg-white/[0.08] hover:border-border hover:shadow-md",
                         )}
                       >
                         {/* Dynamic category active vertical ribbon */}
@@ -1862,7 +1862,7 @@ export default function App() {
           {/* WHY PARTNER SECTION */}
           <section
             id="why-partner"
-            className="py-32 bg-slate-50 relative overflow-hidden"
+            className="py-32 bg-slate-50 dark:bg-slate-950 relative overflow-hidden"
           >
             {/* Background Decorations */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-[#17468C]/5 to-transparent rounded-full blur-[100px] pointer-events-none translate-x-1/3 -translate-y-1/3" />
@@ -1897,7 +1897,7 @@ export default function App() {
                     whileInView={{ opacity: 1, y: 0, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/20 bg-white"
+                    className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-border/30 bg-white dark:bg-slate-900"
                   >
                     <img
                       src={PartnershipIllustration}
@@ -1994,7 +1994,7 @@ export default function App() {
                           type: "spring",
                         }}
                         className={cn(
-                          "group relative bg-white rounded-[2rem] p-6 shadow-xl shadow-foreground/5 border transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden",
+                          "group relative bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-xl shadow-foreground/5 border transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden",
                           item.borderColor,
                           idx === 8 && "sm:col-span-2 max-w-md mx-auto w-full", // Center the last item
                         )}
@@ -2009,7 +2009,7 @@ export default function App() {
 
                         <div className="relative z-10 flex flex-col h-full">
                           <div className="mb-6 h-16 flex items-center justify-start">
-                            <div className="p-3 bg-white shadow-sm border border-border/50 rounded-2xl group-hover:scale-110 transition-transform duration-500">
+                            <div className="p-3 bg-white dark:bg-slate-800 shadow-sm border border-border/50 rounded-2xl group-hover:scale-110 transition-transform duration-500">
                               <img
                                 src={item.image}
                                 alt={item.title}

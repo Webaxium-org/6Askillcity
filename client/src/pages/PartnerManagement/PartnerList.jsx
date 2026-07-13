@@ -544,10 +544,11 @@ export default function PartnerList() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setViewDetailsPoint(partner)}
-                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
-                              title="View Details"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200 text-[10px] font-black uppercase tracking-widest"
+                              title="Review Partner"
                             >
                               <Eye className="w-4 h-4" />
+                              Review
                             </button>
                           </div>
                         </td>
@@ -642,10 +643,11 @@ export default function PartnerList() {
                                 onClick={() =>
                                   navigate(`/dashboard/partner-management/${partner._id}`)
                                 }
-                                className="p-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-xl transition-all border border-blue-500/20"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white rounded-xl transition-all border border-blue-500/20 text-[10px] font-black uppercase tracking-widest"
                                 title="View Profile"
                               >
                                 <UserIcon className="w-4 h-4" />
+                                Profile
                               </button>
                               <button
                                 onClick={() => setViewDetailsPoint(partner)}
@@ -659,7 +661,7 @@ export default function PartnerList() {
                                 title={partner.documents?.officeVideo?.length > 0 ? "View Inspection Media" : "Waiting for Upload"}
                               >
                                 <Eye className="w-3.5 h-3.5" />
-                                View
+                                Review
                               </button>
                             </div>
                           </td>

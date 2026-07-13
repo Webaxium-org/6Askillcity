@@ -23,7 +23,7 @@ const ServiceApplicationSchema = new mongoose.Schema({
     type: String,
     enum: [
       "Waiting for Payment",
-      "Pending Applications", 
+      "Application Submitted", 
       "Application On Progress", 
       "Documents Received", 
       "Documents Sent Courier"

@@ -81,6 +81,7 @@ export default function DocumentsServices() {
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
+  const isPartner = user?.type === "partner" || user?.role === "partner";
   
   const [activeTab, setActiveTab] = useState("applications"); // applications, management
   const [stats, setStats] = useState({
@@ -324,7 +325,7 @@ export default function DocumentsServices() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Waiting for Payment": return "rose";
-      case "Pending Applications": return "blue";
+      case "Application Submitted": return "blue";
       case "Application On Progress": return "amber";
       case "Documents Received": return "emerald";
       case "Documents Sent Courier": return "purple";
@@ -568,7 +569,7 @@ export default function DocumentsServices() {
                         >
                           <option value="all">All Application States</option>
                           <option value="Waiting for Payment">Waiting for Payment</option>
-                          <option value="Pending Applications">Pending Applications</option>
+                          <option value="Application Submitted">Application Submitted</option>
                           <option value="Application On Progress">Application On Progress</option>
                           <option value="Documents Received">Documents Received</option>
                           <option value="Documents Sent Courier">Documents Sent Courier</option>
@@ -807,14 +808,14 @@ export default function DocumentsServices() {
                             <div className={cn(
                               "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap",
                               app.status === "Waiting for Payment" ? "bg-rose-500/10 text-rose-600 border-rose-500/20" :
-                               app.status === "Pending Applications" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
+                               app.status === "Application Submitted" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
                               app.status === "Application On Progress" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
                               app.status === "Documents Received" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
                               "bg-purple-500/10 text-purple-600 border-purple-500/20"
                             )}>
                               <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", 
                                 app.status === "Waiting for Payment" ? "bg-rose-500" :
-                                 app.status === "Pending Applications" ? "bg-blue-500" :
+                                 app.status === "Application Submitted" ? "bg-blue-500" :
                                 app.status === "Application On Progress" ? "bg-amber-500" :
                                 app.status === "Documents Received" ? "bg-emerald-500" :
                                 "bg-purple-500"
@@ -836,9 +837,10 @@ export default function DocumentsServices() {
                           <td className="px-8 py-6 text-right">
                             <button 
                               onClick={() => handleUpdateStatusClick(app)}
-                              className="p-3 rounded-xl bg-muted/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-muted/50 border border-border/60 text-muted-foreground hover:bg-primary hover:border-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest"
                             >
                               <ArrowUpDown size={16} />
+                              {isPartner ? "View" : "Manage"}
                             </button>
                           </td>
                         </motion.tr>
@@ -882,9 +884,10 @@ export default function DocumentsServices() {
                       </div>
                       <button 
                         onClick={() => handleUpdateStatusClick(app)}
-                        className="p-3 rounded-xl bg-muted/50 text-muted-foreground shrink-0"
+                        className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-muted/50 border border-border/60 text-muted-foreground shrink-0 text-[10px] font-black uppercase tracking-widest"
                       >
                         <ArrowUpDown size={16} />
+                        {isPartner ? "View" : "Manage"}
                       </button>
                     </div>
 
@@ -892,14 +895,14 @@ export default function DocumentsServices() {
                       <div className={cn(
                         "px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 whitespace-nowrap",
                         app.status === "Waiting for Payment" ? "bg-rose-500/10 text-rose-600 border-rose-500/20" :
-                        app.status === "Pending Applications" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
+                        app.status === "Application Submitted" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
                         app.status === "Application On Progress" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
                         app.status === "Documents Received" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
                         "bg-purple-500/10 text-purple-600 border-purple-500/20"
                       )}>
                         <div className={cn("w-1 h-1 rounded-full", 
                           app.status === "Waiting for Payment" ? "bg-rose-500" : 
-                          app.status === "Pending Applications" ? "bg-blue-500" :
+                          app.status === "Application Submitted" ? "bg-blue-500" :
                           app.status === "Application On Progress" ? "bg-amber-500" :
                           app.status === "Documents Received" ? "bg-emerald-500" :
                           "bg-purple-500"
@@ -1605,13 +1608,14 @@ const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
 
   const statusOrder = [
     "Waiting for Payment",
-    "Pending Applications",
+    "Application Submitted",
     "Application On Progress",
     "Documents Received",
     "Documents Sent Courier"
   ];
 
   const currentIdx = statusOrder.indexOf(application?.status);
+  const canAdvance = statusOrder.indexOf(formData.status) === currentIdx + 1;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1668,12 +1672,24 @@ const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Current Status</label>
-          <div className="grid grid-cols-2 gap-2">
-            {statusOrder.slice(1).map(s => {
+        <div className="space-y-3">
+          <div className="flex items-end justify-between gap-3 px-1">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Application Workflow</label>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">Select the next stage in the document process.</p>
+            </div>
+            <span className="shrink-0 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-primary">
+              Step {Math.max(1, currentIdx)} of 4
+            </span>
+          </div>
+          <div className="space-y-2 rounded-3xl border border-border bg-muted/10 p-3">
+            {statusOrder.slice(1).map((s, index) => {
               const targetIdx = statusOrder.indexOf(s);
-              const isDisabled = targetIdx <= currentIdx;
+              const isNext = targetIdx === currentIdx + 1;
+              const isDisabled = !isNext;
+              const isCurrent = targetIdx === currentIdx;
+              const isCompleted = targetIdx < currentIdx;
+              const isSelected = formData.status === s;
               
               return (
                 <button
@@ -1682,15 +1698,38 @@ const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
                   disabled={isDisabled}
                   onClick={() => setFormData({...formData, status: s})}
                   className={cn(
-                    "p-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
-                    formData.status === s 
-                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-                      : isDisabled 
-                        ? "bg-muted/10 border-border/50 text-muted-foreground/30 cursor-not-allowed"
-                        : "bg-muted/30 border-border text-muted-foreground hover:bg-muted hover:border-primary/30"
+                    "group flex w-full items-center gap-4 rounded-2xl border p-3.5 text-left transition-all",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/15"
+                      : isCompleted
+                        ? "border-emerald-500/15 bg-emerald-500/5 text-emerald-700 cursor-not-allowed"
+                        : isDisabled
+                          ? "border-border/60 bg-background/50 text-muted-foreground cursor-not-allowed"
+                          : "border-border bg-background text-foreground hover:border-primary/40 hover:bg-primary/[0.03] hover:shadow-sm"
                   )}
                 >
-                  {s.replace(" Applications", "")}
+                  <span className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-black",
+                    isSelected
+                      ? "border-primary-foreground/25 bg-primary-foreground/15 text-primary-foreground"
+                      : isCompleted
+                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+                        : "border-border bg-muted/40 text-muted-foreground group-hover:border-primary/20 group-hover:text-primary"
+                  )}>
+                    {isCompleted ? <CheckCircle2 size={16} /> : index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[11px] font-black uppercase tracking-wider">
+                      {index + 1}. {s.replace(" Applications", "")}
+                    </span>
+                    <span className={cn(
+                      "mt-0.5 block text-[10px] font-semibold",
+                      isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )}>
+                      {isCurrent ? "Current status" : isCompleted ? "Completed" : isSelected ? "Selected as next status" : isNext ? "Available next stage" : "Complete the previous stage first"}
+                    </span>
+                  </span>
+                  {isNext && <ChevronRight size={16} className={cn("shrink-0 transition-transform group-hover:translate-x-0.5", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")} />}
                 </button>
               );
             })}
@@ -1711,8 +1750,8 @@ const UpdateStatusForm = ({ application, onSuccess, cashfree }) => {
       </div>
 
       <button 
-        disabled={loading}
-        className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+        disabled={loading || !canAdvance}
+        className="w-full py-5 rounded-3xl bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed"
       >
         {loading ? "Updating..." : "Commit Status Change"}
       </button>
@@ -2191,7 +2230,7 @@ const RecordPaymentForm = ({ application, onSuccess, cashfree }) => {
 const BulkServiceUpdateStatusForm = ({ selectedIds, applications, onSuccess }) => {
   const selectedApps = applications.filter(app => selectedIds.includes(app._id));
   const [formData, setFormData] = useState({
-    status: selectedApps[0]?.status || "Pending Applications",
+    status: selectedApps[0]?.status || "Application Submitted",
     remarks: ""
   });
   const [loading, setLoading] = useState(false);
@@ -2199,7 +2238,7 @@ const BulkServiceUpdateStatusForm = ({ selectedIds, applications, onSuccess }) =
 
   const statusOrder = [
     "Waiting for Payment",
-    "Pending Applications",
+    "Application Submitted",
     "Application On Progress",
     "Documents Received",
     "Documents Sent Courier"
@@ -2273,7 +2312,7 @@ const BulkServiceUpdateStatusForm = ({ selectedIds, applications, onSuccess }) =
         <div className="space-y-1.5">
           <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Status</label>
           <div className="grid grid-cols-2 gap-2">
-            {statusOrder.slice(1).map(s => (
+            {statusOrder.slice(1).map((s, index) => (
               <button
                 key={s}
                 type="button"
@@ -2285,7 +2324,7 @@ const BulkServiceUpdateStatusForm = ({ selectedIds, applications, onSuccess }) =
                     : "bg-muted/30 border-border text-muted-foreground hover:bg-muted hover:border-primary/30"
                 )}
               >
-                {s.replace(" Applications", "")}
+                {index + 1}. {s.replace(" Applications", "")}
               </button>
             ))}
           </div>

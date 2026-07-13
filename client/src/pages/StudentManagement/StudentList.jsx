@@ -724,7 +724,8 @@ export default function StudentList() {
                           </span>
                         </td>
                         <td className="px-8 py-6 text-right">
-                          <button className="p-3 rounded-2xl bg-muted/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                          <button className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-muted/50 border border-border/60 text-muted-foreground group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest">
+                            Profile
                             <ChevronRight className="w-4 h-4" />
                           </button>
                         </td>
@@ -781,7 +782,10 @@ export default function StudentList() {
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted/50 border border-border/60 text-[9px] font-black uppercase tracking-widest text-muted-foreground shrink-0">
+                        Profile
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">

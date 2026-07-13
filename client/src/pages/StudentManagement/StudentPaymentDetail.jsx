@@ -1974,6 +1974,9 @@ export default function StudentPaymentDetail() {
                       mandatoryDefs.some(def => def._id === (app.service?._id || app.service))
                     );
                     const unpaidMandatoryApps = mandatoryApps.filter(app => app.paymentStatus !== "Paid");
+                    const unpaidMandatoryDefs = mandatoryDefs.filter(def =>
+                      unpaidMandatoryApps.some(app => def._id === (app.service?._id || app.service))
+                    );
                     const totalUnpaidMandatoryFee = unpaidMandatoryApps.reduce((sum, app) => sum + (app.feeAmount || 0) - (app.paidAmount || 0), 0);
                     const totalPendingMandatoryFee = payments
                       .filter(p => p.approvalStatus === "pending" && p.type === "Documents & Services" && unpaidMandatoryApps.some(app => app._id === p.serviceApplication?._id || app._id === p.serviceApplication))
@@ -2002,15 +2005,6 @@ export default function StudentPaymentDetail() {
                                 Apply All Mandatory Documents
                               </button>
                             )}
-                            {isPartner && remainingMandatoryFee > 0 && (
-                              <button
-                                onClick={() => setShowBulkPayModal(true)}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-500/10"
-                              >
-                                <CreditCard size={14} />
-                                Pay All (₹{remainingMandatoryFee.toLocaleString()})
-                              </button>
-                            )}
                             {isPartner && totalPendingMandatoryFee > 0 && (
                               <div className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-xl text-xs font-black uppercase tracking-wider select-none shadow-sm shadow-amber-500/5">
                                 <Clock size={14} />
@@ -2028,6 +2022,56 @@ export default function StudentPaymentDetail() {
                             )}
                           </div>
                         </div>
+
+                        {isPartner && remainingMandatoryFee > 0 && (
+                          <div className="w-full p-6 bg-slate-100 border border-border/80 rounded-3xl text-muted-foreground shadow-sm">
+                            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                              <div className="flex min-w-0 items-start gap-4">
+                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl shrink-0">
+                                  <CreditCard size={22} className="text-emerald-600" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="uppercase tracking-widest text-[10px] font-black text-foreground mb-1">
+                                    Pay All Mandatory Documents
+                                  </p>
+                                  <p className="font-semibold text-xs text-muted-foreground leading-relaxed">
+                                    Complete one payment for all mandatory document applications listed below.
+                                  </p>
+
+                                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {unpaidMandatoryDefs.map(def => (
+                                      <div key={def._id} className="p-4 bg-background/80 border border-border/70 rounded-2xl">
+                                        <div className="flex items-center gap-2">
+                                          <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                                          <p className="text-xs font-black text-foreground leading-snug">{def.title}</p>
+                                        </div>
+                                        {def.description && (
+                                          <p className="mt-1.5 pl-[22px] text-[11px] font-medium text-muted-foreground leading-relaxed">
+                                            {def.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-4 lg:flex-col lg:items-end shrink-0 lg:min-w-52">
+                                <div className="lg:text-right">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total payable</p>
+                                  <p className="mt-1 text-2xl font-black text-foreground">₹{remainingMandatoryFee.toLocaleString()}</p>
+                                </div>
+                                <button
+                                  onClick={() => setShowBulkPayModal(true)}
+                                  className="flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider active:scale-[0.98] transition-all shadow-md shadow-emerald-500/15"
+                                >
+                                  <CreditCard size={15} />
+                                  Pay All Now
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       
                       {Object.keys(groupMandatory).map((catName) => (
                         <div key={catName} className="space-y-4">
@@ -3353,7 +3397,7 @@ const ServiceModal = ({ show, onClose, title, children }) => {
   );
 };
 
-const ServiceUpdateStatusForm = ({ application, onSuccess, cashfree }) => {
+const ServiceUpdateStatusForm = ({ application, onSuccess, cashfree, pendingAmount = 0 }) => {
   const { user } = useSelector((state) => state.user);
   const isPartner = user?.type === "partner" || user?.role === "partner";
 
@@ -3367,7 +3411,7 @@ const ServiceUpdateStatusForm = ({ application, onSuccess, cashfree }) => {
 
   const statusOrder = [
     "Waiting for Payment",
-    "Pending Applications",
+    "Application Submitted",
     "Application On Progress",
     "Documents Received",
     "Documents Sent Courier"
@@ -3770,7 +3814,7 @@ const ServiceRecordPaymentForm = ({ application, onSuccess, cashfree, pendingAmo
 
 const BulkServiceUpdateStatusForm = ({ applications, onSuccess }) => {
   const [formData, setFormData] = useState({
-    status: applications[0]?.status || "Pending Applications",
+    status: applications[0]?.status || "Application Submitted",
     remarks: ""
   });
   const [loading, setLoading] = useState(false);
@@ -3778,7 +3822,7 @@ const BulkServiceUpdateStatusForm = ({ applications, onSuccess }) => {
 
   const statusOrder = [
     "Waiting for Payment",
-    "Pending Applications",
+    "Application Submitted",
     "Application On Progress",
     "Documents Received",
     "Documents Sent Courier"

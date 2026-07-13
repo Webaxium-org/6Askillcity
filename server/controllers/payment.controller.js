@@ -461,10 +461,10 @@ export const approvePayment = async (req, res, next) => {
             application.paymentStatus = "Paid";
             // Only advance status if full payment is done
             if (application.status === "Waiting for Payment") {
-              application.status = "Pending Applications";
+              application.status = "Application Submitted";
               application.pendingDate = new Date();
               application.history.push({
-                status: "Pending Applications",
+                status: "Application Submitted",
                 updatedBy: req.user.userId,
                 remarks: "Full payment confirmed via admin approval.",
               });
@@ -496,10 +496,10 @@ export const approvePayment = async (req, res, next) => {
 
           application.paymentStatus = "Paid";
           if (application.status === "Waiting for Payment") {
-            application.status = "Pending Applications";
+            application.status = "Application Submitted";
             application.pendingDate = new Date();
             application.history.push({
-              status: "Pending Applications",
+              status: "Application Submitted",
               updatedBy: req.user.userId,
               remarks: "Full payment confirmed via bulk admin approval.",
             });

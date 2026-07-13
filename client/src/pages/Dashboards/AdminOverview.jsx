@@ -240,8 +240,8 @@ const AdminOverview = () => {
         else if (label === "Partial Fees Paid")
           query += "&paymentStatus=Partially Paid";
         else if (label === "Fees Pending") query += "&paymentStatus=Unpaid";
-        else if (label === "Pending Applications")
-          query += "&status=Pending Applications";
+        else if (label === "Application Submitted")
+          query += "&status=Application Submitted";
         else if (label === "Application On Progress")
           query += "&status=Application On Progress";
         else if (label === "Documents Received")
@@ -371,7 +371,7 @@ const AdminOverview = () => {
           value: srv.unpaid || 0,
         },
         {
-          label: "Pending Applications",
+          label: "Application Submitted",
           value: srv.pending || 0,
         },
         {

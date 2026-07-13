@@ -573,10 +573,11 @@ export default function PaymentManagement() {
                                 {isAdmin && activeTab === "pending" && (
                                   <button
                                     onClick={() => handleApprove(item)}
-                                    className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200"
-                                    title="Verify Details"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-500/20 hover:border-blue-500 transition-all duration-200 text-[10px] font-black uppercase tracking-widest"
+                                    title="View Payment Details"
                                   >
                                     <Check className="w-4 h-4" />
+                                    View Details
                                   </button>
                                 )}
                                 {(activeTab === "rejected" || !isAdmin) && (
