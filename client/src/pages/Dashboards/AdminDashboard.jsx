@@ -255,7 +255,15 @@ export default function AdminDashboard() {
               aria-label="Toggle pending review notifications"
               className="relative flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-card text-primary shadow-xl shadow-primary/10 transition-all hover:scale-105 hover:border-primary/40 hover:bg-primary/5 hover:shadow-primary/20 active:scale-95"
             >
-              <Bell className="h-6 w-6" />
+              <motion.span
+                animate={{ rotate: [0, -14, 14, -10, 10, -4, 4, 0] }}
+                transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                className="inline-flex origin-top"
+              >
+                <Bell className="h-6 w-6" />
+              </motion.span>
+              <span className="pointer-events-none absolute inset-[-7px] rounded-full border border-primary/35 animate-ping opacity-35" />
+              <span className="pointer-events-none absolute inset-[-14px] rounded-full border border-primary/20 animate-[ping_2s_ease-out_infinite] opacity-25" />
               <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-card bg-rose-500 px-1 text-[10px] font-black text-white shadow-sm shadow-rose-500/30">
                 {pendingReviewTotal}
               </span>
