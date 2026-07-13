@@ -55,6 +55,7 @@ import { useNavigate } from "react-router-dom";
 import { showAlert } from "../../redux/alertSlice";
 import { ReviewModal } from "../../components/students/ReviewModal";
 import { getGlobalPaymentStats } from "../../api/payment.api";
+import { getTicketMetrics } from "../../api/ticket.api";
 
 const COURSE_LABELS = {
   uiux: "Advanced UI/UX Design",
@@ -74,6 +75,7 @@ export default function AdminDashboard() {
   const [pendingPoints, setPendingPoints] = useState([]);
   const [pendingApplications, setPendingApplications] = useState([]);
   const [pendingPaymentCount, setPendingPaymentCount] = useState(null);
+  const [unresolvedTicketCount, setUnresolvedTicketCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingApps, setLoadingApps] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -99,17 +101,19 @@ export default function AdminDashboard() {
   const fetchAllData = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, partnersRes, appsRes, paymentsRes] = await Promise.all([
+      const [statsRes, partnersRes, appsRes, paymentsRes, ticketsRes] = await Promise.all([
         getAdminDashboardStats(selectedYear, selectedHalf),
         getPendingAdmissionPoints(),
         getPendingEligibility(),
         getGlobalPaymentStats(),
+        getTicketMetrics(),
       ]);
 
       if (statsRes.success) setStats(statsRes.data);
       if (partnersRes.success) setPendingPoints(partnersRes.data);
       if (appsRes.success) setPendingApplications(appsRes.data);
       if (paymentsRes.success) setPendingPaymentCount(paymentsRes.data?.pendingPayments?.length || 0);
+      if (ticketsRes.success) setUnresolvedTicketCount(Math.max(0, (ticketsRes.data?.total || 0) - (ticketsRes.data?.closed || 0)));
     } catch (error) {
       console.error("Dashboard fetch error:", error);
     } finally {
@@ -222,7 +226,7 @@ export default function AdminDashboard() {
   } = stats || {};
 
   const isManager = user?.role === "manager";
-  const pendingReviewTotal = (pendingPaymentCount || 0) + pendingPoints.length + pendingApplications.length;
+  const pendingReviewTotal = (pendingPaymentCount || 0) + pendingPoints.length + pendingApplications.length + (unresolvedTicketCount || 0);
   const [showReviewNotifications, setShowReviewNotifications] = useState(false);
 
   return (
@@ -291,6 +295,7 @@ export default function AdminDashboard() {
             { label: "Eligibility Review", count: pendingApplications.length, path: "/dashboard/eligibility-queue", tone: "bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10", iconTone: "bg-amber-500/10 text-amber-600", countTone: "text-amber-600", icon: Clock },
             { label: "Authorisation Review", count: pendingPoints.length, path: "/dashboard/partner-management", tone: "bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10", iconTone: "bg-purple-500/10 text-purple-600", countTone: "text-purple-600", icon: UserPlus },
             { label: "Payment Verification", count: pendingPaymentCount, path: "/dashboard/payment-management", tone: "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10", iconTone: "bg-blue-500/10 text-blue-600", countTone: "text-blue-600", icon: CreditCard },
+            { label: "Unresolved Tickets", count: unresolvedTicketCount, path: "/dashboard/tickets", tone: "bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10", iconTone: "bg-rose-500/10 text-rose-600", countTone: "text-rose-600", icon: MessageSquare },
           ].filter(({ count }) => count !== null && count > 0).map(({ label, count, path, tone, iconTone, countTone, icon: Icon }) => (
             <button
               key={label}

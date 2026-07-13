@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { X, Send, ChevronLeft, Calendar as CalendarIcon, CheckCircle2, GraduationCap } from "lucide-react";
+import { X, Send, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle2, GraduationCap } from "lucide-react";
 import { cn } from "../../components/dashboard/StatCard";
 import { useSelector, useDispatch } from "react-redux";
 import { showAlert } from "../../redux/alertSlice";
@@ -40,8 +41,12 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId, prefil
   const [postponedUntil, setPostponedUntil] = useState(
     ticket?.postponedUntil ? ticket.postponedUntil.split("T")[0] : ""
   );
-  const isClosed = ticket?.status === "Closed" || status === "Closed";
+  const isClosed = ticketState?.status === "Closed" || status === "Closed";
   const canUpdateStatus = (user?.type === "admin" || (user?.type === "partner" && !isCreator && isAssigned)) && !isClosed;
+  const canReopen = isClosed && (
+    user?.type === "admin" ||
+    (user?.type === "partner" && (isCreator || isAssigned))
+  );
 
 
   /* ── data loading ── */
@@ -156,8 +161,14 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId, prefil
               )}
               {!ticket?.isNew && ticketState?.studentId && (
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-bold text-primary">{ticketState.studentId.name}</span>
+                  <GraduationCap className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <Link
+                    to={`/dashboard/student-management/${ticketState.studentId._id || ticketState.studentId}`}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1 group"
+                  >
+                    <span>{ticketState.studentId.name}</span>
+                    <ChevronRight className="w-3 h-3 text-primary/70 group-hover:text-primary transition-colors shrink-0" />
+                  </Link>
                   <span className="text-[10px] text-muted-foreground">• {ticketState.studentId.enrollmentNumber || "No EN"}</span>
                 </div>
               )}
@@ -246,12 +257,22 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId, prefil
                 {canUpdateStatus ? (
                   <select value={status} onChange={(e) => handleStatusChange(e.target.value)} disabled={isSubmitting}
                     className="text-xs font-medium border border-border rounded-lg bg-background px-2 py-1 outline-none focus:border-primary">
-                    {["Received", "On Progress", "Closed", "Postponed"].map(s => <option key={s}>{s}</option>)}
+                    {["Received", "On Progress", "Closed", "Postponed", "Reopened"].map(s => <option key={s}>{s}</option>)}
                   </select>
                 ) : (
                   <span className="text-xs font-medium px-2 py-1 rounded-lg bg-muted">{status}</span>
                 )}
               </div>
+              {canReopen && (
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("Reopened")}
+                  disabled={isSubmitting}
+                  className="text-xs font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
+                >
+                  Re-open Ticket
+                </button>
+              )}
               {status === "Postponed" && (
                 <div className="flex items-center gap-2 flex-wrap">
                   <CalendarIcon className="w-4 h-4 text-purple-500 shrink-0" />

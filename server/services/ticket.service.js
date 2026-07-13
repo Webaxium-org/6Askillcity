@@ -79,8 +79,9 @@ export const getTicketMetrics = async (baseFilter) => {
   const inProgress = await Ticket.countDocuments({ ...baseFilter, status: "On Progress" });
   const postponed = await Ticket.countDocuments({ ...baseFilter, status: "Postponed" });
   const closed = await Ticket.countDocuments({ ...baseFilter, status: "Closed" });
+  const reopened = await Ticket.countDocuments({ ...baseFilter, status: "Reopened" });
 
-  return { total, open, inProgress, postponed, closed };
+  return { total, open, inProgress, postponed, closed, reopened };
 };
 
 export const getTicketById = async (ticketId, userId, userType) => {
@@ -111,6 +112,12 @@ export const getTicketById = async (ticketId, userId, userType) => {
     }
   }
 
+  // Mark other senders' messages as read when this ticket's chat is retrieved
+  await TicketMessage.updateMany(
+    { ticketId, senderId: { $ne: userId } },
+    { $set: { isRead: true } }
+  );
+
   const messages = await TicketMessage.find({ ticketId })
     .sort("createdAt")
     .populate(
@@ -131,8 +138,8 @@ export const updateTicketStatus = async (
   const ticket = await Ticket.findById(ticketId);
   if (!ticket) throw new Error("Ticket not found");
 
-  if (ticket.status === "Closed") {
-    throw new Error("Cannot update status of a closed ticket");
+  if (ticket.status === "Closed" && status !== "Reopened") {
+    throw new Error("Cannot update status of a closed ticket unless reopening it");
   }
 
   if (userType !== "admin") {
@@ -143,11 +150,17 @@ export const updateTicketStatus = async (
       ticket.assignedToPartner.toString() === userIdStr;
 
     if (userType === "partner") {
-      if (isCreator) {
-        throw new Error("Unauthorized: You cannot update status of a ticket you created");
-      }
-      if (!isAssigned) {
-        throw new Error("Unauthorized: You are not assigned to this ticket");
+      if (status === "Reopened") {
+        if (!isCreator && !isAssigned) {
+          throw new Error("Unauthorized: You must be the creator or the assignee of this ticket to reopen it");
+        }
+      } else {
+        if (isCreator) {
+          throw new Error("Unauthorized: You cannot update status of a ticket you created");
+        }
+        if (!isAssigned) {
+          throw new Error("Unauthorized: You are not assigned to this ticket");
+        }
       }
     } else {
       // If it's some other non-admin type, reject

@@ -1,6 +1,7 @@
 import * as ticketService from "../services/ticket.service.js";
 import createError from "http-errors";
 import moment from "moment";
+import TicketMessage from "../models/ticketMessage.js";
 
 export const createTicket = async (req, res, next) => {
   try {
@@ -97,9 +98,23 @@ export const getTickets = async (req, res, next) => {
 
     const result = await ticketService.getTickets(filter, req.query);
 
+    const enrichedTickets = await Promise.all(
+      (result.tickets || []).map(async (t) => {
+        const unreadCount = await TicketMessage.countDocuments({
+          ticketId: t._id,
+          senderId: { $ne: req.user.userId },
+          isRead: false,
+        });
+        return {
+          ...t.toObject(),
+          hasUnreadMessages: unreadCount > 0,
+        };
+      })
+    );
+
     res.status(200).json({
       success: true,
-      data: result.tickets,
+      data: enrichedTickets,
       pagination: result.pagination,
     });
   } catch (error) {

@@ -22,6 +22,7 @@ const getStatusColor = (s) => {
     "On Progress": "bg-amber-500/10 text-amber-500 border-amber-500/20",
     Closed: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
     Postponed: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    Reopened: "bg-rose-500/10 text-rose-500 border-rose-500/20",
   };
   return map[s] || "bg-primary/10 text-primary border-primary/20";
 };
@@ -38,7 +39,7 @@ export default function TicketsPage() {
   const [startDate, setStartDate] = useState(searchParams.get("startDate") || "");
   const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
   const [filterCategory, setFilterCategory] = useState("All");
-  const [metrics, setMetrics] = useState({ total: 0, open: 0, inProgress: 0, postponed: 0, closed: 0 });
+  const [metrics, setMetrics] = useState({ total: 0, open: 0, inProgress: 0, postponed: 0, closed: 0, reopened: 0 });
   const location = useLocation();
   const [showFilters, setShowFilters] = useState(!!location.state?.partnerId);
   const [filterPartner, setFilterPartner] = useState(location.state?.partnerId || searchParams.get("partner") || "All");
@@ -84,9 +85,25 @@ export default function TicketsPage() {
   useEffect(() => {
     if (!socket) return;
     const fn = ({ ticketId, status, postponedUntil }) => setTickets(prev => prev.map(t => t._id === ticketId ? { ...t, status, postponedUntil } : t));
+    const handleNewMsg = (data) => {
+      console.log("Live message received on TicketsPage:", data);
+      const senderId = data.senderId?._id || data.senderId;
+      const currentUserId = user?.userId || user?._id;
+      if (senderId === currentUserId) return;
+
+      const id = (data.ticketId?._id || data.ticketId || data._id)?.toString();
+      if (!id) return;
+
+      console.log("Setting hasUnreadMessages to true for ticket:", id);
+      setTickets(prev => prev.map(t => t._id?.toString() === id ? { ...t, hasUnreadMessages: true } : t));
+    };
     socket.on("ticket_status_updated", fn);
-    return () => socket.off("ticket_status_updated", fn);
-  }, [socket]);
+    socket.on("new_ticket_message", handleNewMsg);
+    return () => {
+      socket.off("ticket_status_updated", fn);
+      socket.off("new_ticket_message", handleNewMsg);
+    };
+  }, [socket, user]);
 
   const setQuickRange = (range) => {
     const today = new Date();
@@ -104,35 +121,22 @@ export default function TicketsPage() {
   };
 
   return (
-    <DashboardLayout title="Support Tickets">
+    <DashboardLayout title={`Support Tickets (${metrics.total})`}>
       <div className="space-y-4 sm:space-y-6">
 
         {/* Metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <StatCard
-            title="Total"
-            value={metrics.total}
-            icon={MessageSquare}
-            color="blue"
-            onClick={() => {
-              setFilterStatus("All");
-              setPage(1);
-            }}
-            className={cn(
-              filterStatus === "All" && "ring-2 ring-blue-500 shadow-lg shadow-blue-500/20"
-            )}
-          />
-          <StatCard
             title="Received"
             value={metrics.open}
             icon={AlertCircle}
-            color="rose"
+            color="blue"
             onClick={() => {
               setFilterStatus("Received");
               setPage(1);
             }}
             className={cn(
-              filterStatus === "Received" && "ring-2 ring-rose-500 shadow-lg shadow-rose-500/20"
+              filterStatus === "Received" && "ring-2 ring-blue-500 shadow-lg shadow-blue-500/20"
             )}
           />
           <StatCard
@@ -172,6 +176,19 @@ export default function TicketsPage() {
             }}
             className={cn(
               filterStatus === "Closed" && "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/20"
+            )}
+          />
+          <StatCard
+            title="Reopened"
+            value={metrics.reopened}
+            icon={AlertCircle}
+            color="rose"
+            onClick={() => {
+              setFilterStatus("Reopened");
+              setPage(1);
+            }}
+            className={cn(
+              filterStatus === "Reopened" && "ring-2 ring-rose-500 shadow-lg shadow-rose-500/20"
             )}
           />
         </div>
@@ -273,7 +290,15 @@ export default function TicketsPage() {
                         onClick={() => setSelectedTicket(ticket)}
                       >
                         <td className="px-5 py-4">
-                          <div className="font-medium text-foreground text-sm">{ticket.title}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-foreground text-sm">{ticket.title}</div>
+                            {ticket.hasUnreadMessages && (
+                              <span className="relative flex h-2 w-2 shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="uppercase text-[10px] tracking-wider font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded">#{ticket._id.slice(-6)}</span>
                             <span className={cn("uppercase text-[10px] tracking-wider font-bold px-2 py-0.5 rounded border", getPriorityColor(ticket.priority))}>{ticket.priority}</span>
@@ -333,7 +358,15 @@ export default function TicketsPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-foreground text-sm leading-snug line-clamp-2">{ticket.title}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium text-foreground text-sm leading-snug line-clamp-2">{ticket.title}</div>
+                          {ticket.hasUnreadMessages && (
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                           <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase tracking-wider">#{ticket._id.slice(-6)}</span>
                            <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider", getPriorityColor(ticket.priority))}>{ticket.priority}</span>
@@ -423,7 +456,7 @@ export default function TicketsPage() {
                     <span className="text-[10px] font-black uppercase tracking-widest">Ticket Status</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {["All", "Received", "On Progress", "Postponed", "Closed"].map((s) => (
+                    {["All", "Received", "On Progress", "Postponed", "Closed", "Reopened"].map((s) => (
                       <button key={s} onClick={() => setFilterStatus(s)}
                         className={cn(
                           "px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",

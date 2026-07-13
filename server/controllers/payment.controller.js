@@ -44,7 +44,12 @@ export const getManagementStudents = async (req, res, next) => {
 
     if (search && search.trim().length >= 3) {
       const searchRegex = { $regex: search.trim(), $options: "i" };
-      match.$or = [{ name: searchRegex }, { email: searchRegex }];
+      match.$or = [
+        { name: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex },
+        { enrollmentNumber: searchRegex },
+      ];
     }
 
     const students = await Student.aggregate([

@@ -44,6 +44,7 @@ import {
 import { showAlert } from "../../redux/alertSlice";
 import { useSocket } from "../../context/SocketContext";
 import { triggerOsNotification } from "../../utils/pushNotification";
+import { getTicketMetrics, getTickets, getTicketById, addMessage } from "../../api/ticket.api";
 // Text-to-speech helper — speaks the notification title aloud in a female voice
 const speakNotification = (title) => {
   if (!window.speechSynthesis) return;
@@ -379,6 +380,15 @@ const Sidebar = ({
               <ChevronLeft className="w-3.5 h-3.5" />
             )}
           </button>
+
+          {/* Close button for mobile */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1.5 hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all absolute right-4 top-1/2 -translate-y-1/2 bg-card border border-border shadow-lg rounded-full z-50 hover:scale-110"
+            aria-label="Close menu"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-8 scrollbar-hide">
@@ -565,6 +575,27 @@ export const DashboardLayout = ({ children, title }) => {
   const { items: notifications, unreadCount } = useSelector(
     (state) => state.notifications,
   );
+  const { user } = useSelector((state) => state.user);
+  const [unreadTicketChats, setUnreadTicketChats] = useState(0);
+  const [showTicketChatWidget, setShowTicketChatWidget] = useState(false);
+  const [ticketChatMessages, setTicketChatMessages] = useState([]);
+  const [activeTicketChat, setActiveTicketChat] = useState(null);
+  const [activeTicketHistory, setActiveTicketHistory] = useState([]);
+  const [ticketReply, setTicketReply] = useState("");
+  const activeTicketChatRef = React.useRef(null);
+  React.useEffect(() => {
+    activeTicketChatRef.current = activeTicketChat;
+  }, [activeTicketChat]);
+
+  React.useEffect(() => {
+    if (user?.type !== "partner") return;
+    (async () => {
+      try {
+        const metricsRes = await getTicketMetrics();
+        if (metricsRes.success) setUnreadTicketChats(0);
+      } catch (error) { console.error("Ticket widget fetch error:", error); }
+    })();
+  }, [user?.type]);
 
   React.useEffect(() => {
     dispatch(fetchNotifications());
@@ -572,6 +603,42 @@ export const DashboardLayout = ({ children, title }) => {
 
   React.useEffect(() => {
     if (!socket) return;
+
+    const handleNewTicketMessage = (data) => {
+      if (user?.type === "partner") {
+        const id = data.ticketId || data._id;
+        const isActive = activeTicketChatRef.current && activeTicketChatRef.current._id === id;
+
+        if (isActive) {
+          setActiveTicketHistory((history) => [...history, data]);
+        } else {
+          setUnreadTicketChats((count) => count + 1);
+        }
+
+        setTicketChatMessages((messages) => {
+          if (messages.some((ticket) => ticket._id === id)) {
+            return messages.map((ticket) =>
+              ticket._id === id
+                ? {
+                    ...ticket,
+                    unread: isActive ? 0 : (ticket.unread || 0) + 1,
+                    lastMessage: data.message || data.content,
+                  }
+                : ticket
+            );
+          }
+          return [
+            {
+              _id: id,
+              message: "Support Ticket",
+              lastMessage: data.message || data.content,
+              unread: isActive ? 0 : 1,
+            },
+            ...messages,
+          ];
+        });
+      }
+    };
 
     const handleNotification = (data) => {
       dispatch(addLiveNotification(data));
@@ -591,8 +658,12 @@ export const DashboardLayout = ({ children, title }) => {
     };
 
     socket.on("notification", handleNotification);
-    return () => socket.off("notification", handleNotification);
-  }, [socket, dispatch]);
+    socket.on("new_ticket_message", handleNewTicketMessage);
+    return () => {
+      socket.off("notification", handleNotification);
+      socket.off("new_ticket_message", handleNewTicketMessage);
+    };
+  }, [socket, dispatch, user?.type]);
 
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -626,6 +697,32 @@ export const DashboardLayout = ({ children, title }) => {
   const confirmLogout = () => {
     dispatch(logOut());
     navigate("/login");
+  };
+
+  const openTicketChat = async (ticket) => {
+    setActiveTicketChat(ticket);
+    setTicketChatMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg._id === ticket._id ? { ...msg, unread: 0 } : msg
+      )
+    );
+    setUnreadTicketChats((prevCount) => {
+      const currentTicketUnread = ticket.unread || 0;
+      return Math.max(0, prevCount - currentTicketUnread);
+    });
+    try {
+      const res = await getTicketById(ticket._id);
+      if (res.success) setActiveTicketHistory(res.data.messages || []);
+    } catch (error) { console.error("Ticket history fetch error:", error); }
+  };
+
+  const sendTicketReply = async (event) => {
+    event.preventDefault();
+    if (!activeTicketChat || !ticketReply.trim()) return;
+    try {
+      const res = await addMessage(activeTicketChat._id, ticketReply.trim());
+      if (res.success) { setActiveTicketHistory((history) => [...history, res.data]); setTicketReply(""); }
+    } catch (error) { console.error("Ticket reply error:", error); }
   };
 
   // Dropdown: latest 10 only
@@ -831,6 +928,37 @@ export const DashboardLayout = ({ children, title }) => {
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">{children}</main>
       </div>
+
+      {user?.type === "partner" && (
+        <div className="fixed bottom-6 right-6 z-40">
+          {!showTicketChatWidget && unreadTicketChats > 0 && <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} onClick={() => { setShowTicketChatWidget(true); setUnreadTicketChats(0); }} className="relative flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-card text-primary shadow-xl shadow-primary/10 transition hover:scale-105 hover:bg-primary/5" aria-label="Open ticket messages">
+            <MessageSquare className="h-6 w-6" />
+            <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-card bg-rose-500 px-1 text-[10px] font-black text-white">{unreadTicketChats}</span>
+          </motion.button>}
+          <AnimatePresence>{showTicketChatWidget && <motion.div initial={{ opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.96 }} className="absolute bottom-0 right-0 w-[min(23rem,calc(100vw-3rem))] overflow-hidden rounded-3xl border border-primary/20 bg-card shadow-2xl">
+            <div className="flex items-center justify-between bg-primary px-4 py-3 text-primary-foreground">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+                  <MessageSquare className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-black">Support Messages</p>
+                  <p className="text-[10px] text-primary-foreground/80">{ticketChatMessages.length} ticket{ticketChatMessages.length === 1 ? "" : "s"}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTicketChatWidget(false)}
+                className="rounded-full p-1.5 hover:bg-white/20 text-primary-foreground transition-colors"
+                aria-label="Close support messages"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {activeTicketChat ? <><div className="flex items-center gap-2 border-b border-border px-4 py-2"><button onClick={() => setActiveTicketChat(null)} className="text-xs font-bold text-primary">← All tickets</button><span className="truncate text-xs font-bold">{activeTicketChat.message}</span></div><div className="max-h-56 space-y-2 overflow-y-auto bg-muted/20 p-3">{activeTicketHistory.map((item, index) => <div key={item._id || index} className="rounded-xl bg-card p-2.5 text-xs shadow-sm"><p>{item.message || item.content}</p><span className="mt-1 block text-[9px] text-muted-foreground">{item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</span></div>)}</div><form onSubmit={sendTicketReply} className="flex gap-2 border-t border-border p-3"><input value={ticketReply} onChange={(e) => setTicketReply(e.target.value)} placeholder="Write a reply..." className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary" /><button className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">Send</button></form></> : <div className="max-h-72 divide-y divide-border overflow-y-auto">{ticketChatMessages.length ? ticketChatMessages.map((message, index) => <button key={message._id || index} onClick={() => openTicketChat(message)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-muted"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">T</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold text-foreground">{message.message || "Support Ticket"}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{message.lastMessage || "Open ticket conversation"}</span></span>{message.unread > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black text-primary-foreground">{message.unread}</span>}</button>) : <p className="py-8 text-center text-xs text-muted-foreground">No tickets yet.</p>}</div>}
+            <button onClick={() => { setShowTicketChatWidget(false); navigate("/dashboard/tickets"); }} className="w-full border-t border-border px-4 py-3 text-center text-xs font-bold text-primary hover:bg-primary/5 dark:hover:bg-primary-foreground/5">Open all conversations</button>
+          </motion.div>}</AnimatePresence>
+        </div>
+      )}
 
       {/* Logout Warning Modal */}
       <AnimatePresence>
