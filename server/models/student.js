@@ -259,8 +259,8 @@ const StudentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["On Progress", "Enrolled", "Cancelled"],
-      default: "On Progress",
+      enum: ["Pending Fee Payments", "On Progress", "Enrolled", "Cancelled"],
+      default: "Pending Fee Payments",
     },
     enrolledDate: Date,
     cancelledDate: Date,
@@ -341,7 +341,7 @@ const StudentSchema = new mongoose.Schema(
     isCreditTransfer: {
       type: Boolean,
       default: false,
-      index:true
+      index: true,
     },
     deleted: {
       type: Boolean,

@@ -24,7 +24,7 @@ const TicketSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["Student", "Finance", "University", "Other"],
+      enum: ["Student", "Finance", "University", "Application", "Course Fee", "Additional Documents", "Other"],
       default: "Other",
     },
     creatorId: {

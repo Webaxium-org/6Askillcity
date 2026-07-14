@@ -152,6 +152,7 @@ export const getAdminStats = async (req, res, next) => {
       rejectedApplicationsCount,
       newApplicationsTodayCount,
       feeStats,
+      pendingFeeCount,
       onProgressCount,
       enrolledCount,
       cancelledCount,
@@ -236,10 +237,16 @@ export const getAdminStats = async (req, res, next) => {
       ]),
       Student.countDocuments(studentFilter({
         $or: [
-          { status: "On Progress" },
+          { status: "Pending Fee Payments" },
           { status: { $exists: false } },
           { status: null },
         ],
+        paymentStatus: "Paid",
+        applicationStatus: "Eligible",
+        deleted: { $ne: true },
+      })),
+      Student.countDocuments(studentFilter({
+        status: "On Progress",
         applicationStatus: "Eligible",
         deleted: { $ne: true },
       })),
@@ -308,6 +315,7 @@ export const getAdminStats = async (req, res, next) => {
     };
 
     const lifecycleStats = {
+      pendingFee: pendingFeeCount,
       onProgress: onProgressCount,
       enrolled: enrolledCount,
       cancelled: cancelledCount,

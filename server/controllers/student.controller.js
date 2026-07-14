@@ -817,7 +817,7 @@ export const updateStudentStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, enrollmentNumber } = req.body;
 
-    if (!["On Progress", "Enrolled", "Cancelled"].includes(status)) {
+    if (!["Pending Fee Payments", "On Progress", "Enrolled", "Cancelled"].includes(status)) {
       throw createError(400, "Invalid status value.");
     }
 
@@ -829,6 +829,10 @@ export const updateStudentStatus = async (req, res, next) => {
       if (String(student.registeredBy) !== String(req.user.userId)) {
         throw createError(403, "Access denied.");
       }
+    }
+
+    if ((status === "On Progress" || status === "Enrolled") && student.paymentStatus !== "Paid") {
+      throw createError(400, "Cannot change status to On Progress or Enrolled until the course fee is fully paid.");
     }
 
     if (status === "Enrolled") {

@@ -333,6 +333,15 @@ export default function StudentPaymentDetail() {
     checkPaymentStatus();
   }, [id]);
 
+  useEffect(() => {
+    if (student?.status) {
+      setNewFollowup((prev) => ({
+        ...prev,
+        status: student.status,
+      }));
+    }
+  }, [student]);
+
   const initializeCashfree = async () => {
     const cf = await load({
       mode: import.meta.env.MODE === "production" ? "production" : "sandbox",
@@ -627,6 +636,9 @@ export default function StudentPaymentDetail() {
     try {
       // 1. Update status if changed in the form
       if (newFollowup.status && newFollowup.status !== student.status) {
+        if ((newFollowup.status === "On Progress" || newFollowup.status === "Enrolled") && student.paymentStatus !== "Paid") {
+          throw new Error("Cannot set status to On Progress or Enrolled until course fee is fully paid.");
+        }
         await updateStudentStatus(
           id,
           newFollowup.status,
@@ -650,7 +662,7 @@ export default function StudentPaymentDetail() {
             message: "Interaction logged and status updated",
           }),
         );
-        setNewFollowup({ note: "", status: "", enrollmentNumber: "" });
+        setNewFollowup({ note: "", status: student?.status || "", enrollmentNumber: "" });
         await Promise.all([fetchData(), fetchFollowups()]);
       }
     } catch (error) {
@@ -753,11 +765,13 @@ export default function StudentPaymentDetail() {
                         ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                         : student.status === "Cancelled"
                           ? "bg-red-500/10 text-red-600 border-red-500/20"
-                          : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                          : student.status === "Pending Fee Payments"
+                            ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            : "bg-blue-500/10 text-blue-600 border-blue-500/20"
                     } whitespace-nowrap`}
                   >
                     <Activity className="w-3 h-3" />
-                    {student.status || "On Progress"}
+                    {student.status || "Pending Fee Payments"}
                   </div>
 
                   {!isPartner && !isAdmin && !isManager && (
@@ -2294,14 +2308,25 @@ export default function StudentPaymentDetail() {
                               }
                               className="w-full p-4 rounded-2xl border border-border bg-muted/50 focus:border-primary outline-none transition-all text-xs font-bold uppercase tracking-wider"
                             >
-                              <option value="">
-                                No Change (Current: {student.status})
+                              <option value="Pending Fee Payments">Pending Fee Payments</option>
+                              <option value="On Progress" disabled={student.paymentStatus !== "Paid"}>
+                                On Progress {student.paymentStatus !== "Paid" && " (Locked - Fee Pending)"}
                               </option>
-                              <option value="On Progress">On Progress</option>
-                              <option value="Enrolled">Enrolled</option>
+                              <option value="Enrolled" disabled={student.paymentStatus !== "Paid"}>
+                                Enrolled {student.paymentStatus !== "Paid" && " (Locked - Fee Pending)"}
+                              </option>
                               <option value="Cancelled">Cancelled</option>
                             </select>
                           </div>
+
+                          {student.paymentStatus !== "Paid" && (
+                            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2.5">
+                              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                              <span>
+                                Note: Status cannot be updated to "On Progress" or "Enrolled" until the course fee is fully paid.
+                              </span>
+                            </div>
+                          )}
 
                           {newFollowup.status === "Enrolled" && (
                             <div className="space-y-2">
@@ -2401,10 +2426,12 @@ export default function StudentPaymentDetail() {
                                         ? "bg-emerald-500/10 text-emerald-600"
                                         : item.status === "Cancelled"
                                           ? "bg-red-500/10 text-red-600"
-                                          : "bg-blue-500/10 text-blue-600"
+                                          : item.status === "Pending Fee Payments"
+                                            ? "bg-amber-500/10 text-amber-600"
+                                            : "bg-blue-500/10 text-blue-600"
                                     } whitespace-nowrap`}
                                   >
-                                    {item.status || "On Progress"}
+                                    {item.status || "Pending Fee Payments"}
                                   </span>
                                   <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5">
                                     <Calendar className="w-3 h-3" />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { MessageSquare, Plus, Search, Clock, AlertCircle, CheckCircle2, ChevronRight, SlidersHorizontal, X, Filter, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -307,7 +307,13 @@ export default function TicketsPage() {
                         <td className="px-5 py-4">
                           {ticket.studentId ? (
                             <div className="flex flex-col">
-                              <span className="text-sm font-bold text-primary">{ticket.studentId.name}</span>
+                              <Link
+                                to={`/dashboard/student-management/${ticket.studentId._id || ticket.studentId}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-sm font-bold text-primary underline hover:text-primary/80 underline-offset-2 w-fit"
+                              >
+                                {ticket.studentId.name}
+                              </Link>
                               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{ticket.studentId.enrollmentNumber || "No EN"}</span>
                             </div>
                           ) : (
@@ -371,7 +377,13 @@ export default function TicketsPage() {
                           <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase tracking-wider">#{ticket._id.slice(-6)}</span>
                            <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider", getPriorityColor(ticket.priority))}>{ticket.priority}</span>
                            {ticket.studentId && (
-                             <span className="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider">Student: {ticket.studentId.name}</span>
+                             <Link
+                               to={`/dashboard/student-management/${ticket.studentId._id || ticket.studentId}`}
+                               onClick={(e) => e.stopPropagation()}
+                               className="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider underline hover:text-primary/80"
+                             >
+                               Student: {ticket.studentId.name}
+                             </Link>
                            )}
                            <span className="text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded uppercase tracking-wider">{ticket.category || "Other"}</span>
                          </div>
@@ -474,7 +486,7 @@ export default function TicketsPage() {
                     <span className="text-[10px] font-black uppercase tracking-widest">Category</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {["All", "Student", "Finance", "University", "Other"].map((c) => (
+                    {["All", "Student", "Finance", "University", "Application", "Course Fee", "Additional Documents", "Other"].map((c) => (
                       <button key={c} onClick={() => setFilterCategory(c)}
                         className={cn(
                           "px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",

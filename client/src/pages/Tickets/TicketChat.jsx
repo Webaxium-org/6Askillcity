@@ -211,7 +211,7 @@ export default function TicketChat({ ticket, onClose, prefilledStudentId, prefil
                 <label className="text-sm font-semibold">Category</label>
                 <select value={category} onChange={(e) => setCategory(e.target.value)}
                   className="w-full border border-border bg-background px-4 py-2.5 rounded-xl focus:outline-none focus:border-primary text-sm">
-                  {["Student", "Finance", "University", "Other"].map(v => <option key={v}>{v}</option>)}
+                  {["Student", "Finance", "University", "Application", "Course Fee", "Additional Documents", "Other"].map(v => <option key={v}>{v}</option>)}
                 </select>
               </div>
               {user?.type === "admin" && (

@@ -210,7 +210,9 @@ const AdminOverview = () => {
         navigate("/dashboard/student-management?paymentStatus=Paid");
       }
     } else if (sectionTitle === "Student") {
-      if (label === "To Be Enrolled" || label === "Enrollment On Progress") {
+      if (label === "To Be Enrolled") {
+        navigate("/dashboard/student-management?tab=Pending Fee Payments&paymentStatus=Paid");
+      } else if (label === "Enrollment On Progress") {
         navigate("/dashboard/student-management?tab=On Progress");
       } else if (label === "Enrolled Students") {
         navigate("/dashboard/student-management?tab=Enrolled");
@@ -314,7 +316,7 @@ const AdminOverview = () => {
       items: [
         {
           label: "To Be Enrolled",
-          value: stats?.lifecycleStats?.onProgress || 0,
+          value: stats?.lifecycleStats?.pendingFee || 0,
         },
         {
           label: "Enrollment On Progress",

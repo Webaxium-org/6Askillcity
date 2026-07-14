@@ -51,7 +51,7 @@ const FollowupSchema = new mongoose.Schema(
     // Enrollment follow up status
     status: {
       type: String,
-      enum: ["On Progress", "Enrolled", "Cancelled"],
+      enum: ["Pending Fee Payments", "On Progress", "Enrolled", "Cancelled"],
     },
 
     // Scheduling: When is the next interaction planned?

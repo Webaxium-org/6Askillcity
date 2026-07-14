@@ -37,8 +37,8 @@ export default function StudentList() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("all"); // all, paid, pending
-  const [statusTab, setStatusTab] = useState("On Progress"); // On Progress, Enrolled, Cancelled
+  const [filterType, setFilterType] = useState("all"); // all, paid, partially_paid, pending
+  const [statusTab, setStatusTab] = useState("Pending Fee Payments"); // Pending Fee Payments, On Progress, Enrolled, Cancelled
 
   // Advanced Filters
   const [showFilters, setShowFilters] = useState(!!location.state?.partnerId);
@@ -207,7 +207,8 @@ export default function StudentList() {
 
     // Payment Filter
     if (filterType === "paid" && s.paymentStatus !== "Paid") return false;
-    if (filterType === "pending" && s.paymentStatus === "Paid") return false;
+    if (filterType === "partially_paid" && s.paymentStatus !== "Partially Paid") return false;
+    if (filterType === "pending" && (s.paymentStatus === "Paid" || s.paymentStatus === "Partially Paid")) return false;
 
     // University/Program Filter
     if (selectedUni !== "all" && s.university?._id !== selectedUni)
@@ -246,7 +247,7 @@ export default function StudentList() {
 
     // Status Tab Filter
     if (statusTab !== "all") {
-      const studentStatus = s.status || "On Progress";
+      const studentStatus = s.status || "Pending Fee Payments";
       if (studentStatus !== statusTab) return false;
     }
 
@@ -280,6 +281,8 @@ export default function StudentList() {
         return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
       case "Cancelled":
         return "bg-red-500/10 text-red-600 border-red-500/20";
+      case "Pending Fee Payments":
+        return "bg-amber-500/10 text-amber-600 border-amber-500/20";
       default:
         return "bg-blue-500/10 text-blue-600 border-blue-500/20";
     }
@@ -288,17 +291,20 @@ export default function StudentList() {
   const totals = students.reduce(
     (acc, curr) => {
       const isPaid = curr.paymentStatus === "Paid";
+      const isPartiallyPaid = curr.paymentStatus === "Partially Paid";
+      
+      const studentTotalFee = curr.programFee?.totalFee || 0;
+      const studentPaidFee = curr.totalFeePaid || 0;
+      const studentPendingFee = Math.max(0, studentTotalFee - studentPaidFee);
+
       return {
         total: acc.total + 1,
-        paidAmount: acc.paidAmount + (curr.totalFeePaid || 0),
-        pendingAmount:
-          acc.pendingAmount +
-          Math.max(
-            0,
-            (curr.programFee?.totalFee || 0) - (curr.totalFeePaid || 0),
-          ),
+        paidAmount: acc.paidAmount + studentPaidFee,
+        pendingAmount: acc.pendingAmount + studentPendingFee,
         paidCount: acc.paidCount + (isPaid ? 1 : 0),
-        pendingCount: acc.pendingCount + (isPaid ? 0 : 1),
+        partiallyPaidCount: acc.partiallyPaidCount + (isPartiallyPaid ? 1 : 0),
+        partiallyPaidAmount: acc.partiallyPaidAmount + (isPartiallyPaid ? studentPaidFee : 0),
+        pendingCount: acc.pendingCount + (!isPaid && !isPartiallyPaid ? 1 : 0),
       };
     },
     {
@@ -306,12 +312,15 @@ export default function StudentList() {
       paidAmount: 0,
       pendingAmount: 0,
       paidCount: 0,
+      partiallyPaidCount: 0,
+      partiallyPaidAmount: 0,
       pendingCount: 0,
     },
   );
 
   const studentTabs = [
-    { id: "On Progress", label: "On Progress", icon: Clock },
+    { id: "Pending Fee Payments", label: "Pending Fee Payments", icon: Clock },
+    { id: "On Progress", label: "On Progress", icon: GraduationCap },
     { id: "Enrolled", label: "Enrolled", icon: CheckCircle2 },
     { id: "Cancelled", label: "Cancelled", icon: AlertCircle },
   ];
@@ -324,8 +333,8 @@ export default function StudentList() {
           className={cn(
             "grid gap-6",
             isManager
-              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+              ? "grid-cols-1"
+              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
           )}
         >
           <StatCard
@@ -353,6 +362,19 @@ export default function StudentList() {
                 className={
                   filterType === "paid"
                     ? "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/20"
+                    : ""
+                }
+              />
+              <StatCard
+                title="Fee Partially Paid Students"
+                value={totals.partiallyPaidCount}
+                icon={BadgeDollarSign}
+                subtext={`Collected: ₹${totals.partiallyPaidAmount.toLocaleString()}`}
+                color="amber"
+                onClick={() => setFilterType("partially_paid")}
+                className={
+                  filterType === "partially_paid"
+                    ? "ring-2 ring-amber-500 shadow-lg shadow-amber-500/20"
                     : ""
                 }
               />
@@ -392,7 +414,7 @@ export default function StudentList() {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground text-[10px] font-black uppercase tracking-widest transition-all shrink-0"
               >
                 <X className="w-3 h-3" />
-                Clear {filterType} Filter
+                Clear {filterType === "partially_paid" ? "Partially Paid" : filterType} Filter
               </button>
             )}
           </div>
@@ -720,7 +742,7 @@ export default function StudentList() {
                           <span
                             className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getLifecycleStatusStyle(student.status)} whitespace-nowrap`}
                           >
-                            {student.status || "On Progress"}
+                            {student.status || "Pending Fee Payments"}
                           </span>
                         </td>
                         <td className="px-8 py-6 text-right">
@@ -813,7 +835,7 @@ export default function StudentList() {
                         <span
                           className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getLifecycleStatusStyle(student.status)} whitespace-nowrap`}
                         >
-                          {student.status || "On Progress"}
+                          {student.status || "Pending Fee Payments"}
                         </span>
                       </div>
                     </div>
