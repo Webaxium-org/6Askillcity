@@ -38,7 +38,7 @@ export default function StudentList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all"); // all, paid, partially_paid, pending
-  const [statusTab, setStatusTab] = useState("Pending Fee Payments"); // Pending Fee Payments, On Progress, Enrolled, Cancelled
+  const [statusTab, setStatusTab] = useState("all"); // all (Students), Pending Fee Payments, On Progress, Enrolled, Cancelled
 
   // Advanced Filters
   const [showFilters, setShowFilters] = useState(!!location.state?.partnerId);
@@ -288,6 +288,70 @@ export default function StudentList() {
     }
   };
 
+  const handleExport = () => {
+    if (filteredStudents.length === 0) {
+      dispatch(showAlert({ type: "info", message: "No data available to export" }));
+      return;
+    }
+
+    const headers = [
+      "Student ID",
+      "Name",
+      "Email",
+      "Phone",
+      "University",
+      "Program",
+      "Batch",
+      "Payment Status",
+      "Total Paid (INR)",
+      "Total Program Fee (INR)",
+      "Lifecycle Status",
+      "Created At"
+    ];
+
+    const rows = filteredStudents.map((s) => [
+      s._id,
+      s.name,
+      s.email,
+      s.phone || "",
+      s.university?.name || "",
+      s.program?.name || "",
+      s.batch || "",
+      s.paymentStatus || "",
+      s.totalFeePaid || 0,
+      s.programFee?.totalFee || 0,
+      s.status || "Pending Fee Payments",
+      s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-IN") : ""
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row
+          .map((value) => {
+            const stringValue = String(value).replace(/"/g, '""');
+            return stringValue.includes(",") || stringValue.includes("\n") || stringValue.includes('"')
+              ? `"${stringValue}"`
+              : stringValue;
+          })
+          .join(",")
+      )
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `Students_Export_${statusTab.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totals = students.reduce(
     (acc, curr) => {
       const isPaid = curr.paymentStatus === "Paid";
@@ -319,6 +383,7 @@ export default function StudentList() {
   );
 
   const studentTabs = [
+    { id: "all", label: "Students", icon: Users },
     { id: "Pending Fee Payments", label: "Pending Fee Payments", icon: Clock },
     { id: "On Progress", label: "On Progress", icon: GraduationCap },
     { id: "Enrolled", label: "Enrolled", icon: CheckCircle2 },
@@ -449,7 +514,10 @@ export default function StudentList() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-card/40 backdrop-blur-xl border border-border/50 text-xs font-black uppercase tracking-[0.2em] hover:bg-muted/50 hover:border-primary/30 transition-all group">
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-card/40 backdrop-blur-xl border border-border/50 text-xs font-black uppercase tracking-[0.2em] hover:bg-muted/50 hover:border-primary/30 transition-all group"
+              >
                 <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
                 Export
               </button>
