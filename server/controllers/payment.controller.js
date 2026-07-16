@@ -3,6 +3,7 @@ import Payment from "../models/payment.js";
 import PaymentIntent from "../models/paymentIntent.js";
 import PaymentSchedule from "../models/paymentSchedule.js";
 import ServiceApplication from "../models/serviceApplication.js";
+import AdmissionPoint from "../models/admissionPoint.js";
 import createError from "http-errors";
 import { v4 as uuidv4 } from "uuid";
 import mongoose from "mongoose";
@@ -415,10 +416,11 @@ export const approvePayment = async (req, res, next) => {
       throw createError(400, `Payment is already ${payment.approvalStatus}.`);
     }
 
-    const student = await Student.findById(payment.student._id).populate(
-      "programFee",
-    );
-    if (!student) throw createError(404, "Student not found.");
+    let student = null;
+    if (payment.type !== "Onboarding Inspection Fee") {
+      student = await Student.findById(payment.student?._id).populate("programFee");
+      if (!student) throw createError(404, "Student not found.");
+    }
 
     // Update payment record
     payment.approvalStatus = "approved";
@@ -426,7 +428,21 @@ export const approvePayment = async (req, res, next) => {
     payment.approvalDate = new Date();
     await payment.save();
 
-    if (payment.type === "Course Fee") {
+    if (payment.type === "Onboarding Inspection Fee") {
+      const partner = await AdmissionPoint.findById(payment.partner);
+      if (!partner) throw createError(404, "Partner not found.");
+
+      partner.onboardingState = "inspection_pending";
+      partner.inspectionFeePaid = true;
+      partner.inspectionFeePaymentDetails = {
+        ...(partner.inspectionFeePaymentDetails || {}),
+        status: "SUCCESS",
+        approvalDate: payment.approvalDate,
+        approvedBy: req.user.userId,
+        paymentId: payment._id,
+      };
+      await partner.save();
+    } else if (payment.type === "Course Fee") {
       // Update student totals
       student.totalFeePaid += payment.amount;
       const totalFee = student.programFee?.totalFee || 0;
@@ -546,6 +562,20 @@ export const rejectPayment = async (req, res, next) => {
     payment.rejectionDate = new Date();
     payment.rejectionReason = reason;
     await payment.save();
+
+    if (payment.type === "Onboarding Inspection Fee") {
+      const partner = await AdmissionPoint.findById(payment.partner);
+      if (partner) {
+        partner.inspectionFeePaid = false;
+        partner.inspectionFeePaymentDetails = {
+          ...(partner.inspectionFeePaymentDetails || {}),
+          status: "REJECTED",
+          rejectionReason: reason,
+          paymentId: payment._id,
+        };
+        await partner.save();
+      }
+    }
 
     res
       .status(200)
@@ -670,7 +700,7 @@ export const getGlobalPaymentStats = async (req, res, next) => {
             { path: "program", select: "name" },
           ],
         })
-        .populate("partner", "name")
+        .populate("partner", "name centerName centerId licenseeEmail licenseeContactNumber")
         .populate({
           path: "serviceApplication",
           populate: { path: "service", select: "title" },
@@ -687,7 +717,7 @@ export const getGlobalPaymentStats = async (req, res, next) => {
           select: "name email university admissionPoint",
           populate: { path: "university", select: "name" },
         })
-        .populate("partner", "name")
+        .populate("partner", "name centerName centerId")
         .sort({ dueDate: 1 })
         .limit(100),
       Payment.find({ ...filter, approvalStatus: "pending" })

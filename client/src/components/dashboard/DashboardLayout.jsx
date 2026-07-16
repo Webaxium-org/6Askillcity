@@ -288,16 +288,17 @@ const Sidebar = ({
               },
             ]
           : []),
-        ...(user?.role === "admin"
-          ? [
-              {
-                id: "reports",
-                label: "Reports",
-                icon: FileText,
-                path: "/dashboard/reports",
-              },
-            ]
-          : []),
+        // Reports are temporarily disabled.
+        // ...(user?.role === "admin"
+        //   ? [
+        //       {
+        //         id: "reports",
+        //         label: "Reports",
+        //         icon: FileText,
+        //         path: "/dashboard/reports",
+        //       },
+        //     ]
+        //   : []),
         ...(user?.role === "admin" || user?.role === "manager" || user?.type === "partner"
           ? [
               {

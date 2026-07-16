@@ -25,8 +25,9 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import { SocketProvider } from "./context/SocketContext";
 import TicketsPage from "./pages/Tickets/TicketsPage";
 import AlertManager from "./components/global/AlertManager";
-import Reports from "./pages/Reports/Reports";
-import ReportDetail from "./pages/Reports/ReportDetail";
+// Reports are temporarily disabled.
+// import Reports from "./pages/Reports/Reports";
+// import ReportDetail from "./pages/Reports/ReportDetail";
 import NotificationsPage from "./pages/Notifications/NotificationsPage";
 import AdminOverview from "./pages/Dashboards/AdminOverview";
 import DocumentsServices from "./pages/Dashboards/DocumentsServices";
@@ -64,6 +65,7 @@ function App() {
                 <Route path="/dashboard/overview" element={<AdminOverview />} />
                 <Route path="/dashboard/documents-services" element={<DocumentsServices />} />
               </Route>
+              {/* Reports are temporarily disabled.
               <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
                 <Route path="/dashboard/reports" element={<Reports />} />
                 <Route
@@ -71,6 +73,7 @@ function App() {
                   element={<ReportDetail />}
                 />
               </Route>
+              */}
               <Route path="/dashboard/profile" element={<MyProfile />} />
               <Route path="/dashboard/courses" element={<PartnerCourses />} />
               <Route path="/dashboard/notifications" element={<NotificationsPage />} />

@@ -5,7 +5,6 @@ const PaymentSchema = new mongoose.Schema(
     student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Student",
-      required: true,
     },
     partner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -35,7 +34,7 @@ const PaymentSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Course Fee", "Documents & Services"],
+      enum: ["Course Fee", "Documents & Services", "Onboarding Inspection Fee"],
       default: "Course Fee",
     },
     serviceApplication: {

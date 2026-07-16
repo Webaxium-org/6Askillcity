@@ -43,6 +43,7 @@ const uploadParams = multer({
 import AdmissionPoint from "../models/admissionPoint.js";
 import AuthorisationLetter from "../models/authorisationLetter.js";
 import ActivityLog from "../models/activityLog.js";
+import Payment from "../models/payment.js";
 import PartnerPermission from "../models/partnerPermission.js";
 import ProgramFee from "../models/programFee.js";
 import createError from "http-errors";
@@ -519,9 +520,12 @@ export const verifyInspectionFeePayment = async (req, res, next) => {
 export const recordOfflineOnboardingFee = async (req, res, next) => {
   try {
     const { partnerId, amount, method, transactionId, remarks } = req.body;
-    // For partner calling this, we can optionally use req.user.userId,
-    // but allowing partnerId via body lets admin do it too.
-    const targetPartnerId = partnerId || req.user.userId;
+    // Partners may only submit their own receipt; admins may record one for a partner.
+    const targetPartnerId = req.user.userType === "partner" ? req.user.userId : partnerId;
+
+    if (!targetPartnerId) {
+      throw createError(400, "Partner ID is required.");
+    }
 
     const partner = await AdmissionPoint.findById(targetPartnerId);
     if (!partner) {
@@ -532,22 +536,45 @@ export const recordOfflineOnboardingFee = async (req, res, next) => {
       throw createError(400, "Partner fee has already been paid or state is invalid.");
     }
 
+    if (partner.inspectionFeePaymentDetails?.status === "PENDING_APPROVAL") {
+      throw createError(400, "This payment receipt is already awaiting admin approval.");
+    }
+
     if (!req.file) {
       throw createError(400, "Please upload the payment receipt.");
     }
 
     const receiptUrl = req.file.location || req.file.path;
+    const paymentAmount = req.user.userType === "partner" ? 5000 : Number(amount);
 
-    partner.onboardingState = "inspection_pending";
-    partner.inspectionFeePaid = true;
+    if (!paymentAmount || paymentAmount <= 0) {
+      throw createError(400, "A valid payment amount is required.");
+    }
+
+    const payment = await Payment.create({
+      partner: partner._id,
+      amount: paymentAmount,
+      method,
+      transactionId,
+      invoiceId: `INV-ONB-${Date.now().toString().slice(-8)}`,
+      remarks: remarks || "Onboarding inspection fee",
+      receipt: receiptUrl,
+      type: "Onboarding Inspection Fee",
+      approvalStatus: "pending",
+    });
+
+    // Receipt uploads are only submissions. Finance/admin must approve them
+    // before the partner can proceed to inspection.
+    partner.inspectionFeePaid = false;
     partner.inspectionFeePaymentDetails = {
-      amount: Number(amount),
+      amount: paymentAmount,
       method,
       transactionId,
       remarks,
       receipt: receiptUrl,
       paymentDate: new Date(),
-      status: "SUCCESS"
+      status: "PENDING_APPROVAL",
+      paymentId: payment._id,
     };
 
     await partner.save();
@@ -561,16 +588,16 @@ export const recordOfflineOnboardingFee = async (req, res, next) => {
     );
 
     await sendToAdmins({
-      title: "Onboarding Fee Paid",
-      message: `${partner.centerName} has paid their onboarding fee (Offline).`,
+      title: "Onboarding Fee Receipt Submitted",
+      message: `${partner.centerName} submitted an onboarding fee receipt for verification.`,
       type: "partner_fee_paid",
-      relatedId: partner._id,
-      link: `/dashboard/partner-management/${partner._id}`
+      relatedId: payment._id,
+      link: "/dashboard/payment-management"
     });
 
     res.status(200).json({
       success: true,
-      message: "Offline payment receipt uploaded and verified successfully!",
+      message: "Payment receipt submitted for admin verification.",
       data: partner,
     });
   } catch (error) {

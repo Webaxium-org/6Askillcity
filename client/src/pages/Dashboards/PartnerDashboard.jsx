@@ -339,6 +339,8 @@ export default function PartnerDashboard() {
     const isFeePending = partnerProfile.onboardingState === "fee_pending";
     const isInspectionPending =
       partnerProfile.onboardingState === "inspection_pending";
+    const feeApprovalStatus =
+      partnerProfile.inspectionFeePaymentDetails?.status;
 
     return (
       <DashboardLayout title="Partner Onboarding">
@@ -413,7 +415,7 @@ export default function PartnerDashboard() {
                       </p>
                     </div>
 
-                    {isFeePending ? (
+                    {isFeePending && feeApprovalStatus !== "PENDING_APPROVAL" ? (
                       <div className="bg-muted/30 border border-border/50 rounded-2xl p-5 space-y-4">
                         <div className="flex justify-between items-center text-sm font-bold">
                           <span className="text-muted-foreground font-medium">
@@ -559,6 +561,16 @@ export default function PartnerDashboard() {
                             </button>
                           </form>
                         )}
+                      </div>
+                    ) : feeApprovalStatus === "PENDING_APPROVAL" ? (
+                      <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 text-amber-700 text-xs font-bold">
+                        <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-black uppercase tracking-widest">Receipt Awaiting Approval</p>
+                          <p className="mt-1 font-medium text-muted-foreground">
+                            Your receipt has been submitted to Finance. Inspection will unlock after an administrator verifies the payment.
+                          </p>
+                        </div>
                       </div>
                     ) : (
                       <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex items-center gap-3 text-emerald-600 text-xs font-bold">

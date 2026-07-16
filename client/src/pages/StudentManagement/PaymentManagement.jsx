@@ -170,7 +170,9 @@ export default function PaymentManagement() {
   const applyFilters = (list, isSchedule = false, isPending = false) => {
     return list.filter((item) => {
       const matchesSearch =
-        item.student?.name.toLowerCase().includes(search.toLowerCase()) ||
+        item.student?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        item.partner?.centerName?.toLowerCase().includes(search.toLowerCase()) ||
+        item.partner?.name?.toLowerCase().includes(search.toLowerCase()) ||
         (item.transactionId || "").toLowerCase().includes(search.toLowerCase());
 
       if (!matchesSearch) return false;
@@ -474,7 +476,7 @@ export default function PaymentManagement() {
                         Type
                       </th>
                       <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                        Student Details
+                        Payment For
                       </th>
                       {isAdmin && (
                         <th className="px-8 py-5 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
@@ -513,7 +515,9 @@ export default function PaymentManagement() {
                                 "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap",
                                 item.type === "Course Fee"
                                   ? "bg-blue-500/10 text-blue-500"
-                                  : "bg-emerald-500/10 text-emerald-500",
+                                  : item.type === "Onboarding Inspection Fee"
+                                    ? "bg-violet-500/10 text-violet-500"
+                                    : "bg-emerald-500/10 text-emerald-500",
                               )}
                             >
                               {item.type || "N/A"}
@@ -527,13 +531,13 @@ export default function PaymentManagement() {
                         </td>
                         <td className="px-6 md:px-8 py-3 md:py-6">
                           <div className="flex md:flex-col items-center md:items-start justify-between">
-                            <span className="md:hidden text-[10px] font-black uppercase text-muted-foreground tracking-widest">Student</span>
+                            <span className="md:hidden text-[10px] font-black uppercase text-muted-foreground tracking-widest">Payment For</span>
                             <div className="flex flex-col text-right md:text-left">
                               <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
-                                {item.student?.name}
+                                {item.student?.name || item.partner?.centerName || item.partner?.name || "Partner onboarding"}
                               </span>
                               <span className="text-[10px] font-bold text-muted-foreground/70 uppercase">
-                                {item.student?.university?.name}
+                                {item.student?.university?.name || (item.type === "Onboarding Inspection Fee" ? "Admission Point" : "")}
                               </span>
                             </div>
                           </div>
@@ -580,7 +584,7 @@ export default function PaymentManagement() {
                                     View Details
                                   </button>
                                 )}
-                                {(activeTab === "rejected" || !isAdmin) && (
+                                {(activeTab === "rejected" || !isAdmin) && item.student?._id && (
                                   <button
                                     onClick={() => navigate(`/dashboard/student-management/${item.student?._id}?tab=payment`)}
                                     className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:bg-primary hover:text-white px-4 py-2.5 rounded-2xl transition-all border border-primary/10"
@@ -721,8 +725,8 @@ export default function PaymentManagement() {
                   <div className="p-6 rounded-3xl bg-muted/30 border border-border space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">Student Name</p>
-                        <p className="text-lg font-black text-foreground">{approvingPayment.student?.name}</p>
+                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">Payment For</p>
+                        <p className="text-lg font-black text-foreground">{approvingPayment.student?.name || approvingPayment.partner?.centerName || approvingPayment.partner?.name}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">Amount</p>
@@ -733,7 +737,7 @@ export default function PaymentManagement() {
                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                       <div>
                         <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">University</p>
-                        <p className="text-xs font-bold truncate">{approvingPayment.student?.university?.name || "N/A"}</p>
+                        <p className="text-xs font-bold truncate">{approvingPayment.student?.university?.name || (approvingPayment.type === "Onboarding Inspection Fee" ? "Admission Point Onboarding" : "N/A")}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">Partner</p>
@@ -995,6 +999,16 @@ export default function PaymentManagement() {
           isOpen={showInvoiceModal}
           onClose={() => setShowInvoiceModal(false)}
           payment={selectedInvoice}
+          student={
+            selectedInvoice.student ||
+            (selectedInvoice.type === "Onboarding Inspection Fee"
+              ? {
+                  name: selectedInvoice.partner?.centerName || selectedInvoice.partner?.name,
+                  email: selectedInvoice.partner?.licenseeEmail,
+                  phone: selectedInvoice.partner?.licenseeContactNumber,
+                }
+              : undefined)
+          }
         />
       )}
     </DashboardLayout>
