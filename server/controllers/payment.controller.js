@@ -717,7 +717,7 @@ export const getGlobalPaymentStats = async (req, res, next) => {
           select: "name email university admissionPoint",
           populate: { path: "university", select: "name" },
         })
-        .populate("partner", "name centerName centerId")
+        .populate("partner", "name centerName centerId licenseeEmail")
         .sort({ dueDate: 1 })
         .limit(100),
       Payment.find({ ...filter, approvalStatus: "pending" })
@@ -729,7 +729,7 @@ export const getGlobalPaymentStats = async (req, res, next) => {
             { path: "program", select: "name" },
           ],
         })
-        .populate("partner", "name centerName centerId")
+        .populate("partner", "name centerName centerId licenseeEmail")
         .populate({
           path: "serviceApplication",
           populate: { path: "service", select: "title" },
@@ -748,7 +748,7 @@ export const getGlobalPaymentStats = async (req, res, next) => {
             { path: "program", select: "name" },
           ],
         })
-        .populate("partner", "name centerName centerId")
+        .populate("partner", "name centerName centerId licenseeEmail")
         .populate({
           path: "serviceApplication",
           populate: { path: "service", select: "title" },

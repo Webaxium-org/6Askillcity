@@ -56,6 +56,7 @@ export default function PaymentManagement() {
   const [endDate, setEndDate] = useState("");
   const [selectedUni, setSelectedUni] = useState("all");
   const [selectedPartner, setSelectedPartner] = useState("all");
+  const [selectedFeeType, setSelectedFeeType] = useState("all");
   const [universities, setUniversities] = useState([]);
   const [partners, setPartners] = useState([]);
 
@@ -83,7 +84,14 @@ export default function PaymentManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, search, startDate, endDate, selectedUni, selectedPartner]);
+  }, [activeTab, search, startDate, endDate, selectedUni, selectedPartner, selectedFeeType]);
+
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   const setQuickRange = (range) => {
     const today = new Date();
@@ -110,8 +118,8 @@ export default function PaymentManagement() {
         break;
     }
 
-    setStartDate(start.toISOString().split("T")[0]);
-    setEndDate(end.toISOString().split("T")[0]);
+    setStartDate(formatLocalDate(start));
+    setEndDate(formatLocalDate(end));
   };
 
   const fetchUniversities = async () => {
@@ -177,6 +185,10 @@ export default function PaymentManagement() {
 
       if (!matchesSearch) return false;
 
+      // Payment schedules are course-fee installments and do not store a type.
+      const feeType = item.type || (isSchedule ? "Course Fee" : "");
+      if (selectedFeeType !== "all" && feeType !== selectedFeeType) return false;
+
       // University Filter
       if (
         selectedUni !== "all" &&
@@ -194,8 +206,14 @@ export default function PaymentManagement() {
 
       // Date Range Filter
       const itemDate = new Date(isSchedule ? item.dueDate : (isPending ? item.createdAt : item.date));
-      if (startDate && itemDate < new Date(startDate)) return false;
-      if (endDate && itemDate > new Date(endDate)) return false;
+      if (startDate) {
+        const rangeStart = new Date(`${startDate}T00:00:00.000`);
+        if (itemDate < rangeStart) return false;
+      }
+      if (endDate) {
+        const rangeEnd = new Date(`${endDate}T23:59:59.999`);
+        if (itemDate > rangeEnd) return false;
+      }
 
       return true;
     });
@@ -371,13 +389,13 @@ export default function PaymentManagement() {
               onClick={() => setShowFilters(true)}
               className={cn(
                 "px-6 py-3 rounded-2xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2",
-                startDate || endDate || selectedUni !== "all" || selectedPartner !== "all"
+                startDate || endDate || selectedUni !== "all" || selectedPartner !== "all" || selectedFeeType !== "all"
                   ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                   : "bg-card border-border/50 text-muted-foreground hover:border-primary/30 hover:text-primary"
               )}
             >
               <Filter className="w-3.5 h-3.5" />
-              {startDate || endDate || selectedUni !== "all" || selectedPartner !== "all"
+              {startDate || endDate || selectedUni !== "all" || selectedPartner !== "all" || selectedFeeType !== "all"
                 ? "Active"
                 : "Filters"}
             </button>
@@ -389,7 +407,8 @@ export default function PaymentManagement() {
           {(startDate ||
             endDate ||
             selectedUni !== "all" ||
-            selectedPartner !== "all") && (
+            selectedPartner !== "all" ||
+            selectedFeeType !== "all") && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -426,6 +445,18 @@ export default function PaymentManagement() {
                 </div>
               )}
 
+              {selectedFeeType !== "all" && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-[10px] font-bold text-violet-600">
+                  Fee Type: {selectedFeeType}
+                  <button
+                    onClick={() => setSelectedFeeType("all")}
+                    className="hover:text-rose-500 animate-pulse"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
               {(startDate || endDate) && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-bold text-emerald-600">
                   Period: {startDate || "Start"} to {endDate || "End"}
@@ -447,6 +478,7 @@ export default function PaymentManagement() {
                   setEndDate("");
                   setSelectedUni("all");
                   setSelectedPartner("all");
+                  setSelectedFeeType("all");
                 }}
                 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 hover:underline ml-2"
               >
@@ -548,7 +580,7 @@ export default function PaymentManagement() {
                               <span className="md:hidden text-[10px] font-black uppercase text-muted-foreground tracking-widest">Partner</span>
                               <div className="flex flex-col text-right md:text-left">
                                 <span className="text-sm font-black">{item.partner?.centerName || item.partner?.name}</span>
-                                <span className="text-[10px] font-bold text-muted-foreground">ID: {item.partner?.centerId || "N/A"}</span>
+                                <span className="text-[10px] font-bold text-muted-foreground">{item.partner?.licenseeEmail || "N/A"}</span>
                               </div>
                             </div>
                           </td>
@@ -852,6 +884,32 @@ export default function PaymentManagement() {
               <div className="flex-1 overflow-y-auto p-10 space-y-12">
                 <div className="space-y-5">
                   <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-violet-500/5 flex items-center justify-center text-violet-600">
+                      <BadgeDollarSign className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        Fee Payment Type
+                      </h4>
+                      <p className="text-[9px] font-bold text-muted-foreground">
+                        Filter by the purpose of payment
+                      </p>
+                    </div>
+                  </div>
+                  <select
+                    value={selectedFeeType}
+                    onChange={(e) => setSelectedFeeType(e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-violet-500/30 focus:bg-white focus:ring-4 focus:ring-violet-500/5 transition-all appearance-none"
+                  >
+                    <option value="all">All Fee Types</option>
+                    <option value="Course Fee">Course Fee</option>
+                    <option value="Documents & Services">Documents &amp; Services</option>
+                    <option value="Onboarding Inspection Fee">Onboarding Inspection Fee</option>
+                  </select>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
                       <Building2 className="w-5 h-5" />
                     </div>
@@ -976,6 +1034,7 @@ export default function PaymentManagement() {
                     setEndDate("");
                     setSelectedUni("all");
                     setSelectedPartner("all");
+                    setSelectedFeeType("all");
                   }}
                   className="flex-1 py-4 rounded-2xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
                 >
