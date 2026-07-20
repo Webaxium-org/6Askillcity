@@ -8,6 +8,7 @@ import {
   Filter,
   Plus,
   ChevronRight,
+  ChevronDown,
   ClipboardCheck,
   GraduationCap,
   Package,
@@ -104,7 +105,16 @@ export default function DocumentsServices() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [serviceTypeFilter, setServiceTypeFilter] = useState("all");
   const [partners, setPartners] = useState([]);
-  
+
+  const activeFilterCount = [
+    !!startDate,
+    !!endDate,
+    selectedPartner !== "all",
+    serviceTypeFilter !== "all",
+    paymentStatusFilter !== "all",
+    statusFilter !== "all",
+  ].filter(Boolean).length;
+
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(null); // service object
@@ -445,18 +455,19 @@ export default function DocumentsServices() {
               </div>
               
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={cn(
-                    "relative group px-6 py-4 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all border flex items-center gap-2",
-                    showFilters || startDate || endDate || selectedPartner !== "all" || serviceTypeFilter !== "all" || paymentStatusFilter !== "all" || statusFilter !== "all"
-                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                      : "bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-primary",
-                  )}
-                >
-                  <Filter className={cn("w-3.5 h-3.5", showFilters && "rotate-180")} />
-                  {showFilters ? "Close" : "Filters"}
-                </button>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2.5 px-6 py-3.5 bg-card border rounded-full text-[10px] font-black uppercase tracking-widest text-slate-800 transition-all hover:bg-muted/50 filters-btn-glow select-none whitespace-nowrap"
+            >
+              <Filter className="w-4 h-4 text-slate-700" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#17468C] text-white text-[10px] font-black">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform duration-300", showFilters && "rotate-180")} />
+            </button>
                 
                 <button className="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] bg-card/40 backdrop-blur-xl border border-border/50 text-xs font-black uppercase tracking-[0.2em] hover:bg-muted/50 hover:border-primary/30 transition-all group">
                   <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />

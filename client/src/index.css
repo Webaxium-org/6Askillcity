@@ -162,3 +162,15 @@
   animation: shine 1.2s infinite;
 }
 
+@keyframes brand-border-glow {
+  0% { border-color: rgba(23, 70, 140, 0.25); box-shadow: 0 0 6px rgba(23, 70, 140, 0.1); }
+  50% { border-color: rgba(37, 99, 235, 0.55); box-shadow: 0 0 15px rgba(37, 99, 235, 0.25); }
+  100% { border-color: rgba(23, 70, 140, 0.25); box-shadow: 0 0 6px rgba(23, 70, 140, 0.1); }
+}
+.filters-btn-glow {
+  animation: brand-border-glow 4s infinite ease-in-out;
+}
+.filters-btn-glow:hover {
+  box-shadow: 0 0 15px rgba(23, 70, 140, 0.25) !important;
+}
+

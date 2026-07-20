@@ -13,6 +13,7 @@ import {
   BadgeDollarSign,
   Receipt,
   ChevronRight,
+  ChevronDown,
   Clock,
   X,
   Hash,
@@ -59,6 +60,14 @@ export default function PaymentManagement() {
   const [selectedFeeType, setSelectedFeeType] = useState("all");
   const [universities, setUniversities] = useState([]);
   const [partners, setPartners] = useState([]);
+
+  const activeFilterCount = [
+    !!startDate,
+    !!endDate,
+    selectedUni !== "all",
+    selectedPartner !== "all",
+    selectedFeeType !== "all",
+  ].filter(Boolean).length;
 
   // Verification Logic
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -387,17 +396,16 @@ export default function PaymentManagement() {
             </div>
             <button
               onClick={() => setShowFilters(true)}
-              className={cn(
-                "px-6 py-3 rounded-2xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2",
-                startDate || endDate || selectedUni !== "all" || selectedPartner !== "all" || selectedFeeType !== "all"
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                  : "bg-card border-border/50 text-muted-foreground hover:border-primary/30 hover:text-primary"
-              )}
+              className="flex items-center gap-2.5 px-6 py-3.5 bg-card border rounded-full text-[10px] font-black uppercase tracking-widest text-slate-800 transition-all hover:bg-muted/50 filters-btn-glow select-none whitespace-nowrap"
             >
-              <Filter className="w-3.5 h-3.5" />
-              {startDate || endDate || selectedUni !== "all" || selectedPartner !== "all" || selectedFeeType !== "all"
-                ? "Active"
-                : "Filters"}
+              <Filter className="w-4 h-4 text-slate-700" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#17468C] text-white text-[10px] font-black">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform duration-300", showFilters && "rotate-180")} />
             </button>
           </div>
         </div>

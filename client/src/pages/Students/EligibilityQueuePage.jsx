@@ -34,6 +34,7 @@ import {
   Filter,
   ArrowUpDown,
   Calendar,
+  ChevronDown,
 } from "lucide-react";
 
 const COURSE_LABELS = {
@@ -160,6 +161,12 @@ export default function EligibilityQueuePage() {
   const [startDate, setStartDate] = useState(searchParams.get("startDate") || "");
   const [endDate, setEndDate] = useState(searchParams.get("endDate") || "");
   const [selectedPartner, setSelectedPartner] = useState("all");
+
+  const activeFilterCount = [
+    !!startDate,
+    !!endDate,
+    selectedPartner !== "all",
+  ].filter(Boolean).length;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -334,15 +341,16 @@ export default function EligibilityQueuePage() {
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={cn(
-                "relative group px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all border flex items-center gap-2",
-                showFilters || startDate || endDate || selectedPartner !== "all"
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                  : "bg-card border-border text-muted-foreground hover:border-primary/30 hover:text-primary",
-              )}
+              className="flex items-center gap-2.5 px-6 py-3.5 bg-card border rounded-full text-[10px] font-black uppercase tracking-widest text-slate-800 transition-all hover:bg-muted/50 filters-btn-glow select-none whitespace-nowrap"
             >
-              <Filter className={cn("w-3.5 h-3.5", showFilters && "rotate-180")} />
-              {showFilters ? "Close" : "Filters"}
+              <Filter className="w-4 h-4 text-slate-700" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#17468C] text-white text-[10px] font-black">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform duration-300", showFilters && "rotate-180")} />
             </button>
           </div>
         </div>

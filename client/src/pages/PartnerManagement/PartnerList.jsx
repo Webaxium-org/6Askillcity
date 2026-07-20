@@ -16,6 +16,7 @@ import {
   Building2,
   GraduationCap,
   ChevronRight,
+  ChevronDown,
   X,
   Activity,
   ShieldCheck,
@@ -51,6 +52,14 @@ export default function PartnerList() {
   const [showFilters, setShowFilters] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  const activeFilterCount = [
+    statusFilter !== "all",
+    activeFilter !== "all",
+    universityFilter !== "all",
+    !!startDate,
+    !!endDate,
+  ].filter(Boolean).length;
 
   // Inspection completion state
   const [inspectionPartnerId, setInspectionPartnerId] = useState(null);
@@ -320,24 +329,16 @@ export default function PartnerList() {
 
             <button
               onClick={() => setShowFilters(true)}
-              className={cn(
-                "px-6 py-3.5 rounded-2xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto",
-                statusFilter !== "all" ||
-                  activeFilter !== "all" ||
-                  universityFilter !== "all" ||
-                  startDate ||
-                  endDate
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                  : "bg-card border-border/50 text-muted-foreground hover:border-primary/30 hover:text-primary",
-              )}
+              className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-card border rounded-full text-[10px] font-black uppercase tracking-widest text-slate-800 transition-all hover:bg-muted/50 filters-btn-glow select-none whitespace-nowrap w-full sm:w-auto"
             >
-              <Filter className="w-3.5 h-3.5" />
-              {statusFilter !== "all" ||
-              activeFilter !== "all" ||
-              startDate ||
-              endDate
-                ? "Active"
-                : "Filters"}
+              <Filter className="w-4 h-4 text-slate-700" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#17468C] text-white text-[10px] font-black">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform duration-300", showFilters && "rotate-180")} />
             </button>
           </div>
         </div>

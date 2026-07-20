@@ -27,6 +27,7 @@ import {
   Calendar,
   Upload,
   FileSpreadsheet,
+  ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -121,15 +122,21 @@ export default function UniversityManagement() {
   const handleImportExcel = async (e) => {
     e.preventDefault();
     if (!importUniversityId) {
-      dispatch(showAlert({ type: "error", message: "Please select a university." }));
+      dispatch(
+        showAlert({ type: "error", message: "Please select a university." }),
+      );
       return;
     }
     if (importType === "specific" && !importProgramId) {
-      dispatch(showAlert({ type: "error", message: "Please select a target Course." }));
+      dispatch(
+        showAlert({ type: "error", message: "Please select a target Course." }),
+      );
       return;
     }
     if (!importFile) {
-      dispatch(showAlert({ type: "error", message: "Please select an Excel file." }));
+      dispatch(
+        showAlert({ type: "error", message: "Please select an Excel file." }),
+      );
       return;
     }
     setImporting(true);
@@ -138,10 +145,15 @@ export default function UniversityManagement() {
         importUniversityId,
         importFile,
         importType,
-        importType === "specific" ? importProgramId : null
+        importType === "specific" ? importProgramId : null,
       );
       if (res.success) {
-        dispatch(showAlert({ type: "success", message: res.message || "Data imported successfully!" }));
+        dispatch(
+          showAlert({
+            type: "success",
+            message: res.message || "Data imported successfully!",
+          }),
+        );
         setIsImportModalOpen(false);
         setImportUniversityId("");
         setImportProgramId("");
@@ -158,7 +170,9 @@ export default function UniversityManagement() {
   const handleDownloadTemplate = async (type) => {
     try {
       const response = await getImportTemplate(type);
-      const blob = new Blob([response.data], { type: response.headers["content-type"] });
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -167,9 +181,16 @@ export default function UniversityManagement() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      dispatch(showAlert({ type: "success", message: "Template downloaded successfully." }));
+      dispatch(
+        showAlert({
+          type: "success",
+          message: "Template downloaded successfully.",
+        }),
+      );
     } catch (error) {
-      dispatch(showAlert({ type: "error", message: "Failed to download template." }));
+      dispatch(
+        showAlert({ type: "error", message: "Failed to download template." }),
+      );
     }
   };
 
@@ -217,7 +238,8 @@ export default function UniversityManagement() {
   const [modalTab, setModalTab] = useState("setup"); // setup or history
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [branchToDelete, setBranchToDelete] = useState(null);
-  const [isProgramDeleteModalOpen, setIsProgramDeleteModalOpen] = useState(false);
+  const [isProgramDeleteModalOpen, setIsProgramDeleteModalOpen] =
+    useState(false);
   const [programToDelete, setProgramToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [feeForm, setFeeForm] = useState({
@@ -515,7 +537,8 @@ export default function UniversityManagement() {
   });
 
   const filteredBranches = branches.filter((b) => {
-    const matchesProgram = !selectedProgramId || b.program?._id === selectedProgramId;
+    const matchesProgram =
+      !selectedProgramId || b.program?._id === selectedProgramId;
     const matchesSearch =
       b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.program?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -536,14 +559,32 @@ export default function UniversityManagement() {
   });
 
   // Pagination derived slices
-  const uniTotalPages = Math.max(1, Math.ceil(filteredUniversities.length / PAGE_SIZE));
-  const pagedUniversities = filteredUniversities.slice((uniPage - 1) * PAGE_SIZE, uniPage * PAGE_SIZE);
+  const uniTotalPages = Math.max(
+    1,
+    Math.ceil(filteredUniversities.length / PAGE_SIZE),
+  );
+  const pagedUniversities = filteredUniversities.slice(
+    (uniPage - 1) * PAGE_SIZE,
+    uniPage * PAGE_SIZE,
+  );
 
-  const progTotalPages = Math.max(1, Math.ceil(filteredPrograms.length / PAGE_SIZE));
-  const pagedPrograms = filteredPrograms.slice((progPage - 1) * PAGE_SIZE, progPage * PAGE_SIZE);
+  const progTotalPages = Math.max(
+    1,
+    Math.ceil(filteredPrograms.length / PAGE_SIZE),
+  );
+  const pagedPrograms = filteredPrograms.slice(
+    (progPage - 1) * PAGE_SIZE,
+    progPage * PAGE_SIZE,
+  );
 
-  const branchTotalPages = Math.max(1, Math.ceil(filteredBranches.length / PAGE_SIZE));
-  const pagedBranches = filteredBranches.slice((branchPage - 1) * PAGE_SIZE, branchPage * PAGE_SIZE);
+  const branchTotalPages = Math.max(
+    1,
+    Math.ceil(filteredBranches.length / PAGE_SIZE),
+  );
+  const pagedBranches = filteredBranches.slice(
+    (branchPage - 1) * PAGE_SIZE,
+    branchPage * PAGE_SIZE,
+  );
 
   // Reusable pagination bar renderer
   const PaginationBar = ({ page, totalPages, total, onPage }) => {
@@ -551,7 +592,11 @@ export default function UniversityManagement() {
     const pages = [];
     const delta = 2;
     for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= page - delta && i <= page + delta)) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= page - delta && i <= page + delta)
+      ) {
         pages.push(i);
       } else if (pages[pages.length - 1] !== "...") {
         pages.push("...");
@@ -560,7 +605,8 @@ export default function UniversityManagement() {
     return (
       <div className="flex items-center justify-between px-2 py-4 border-t border-border/40">
         <span className="text-xs text-muted-foreground font-medium">
-          Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+          Showing {(page - 1) * PAGE_SIZE + 1}–
+          {Math.min(page * PAGE_SIZE, total)} of {total}
         </span>
         <div className="flex items-center gap-1">
           <button
@@ -572,7 +618,12 @@ export default function UniversityManagement() {
           </button>
           {pages.map((p, idx) =>
             p === "..." ? (
-              <span key={`ellipsis-${idx}`} className="px-2 text-xs text-muted-foreground">…</span>
+              <span
+                key={`ellipsis-${idx}`}
+                className="px-2 text-xs text-muted-foreground"
+              >
+                …
+              </span>
             ) : (
               <button
                 key={p}
@@ -585,7 +636,7 @@ export default function UniversityManagement() {
               >
                 {p}
               </button>
-            )
+            ),
           )}
           <button
             onClick={() => onPage(page + 1)}
@@ -599,12 +650,21 @@ export default function UniversityManagement() {
     );
   };
 
+  const activeFilterCount = [
+    filterStatus !== "all",
+    !!startDate,
+    !!endDate,
+  ].filter(Boolean).length;
+
   return (
     <DashboardLayout title="University Management">
       <div className="space-y-6">
         {/* Active Filter Chips */}
         <AnimatePresence>
-          {(filterStatus !== "all" || startDate || endDate || selectedProgramId) && (
+          {(filterStatus !== "all" ||
+            startDate ||
+            endDate ||
+            selectedProgramId) && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -645,7 +705,9 @@ export default function UniversityManagement() {
 
               {selectedProgramId && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-[10px] font-bold text-blue-600">
-                  Program: {programs.find((p) => p._id === selectedProgramId)?.name || "Selected"}
+                  Program:{" "}
+                  {programs.find((p) => p._id === selectedProgramId)?.name ||
+                    "Selected"}
                   <button
                     onClick={() => setSelectedProgramId(null)}
                     className="hover:text-rose-500"
@@ -711,17 +773,21 @@ export default function UniversityManagement() {
 
             <button
               onClick={() => setShowFilters(true)}
-              className={cn(
-                "flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border whitespace-nowrap",
-                showFilters || filterStatus !== "all" || startDate || endDate
-                  ? "bg-primary text-white border-primary"
-                  : "bg-card border-border hover:bg-muted",
-              )}
+              className="flex items-center gap-2.5 px-6 py-3.5 bg-card border rounded-full text-[10px] font-black uppercase tracking-widest text-slate-800 transition-all hover:bg-muted/50 filters-btn-glow select-none whitespace-nowrap"
             >
-              <Filter className="w-4 h-4" />
-              {filterStatus !== "all" || startDate || endDate
-                ? "Active Filters"
-                : "Advanced"}
+              <Filter className="w-4 h-4 text-slate-700" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#17468C] text-white text-[10px] font-black">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown
+                className={cn(
+                  "w-3.5 h-3.5 text-slate-400 transition-transform duration-300",
+                  showFilters && "rotate-180",
+                )}
+              />
             </button>
 
             {/* Excel Import Button */}
@@ -853,7 +919,9 @@ export default function UniversityManagement() {
                                 <Edit className="w-4 h-4" />
                               </button>
                             </div>
-                            <h3 className="font-bold text-lg mb-1">{uni.name}</h3>
+                            <h3 className="font-bold text-lg mb-1">
+                              {uni.name}
+                            </h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                               <MapPin className="w-3.5 h-3.5" />
                               {uni.location}
@@ -872,13 +940,19 @@ export default function UniversityManagement() {
                                 }}
                                 className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
                               >
-                                View Programs <ChevronRight className="w-3 h-3" />
+                                View Programs{" "}
+                                <ChevronRight className="w-3 h-3" />
                               </button>
                             </div>
                           </div>
                         ))}
                       </div>
-                      <PaginationBar page={uniPage} totalPages={uniTotalPages} total={filteredUniversities.length} onPage={setUniPage} />
+                      <PaginationBar
+                        page={uniPage}
+                        totalPages={uniTotalPages}
+                        total={filteredUniversities.length}
+                        onPage={setUniPage}
+                      />
                     </>
                   ) : (
                     <>
@@ -949,7 +1023,12 @@ export default function UniversityManagement() {
                             ))}
                           </tbody>
                         </table>
-                        <PaginationBar page={uniPage} totalPages={uniTotalPages} total={filteredUniversities.length} onPage={setUniPage} />
+                        <PaginationBar
+                          page={uniPage}
+                          totalPages={uniTotalPages}
+                          total={filteredUniversities.length}
+                          onPage={setUniPage}
+                        />
                       </div>
                     </>
                   )}
@@ -1020,7 +1099,8 @@ export default function UniversityManagement() {
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20 whitespace-nowrap">
                                   Skill Test
                                 </span>
-                              ) : prog.programType === "PG Deploma" || prog.programType === "PG Diploma" ? (
+                              ) : prog.programType === "PG Deploma" ||
+                                prog.programType === "PG Diploma" ? (
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-500/10 text-pink-600 border border-pink-500/20 whitespace-nowrap">
                                   {prog.programType}
                                 </span>
@@ -1114,7 +1194,12 @@ export default function UniversityManagement() {
                       )}
                     </tbody>
                   </table>
-                  <PaginationBar page={progPage} totalPages={progTotalPages} total={filteredPrograms.length} onPage={setProgPage} />
+                  <PaginationBar
+                    page={progPage}
+                    totalPages={progTotalPages}
+                    total={filteredPrograms.length}
+                    onPage={setProgPage}
+                  />
                 </div>
               )}
 
@@ -1219,10 +1304,14 @@ export default function UniversityManagement() {
                       )}
                     </tbody>
                   </table>
-                  <PaginationBar page={branchPage} totalPages={branchTotalPages} total={filteredBranches.length} onPage={setBranchPage} />
+                  <PaginationBar
+                    page={branchPage}
+                    totalPages={branchTotalPages}
+                    total={filteredBranches.length}
+                    onPage={setBranchPage}
+                  />
                 </div>
               )}
-
 
               {activeTab === "history" && (
                 <div className="space-y-4">
@@ -1422,9 +1511,7 @@ export default function UniversityManagement() {
                     </label>
                     <select
                       name="mode"
-                      defaultValue={
-                        editingProgram?.mode || "External"
-                      }
+                      defaultValue={editingProgram?.mode || "External"}
                       required
                       className="w-full px-4 py-2.5 rounded-xl border border-input bg-background outline-none focus:ring-1 focus:ring-primary transition-all text-sm"
                     >
@@ -1686,7 +1773,12 @@ export default function UniversityManagement() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                  Are you sure you want to delete <span className="font-bold text-foreground">{branchToDelete?.name}</span>? This action is permanent and cannot be undone. All associated fee records will be deleted.
+                  Are you sure you want to delete{" "}
+                  <span className="font-bold text-foreground">
+                    {branchToDelete?.name}
+                  </span>
+                  ? This action is permanent and cannot be undone. All
+                  associated fee records will be deleted.
                 </p>
                 <div className="flex gap-3">
                   <button
@@ -1742,7 +1834,13 @@ export default function UniversityManagement() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                  Are you sure you want to delete <span className="font-bold text-foreground">{programToDelete?.name}</span>? This action is permanent and cannot be undone. All associated branches, fee structures, and partner permissions will also be deleted.
+                  Are you sure you want to delete{" "}
+                  <span className="font-bold text-foreground">
+                    {programToDelete?.name}
+                  </span>
+                  ? This action is permanent and cannot be undone. All
+                  associated branches, fee structures, and partner permissions
+                  will also be deleted.
                 </p>
                 <div className="flex gap-3">
                   <button
@@ -2208,25 +2306,40 @@ export default function UniversityManagement() {
                       <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1 block">
                         Target Course (Program)
                       </label>
-                      
+
                       {/* Trigger Button */}
                       <button
                         type="button"
-                        onClick={() => setIsCourseDropdownOpen(!isCourseDropdownOpen)}
+                        onClick={() =>
+                          setIsCourseDropdownOpen(!isCourseDropdownOpen)
+                        }
                         className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-border bg-slate-50 outline-none focus:border-emerald-500/30 focus:bg-white transition-all text-xs font-bold text-left relative z-10"
                       >
-                        <span className={importProgramId ? "text-slate-800" : "text-muted-foreground font-medium"}>
-                          {importProgramId 
-                            ? importPrograms.find(p => p._id === importProgramId)?.name || "Select Target Course"
+                        <span
+                          className={
+                            importProgramId
+                              ? "text-slate-800"
+                              : "text-muted-foreground font-medium"
+                          }
+                        >
+                          {importProgramId
+                            ? importPrograms.find(
+                                (p) => p._id === importProgramId,
+                              )?.name || "Select Target Course"
                             : "Select Target Course"}
                         </span>
-                        <ChevronRight className={cn("w-4 h-4 text-muted-foreground transition-transform duration-200", isCourseDropdownOpen && "rotate-90")} />
+                        <ChevronRight
+                          className={cn(
+                            "w-4 h-4 text-muted-foreground transition-transform duration-200",
+                            isCourseDropdownOpen && "rotate-90",
+                          )}
+                        />
                       </button>
 
                       {/* Backdrop for outside click */}
                       {isCourseDropdownOpen && (
-                        <div 
-                          className="fixed inset-0 z-40 bg-transparent" 
+                        <div
+                          className="fixed inset-0 z-40 bg-transparent"
                           onClick={() => setIsCourseDropdownOpen(false)}
                         />
                       )}
@@ -2247,7 +2360,9 @@ export default function UniversityManagement() {
                                 type="text"
                                 placeholder="Search course..."
                                 value={importProgramSearch}
-                                onChange={(e) => setImportProgramSearch(e.target.value)}
+                                onChange={(e) =>
+                                  setImportProgramSearch(e.target.value)
+                                }
                                 className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs outline-none focus:border-emerald-500/30 transition-all font-semibold"
                                 onClick={(e) => e.stopPropagation()} // prevent closing when clicking input
                               />
@@ -2255,15 +2370,23 @@ export default function UniversityManagement() {
 
                             {/* Dropdown Options */}
                             <div className="overflow-y-auto flex-1 py-1 max-h-44 scrollbar-thin">
-                              {importPrograms.filter(p => 
-                                p.name.toLowerCase().includes(importProgramSearch.toLowerCase())
+                              {importPrograms.filter((p) =>
+                                p.name
+                                  .toLowerCase()
+                                  .includes(importProgramSearch.toLowerCase()),
                               ).length === 0 ? (
                                 <div className="px-4 py-3 text-xs text-muted-foreground text-center italic">
                                   No courses found
                                 </div>
                               ) : (
                                 importPrograms
-                                  .filter(p => p.name.toLowerCase().includes(importProgramSearch.toLowerCase()))
+                                  .filter((p) =>
+                                    p.name
+                                      .toLowerCase()
+                                      .includes(
+                                        importProgramSearch.toLowerCase(),
+                                      ),
+                                  )
                                   .map((p) => (
                                     <button
                                       key={p._id}
@@ -2275,10 +2398,14 @@ export default function UniversityManagement() {
                                       }}
                                       className={cn(
                                         "w-full text-left px-4 py-2.5 text-xs hover:bg-muted transition-colors flex items-center justify-between",
-                                        importProgramId === p._id ? "bg-emerald-500/5 text-emerald-600 font-bold" : "text-foreground font-medium"
+                                        importProgramId === p._id
+                                          ? "bg-emerald-500/5 text-emerald-600 font-bold"
+                                          : "text-foreground font-medium",
                                       )}
                                     >
-                                      <span>{p.name} ({p.programType})</span>
+                                      <span>
+                                        {p.name} ({p.programType})
+                                      </span>
                                       {importProgramId === p._id && (
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                       )}

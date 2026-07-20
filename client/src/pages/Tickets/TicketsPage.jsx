@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
-import { MessageSquare, Plus, Search, Clock, AlertCircle, CheckCircle2, ChevronRight, SlidersHorizontal, X, Filter, Calendar } from "lucide-react";
+import { MessageSquare, Plus, Search, Clock, AlertCircle, CheckCircle2, ChevronRight, ChevronDown, SlidersHorizontal, X, Filter, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, StatCard } from "../../components/dashboard/StatCard";
 import { getTickets, getTicketMetrics } from "../../api/ticket.api";
@@ -48,6 +48,14 @@ export default function TicketsPage() {
   const { user } = useSelector((s) => s.user);
   const dispatch = useDispatch();
   const { socket } = useSocket();
+
+  const activeFilterCount = [
+    filterStatus !== "All",
+    filterCategory !== "All",
+    filterPartner !== "All",
+    !!startDate,
+    !!endDate,
+  ].filter(Boolean).length;
 
   useEffect(() => {
     if (user?.type === "admin") {
@@ -202,15 +210,18 @@ export default function TicketsPage() {
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                 className="pl-9 pr-4 py-2.5 rounded-xl bg-card border border-border focus:border-primary outline-none text-sm w-full transition-all shadow-sm" />
             </div>
-            <button onClick={() => setShowFilters(true)}
-              className={cn(
-                "px-4 py-2.5 rounded-xl border font-bold text-[11px] uppercase tracking-wider transition-all flex items-center gap-2",
-                filterStatus !== "All" || filterCategory !== "All" || startDate || endDate || filterPartner !== "All"
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
-                  : "bg-card border-border text-muted-foreground hover:border-primary hover:text-primary shadow-sm"
-              )}>
-              <Filter className="w-3.5 h-3.5" />
-              {filterStatus !== "All" || filterCategory !== "All" || startDate || endDate || filterPartner !== "All" ? "Active" : "Filters"}
+             <button
+              onClick={() => setShowFilters(true)}
+              className="flex items-center gap-2.5 px-6 py-3.5 bg-card border rounded-full text-[10px] font-black uppercase tracking-widest text-slate-800 transition-all hover:bg-muted/50 filters-btn-glow select-none whitespace-nowrap"
+            >
+              <Filter className="w-4 h-4 text-slate-700" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#17468C] text-white text-[10px] font-black">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform duration-300", showFilters && "rotate-180")} />
             </button>
           </div>
 
