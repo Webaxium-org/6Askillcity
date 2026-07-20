@@ -259,10 +259,10 @@ export default function Reports() {
                   "flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all relative overflow-hidden group",
                   activeCategory === category.id
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "bg-card border border-border text-muted-foreground hover:border-primary/50 hover:text-primary",
+                    : "bg-card border border-border text-slate-800 hover:border-[#17468C]/50 hover:text-[#17468C]",
                 )}
               >
-                <category.icon className="w-4 h-4" />
+                <category.icon className="w-4 h-4 transition-colors group-hover:text-[#17468C]" />
                 {category.label}
                 {activeCategory === category.id && (
                   <motion.div

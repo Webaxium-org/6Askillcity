@@ -415,10 +415,10 @@ export default function DocumentsServices() {
               "flex items-center gap-2.5 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden group border shrink-0",
               activeTab === "applications" 
                 ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20" 
-                : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
+                : "bg-card border-border/60 text-slate-800 hover:border-[#17468C]/50 hover:text-[#17468C]"
             )}
           >
-            <Activity className={cn("w-4 h-4", activeTab === "applications" ? "text-white" : "text-primary/70")} />
+            <Activity className={cn("w-4 h-4 transition-colors", activeTab === "applications" ? "text-white" : "text-slate-600 group-hover:text-[#17468C]")} />
             Applications
           </button>
           {user?.type !== "partner" && user?.role !== "partner" && (
@@ -428,10 +428,10 @@ export default function DocumentsServices() {
                 "flex items-center gap-2.5 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden group border shrink-0",
                 activeTab === "management" 
                   ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20" 
-                  : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
+                  : "bg-card border-border/60 text-slate-800 hover:border-[#17468C]/50 hover:text-[#17468C]"
               )}
             >
-              <Settings className={cn("w-4 h-4", activeTab === "management" ? "text-white" : "text-primary/70")} />
+              <Settings className={cn("w-4 h-4 transition-colors", activeTab === "management" ? "text-white" : "text-slate-600 group-hover:text-[#17468C]")} />
               Manage Services
             </button>
           )}
@@ -960,7 +960,7 @@ export default function DocumentsServices() {
                       "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0",
                       selectedManageCategory === "all"
                         ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10"
-                        : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
+                        : "bg-card border-border/60 text-slate-800 hover:border-[#17468C]/50 hover:text-[#17468C]"
                     )}
                   >
                     <Layers size={12} />
@@ -986,7 +986,7 @@ export default function DocumentsServices() {
                           "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0",
                           selectedManageCategory === cat
                             ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10"
-                            : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary"
+                            : "bg-card border-border/60 text-slate-800 hover:border-[#17468C]/50 hover:text-[#17468C]"
                         )}
                       >
                         <CategoryIcon size={12} />

@@ -651,7 +651,7 @@ export default function StudentList() {
                   "flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all relative overflow-hidden group border",
                   statusTab === tab.id
                     ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20"
-                    : "bg-card border-border/60 text-muted-foreground/80 hover:border-primary/50 hover:text-primary",
+                    : "bg-card border-border/60 text-slate-800 hover:border-[#17468C]/50 hover:text-[#17468C]",
                 )}
               >
                 <tab.icon
@@ -659,7 +659,7 @@ export default function StudentList() {
                     "w-4 h-4 transition-colors",
                     statusTab === tab.id
                       ? "text-white"
-                      : "text-muted-foreground group-hover:text-primary",
+                      : "text-slate-600 group-hover:text-[#17468C]",
                   )}
                 />
                 {tab.label}
